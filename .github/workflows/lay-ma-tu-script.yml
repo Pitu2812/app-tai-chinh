@@ -1,0 +1,36 @@
+name: Lay ma tu Apps Script ve kho
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  pull:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Cai clasp
+        run: npm install -g @google/clasp
+      - name: Dang nhap clasp bang secret
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+        run: |
+          printf '%s' "$CLASPRC_JSON" > ~/.clasprc.json
+          chmod 600 ~/.clasprc.json
+      - name: Keo ma ve thu muc script/
+        run: |
+          mkdir -p script
+          cd script
+          clasp clone 1Cpk571gg4NEv7kjV-gteJ_81973O4kkhQkSfmRyjV3CyYt5SdeuD7E62
+          ls -la
+      - name: Day len nhanh script-ban-hien-tai
+        run: |
+          rm -f ~/.clasprc.json
+          git config user.name "github-actions"
+          git config user.email "actions@users.noreply.github.com"
+          git checkout -b script-ban-hien-tai
+          git add script
+          git commit -m "Ma Apps Script hien tai (lay tu script.google.com)" || echo "khong co thay doi"
+          git push -f origin script-ban-hien-tai
