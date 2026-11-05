@@ -1,0 +1,32 @@
+name: Thu nghiem kich thuoc tep web trong Apps Script
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  thu:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install -g @google/clasp
+      - name: Dang nhap clasp
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+        run: |
+          printf '%s' "$CLASPRC_JSON" > ~/.clasprc.json
+          chmod 600 ~/.clasprc.json
+      - name: Tao du an THU NGHIEM rieng (khong dung vao APP TAI CHINH) va day tep web len
+        run: |
+          mkdir /tmp/thu && cd /tmp/thu
+          clasp create --type standalone --title "THU NGHIEM kich thuoc web (xoa duoc)"
+          cp "$GITHUB_WORKSPACE/web/app-tai-chinh.html" app_tai_chinh.html
+          cp "$GITHUB_WORKSPACE/web/phan-cap-thu-rieng.html" phan_cap.html
+          echo 'function t(){ return HtmlService.createHtmlOutputFromFile("app_tai_chinh").getContent().length; }' > Code.js
+          clasp push --force
+          cat .clasp.json | sed 's/"scriptId": *"[^"]*"/scriptId: (an)/'
+      - name: Xoa chia khoa
+        if: always()
+        run: rm -f ~/.clasprc.json
