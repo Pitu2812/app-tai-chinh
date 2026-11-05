@@ -23,6 +23,7 @@ jobs:
           mkdir -p app-ty-le/script
           cd app-ty-le/script
           clasp clone 1U4nQpKZdvCKNQmjOxcVQbdrrCz39O8kqjti7XOvOwaMNrJ4vfvrxGnPu
+          rm -f web-data.js build-info.js
           ls -la
       - name: Day len nhanh app-ty-le-ban-hien-tai
         run: |

@@ -1,0 +1,75 @@
+name: Day ma App ty le phan cap len Apps Script va trien khai
+on:
+  workflow_dispatch:
+    inputs:
+      trien_khai:
+        description: "Trien khai vao link /exec chinh cua App ty le? (mac dinh: khong, chi day ma)"
+        type: boolean
+        default: false
+      trien_khai_thu:
+        description: "Tao ban trien khai THU rieng (link moi, khong dung /exec chinh)"
+        type: boolean
+        default: false
+      quay_lai_phien_ban:
+        description: "Chi dung khi can lui: so phien ban cu muon tra lai"
+        type: string
+        default: ""
+      ghi_chu:
+        description: "Ghi chu cho ban trien khai"
+        type: string
+        default: "Trien khai tu GitHub"
+permissions:
+  contents: read
+concurrency:
+  group: apps-script-deploy-app-ty-le
+  cancel-in-progress: false
+env:
+  DEPLOYMENT_ID: AKfycbykyJgyXsiGOMc1M7uWbXoT_088vIhdULdb2YGbuu8U2WkHP93Dof9UwvMIrL1ZmcR41w
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Cai clasp
+        run: npm install -g @google/clasp
+      - name: Dang nhap clasp bang secret
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+        run: |
+          printf '%s' "$CLASPRC_JSON" > ~/.clasprc.json
+          chmod 600 ~/.clasprc.json
+      - name: Gop web (base64) va dau moc phien ban vao thu muc script
+        if: ${{ inputs.quay_lai_phien_ban == '' }}
+        run: |
+          python3 - <<'PY'
+          import base64
+          b = base64.b64encode(open("app-ty-le/web/app-ty-le-phan-cap.html", "rb").read()).decode()
+          step = 900000
+          open("app-ty-le/script/web-data.js", "w").write("var WEB_PARTS = {};\nWEB_PARTS.app_ty_le = [" + ",".join("'%s'" % b[i:i+step] for i in range(0, len(b), step)) + "];")
+          PY
+          echo "var BUILD_TS = $(date +%s%3N);" > app-ty-le/script/build-info.js
+      - name: Day ma len script
+        if: ${{ inputs.quay_lai_phien_ban == '' }}
+        working-directory: app-ty-le/script
+        run: clasp push --force
+      - name: Trien khai vao dung link /exec chinh
+        if: ${{ inputs.trien_khai && inputs.quay_lai_phien_ban == '' }}
+        working-directory: app-ty-le/script
+        run: clasp deploy --deploymentId "$DEPLOYMENT_ID" --description "${{ inputs.ghi_chu }}"
+      - name: Tao ban trien khai THU (link rieng)
+        if: ${{ inputs.trien_khai_thu && inputs.quay_lai_phien_ban == '' }}
+        working-directory: app-ty-le/script
+        run: |
+          clasp deploy --description "THU: ${{ inputs.ghi_chu }}" | tee /tmp/dep.txt
+          id=$(grep -o 'AKfycb[A-Za-z0-9_-]*' /tmp/dep.txt | head -1)
+          echo "LINK THU: https://script.google.com/macros/s/$id/exec"
+      - name: Lui ve phien ban cu
+        if: ${{ inputs.quay_lai_phien_ban != '' }}
+        working-directory: app-ty-le/script
+        run: clasp deploy --deploymentId "$DEPLOYMENT_ID" --versionNumber "${{ inputs.quay_lai_phien_ban }}" --description "Lui ve phien ban ${{ inputs.quay_lai_phien_ban }}"
+      - name: Xoa chia khoa
+        if: always()
+        run: rm -f ~/.clasprc.json
