@@ -52,8 +52,17 @@ function autoLogin_(html) {
     return '<script>try{localStorage.setItem("tc_tok","' + token + '")}catch(e){}<\/script>' + html;
   } catch (e) { return html; }
 }
-/* tệp mới nhất theo tên trên Drive của chủ script */
+/* web nằm ngay trong dự án script (robot GitHub đẩy lên cùng mã): tên tệp web -> tên tệp html trong script */
+var EMB = { 'app-tai-chinh.html': 'app_tai_chinh', 'phan-cap-thu-rieng.html': 'phan_cap_thu_rieng' };
+function embedded_(name) {
+  var e = EMB[name];
+  if (!e) return null;
+  try { return HtmlService.createHtmlOutputFromFile(e).getContent(); } catch (x) { return null; }
+}
+/* ưu tiên web nằm trong script, không có thì lấy tệp mới nhất theo tên trên Drive của chủ script */
 function readApp_(name) {
+  var emb = embedded_(name);
+  if (emb) return emb;
   var it = DriveApp.getFilesByName(name), best = null;
   while (it.hasNext()) { var f = it.next(); if (!best || f.getLastUpdated() > best.getLastUpdated()) best = f; }
   if (!best) throw new Error('Chưa thấy tệp "' + name + '" trên Google Drive của chủ script.');
@@ -174,7 +183,7 @@ function auto_() { return prop_("AUTO_UPDATE") !== "0"; }
 function fileTs_() {
   var c = CacheService.getScriptCache(), v = c.get('filets');
   if (v) return +v;
-  var it = DriveApp.getFilesByName(CFG.APPS['']), t = 0;
+  var it = DriveApp.getFilesByName(CFG.APPS['']), t = (typeof BUILD_TS !== 'undefined') ? +BUILD_TS : 0;   // BUILD_TS: robot GitHub ghi lúc đẩy mã
   while (it.hasNext()) { var f = it.next().getLastUpdated().getTime(); if (f > t) t = f; }
   c.put('filets', String(t), 60);
   return t;
