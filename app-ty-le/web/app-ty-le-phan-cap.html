@@ -568,7 +568,7 @@ function rowsMain(S,get,sk,id){const out=[],st=id?fs(id):null,srt=st&&sorted(id)
  const cmp=srt?cmpFn(MKEYS,st):null,order=[];
  const walk=i=>{order.push(i);if(!kids[i]||!S.open.has(i))return;let c=(ch[i]||[]).slice();if(cmp)c.sort((a,b)=>cmp(it(a),it(b)));c.forEach(walk)};
  (ch[-1]||[]).forEach(walk);
- order.forEach(i=>{const v=it(i).v;if(S.hz&&!R[i].hdr&&v.every(x=>x==null||Math.round(x)===0))return;out.push({item:{i,r:R[i],v},cls:`d${D[i]} ${kids[i]?'p':''} ${S.open.has(i)?'open':''}`,attr:kids[i]?`onclick="tg('${sk}',${i})"`:''})});return out}
+ order.forEach(i=>{const v=it(i).v;if(S.hz&&!R[i].hdr&&v.every(x=>x==null||Math.round(x)===0))return;out.push({item:{i,r:R[i],v},cls:`d${D[i]} ${kids[i]?'p':''} ${S.open.has(i)?'open':''}`,attr:`data-ri="${i}" data-pi="${par[i]}" `+(kids[i]?`onclick="tg('${sk}',${i})"`:'')})});return out}
 window.tg=(k,i)=>{const S=k==='det'?ST.xa:ST[k];S.open.has(i)?S.open.delete(i):S.open.add(i);draw(true)};
 const chip=(on,att,t)=>`<label class="chip ${on?'on':''}"><input type="checkbox" ${att} ${on?'checked':''}>${t}</label>`;
 const OPT={open:false};
@@ -766,9 +766,9 @@ function plKhoan(kx,pc){const c=PL.cols,id='plk',st=fs(id),cp=curPlan(),lock=PL.
  L.sort(cmpFn(KEYS,st));
  const mkT=(n,arr)=>({tot:1,n,i:-1,nti:arr.reduce((a,r)=>a+r.nti,0),nxa:arr.reduce((a,r)=>a+r.nxa,0),dti:arr.reduce((a,r)=>a+r.dti,0),dx:arr.reduce((a,r)=>a+r.dx,0),gti:arr.reduce((a,r)=>a+r.gti,0),gx:arr.reduce((a,r)=>a+r.gx,0)});
  const tops=[{item:mkT('Tổng cộng các khoản thu',kx)}];if(L.length<kx.length)tops.push({item:mkT(`Cộng theo bộ lọc (${L.length} khoản)`,L)});
- const rows=[];L.forEach(r=>{r.kind='k';r.d=0;rows.push({item:r,cls:`px ${PL.sel===r.i?'sel':''}`,attr:`data-i="${r.i}"`});
+ const rows=[];L.forEach(r=>{r.kind='k';r.d=0;rows.push({item:r,cls:`px ${PL.sel===r.i?'sel':''}`,attr:`data-i="${r.i}" data-lv="0"${PL.open.has('k'+r.i)&&r.k.lines.length>1?' data-op="1"':''}`});
   if(PL.open.has('k'+r.i)&&r.k.lines.length>1)r.k.lines.forEach(l=>{const pg=l.d===2?r.k.lines.find(g=>g.grp&&g.children.includes(l.key)):null;if(pg&&!PL.open.has(pg.key))return;
-   const a=lAgg(r.k,l),nm=l.label||'';rows.push({item:Object.assign({kind:'l',i:r.i,k:r.k,l,key:l.key,n:nm,o:r.o,d:l.d},a),cls:`px ln ${PL.sel===r.i?'sel':''}`,attr:`data-i="${r.i}"`})})});
+   const a=lAgg(r.k,l),nm=l.label||'';rows.push({item:Object.assign({kind:'l',i:r.i,k:r.k,l,key:l.key,n:nm,o:r.o,d:l.d},a),cls:`px ln ${PL.sel===r.i?'sel':''}`,attr:`data-i="${r.i}" data-lv="${l.d||1}"${l.grp&&PL.open.has(l.key)?' data-op="1"':''}`})})});
  const tool=ptool(id,cols,{dl:'dl-kh',ph:'Tìm hoặc chọn khoản thu...',cnt:`${L.length}/${kx.length} khoản`,extra:`${chip(PL.hz,'id="khz"','Ẩn khoản bằng 0')}${chip(PL.kch,'id="kch"','Chỉ khoản đã sửa')}<button class="ib sm" id="kop">${PL.open.size?'Thu gọn khu vực':'Mở hết khu vực'}</button>`});
  let right='';const i=PL.sel,k=KH[i];
  if(i>=0){const rid='plr',rs=fs(rid);
@@ -1512,8 +1512,46 @@ function paneSheet(id,title,all){const t=paneBox(id).querySelector('table.rz'),c
  const ws=XLSX.utils.aoa_to_sheet([[title],[(all?'Toàn bộ (bỏ lọc, mở hết khoản con)':'Theo bộ lọc đang hiển thị')+' · xuất lúc '+new Date().toLocaleString('vi-VN')+' · đơn vị: triệu đồng']]);
  XLSX.utils.sheet_add_dom(ws,c,{origin:'A4',raw:true});cellFix(ws);
  const nh=c.tHead?c.tHead.rows.length:0;Object.keys(ws).forEach(k=>{if(k[0]==='!')return;const a=XLSX.utils.decode_cell(k);if(a.r>=3&&a.r<3+nh&&ws[k].t==='n'){ws[k]={t:'s',v:String(ws[k].v)}}});
+ paneF(ws,c,nh);
  const z=zget(id);if(z.cw)ws['!cols']=z.cw.map((w,x)=>({wch:Math.max(x?9:12,Math.min(60,Math.round(w/6.5)))}));
  return ws}
+/* công thức cho bản xuất theo khung (H duyệt 05/11/2026): ô chênh lệch, ô tỷ lệ so sánh, NSĐP = ROUND(NSNN × tỷ lệ), dòng cha và dòng cộng = SUM; chỉ ghi công thức khi tính lại ra đúng số đang hiện */
+function paneF(ws,c,nh){const body=c.tBodies[0];if(!body||!ws['!ref'])return 0;
+ const U=XLSX.utils,rows=[...body.rows],r0=3+nh,nc=U.decode_range(ws['!ref']).e.c+1,n=rows.length,A=(r,x)=>U.encode_cell({r,c:x}),C=x=>U.encode_col(x);
+ const num=(r,x)=>{const z=ws[A(r,x)];return z&&z.t==='n'&&isFinite(z.v)?z.v:null};
+ const H=[];for(let x=0;x<nc;x++){const t=[];for(let r=3;r<3+nh;r++){let z=ws[A(r,x)];if(!z||z.v==null){const m=(ws['!merges']||[]).find(m=>m.s.r<=r&&m.e.r>=r&&m.s.c<=x&&m.e.c>=x);z=m&&ws[A(m.s.r,m.s.c)]}if(z&&z.v!=null&&!t.includes(String(z.v)))t.push(String(z.v))}H.push(t.join(' '))}
+ const meta=rows.map(tr=>{const m=tr.className.match(/\bd(\d)\b/),nm=tr.querySelector('td.nm'),lv=tr.getAttribute('data-lv');return{ri:tr.getAttribute('data-ri'),pi:tr.getAttribute('data-pi'),d:lv!=null?+lv:m?+m[1]:0,tot:/\btot\b/.test(tr.className),open:tr.hasAttribute('data-op')||/\bopen\b/.test(tr.className)&&/\bp\b/.test(tr.className),nm:nm?nm.textContent.trim():''}});
+ const isRat=x=>/\//.test(H[x]),isDiff=x=>!isRat(x)&&/−|Chênh/i.test(H[x]),isRate=x=>/Tỷ lệ|Tỷ trọng|hưởng|%/i.test(H[x])&&!/NSĐP gốc|NSĐP theo|Thu NSĐP/.test(H[x])||/^STT/.test(H[x]);
+ const done=new Set();let nf=0;const setF=(r,x,f)=>{const k=A(r,x);ws[k]=Object.assign({},ws[k],{t:'n',f});done.add(k);nf++};
+ const best=(x,test)=>{let b=null,bs=-1;const lo=Math.max(0,x-12),hi=Math.min(nc,x+13);for(let a=lo;a<hi;a++)for(let q=lo;q<hi;q++){if(a===q||a===x||q===x)continue;const sc0=test.pre(a,q);if(sc0===false)continue;let ok=0,bad=0;
+   for(let k=0;k<n;k++){const r=r0+k,v=num(r,x),va=num(r,a),vb=num(r,q);if(v==null||va==null||vb==null)continue;if(test.m(v,va,vb))ok++;else{bad++;if(bad>test.tol(n))break}}
+   if(bad>test.tol(n)||ok<2)continue;const sc=ok*1000+(a<x&&q<x?500:0)+(a>q?100:0)-((x-a)+(x-q))*(a<x&&q<x?1:0)/1000;if(sc>bs){bs=sc;b=[a,q]}}return b};
+ for(let x=0;x<nc;x++){if(!isRat(x)&&!isDiff(x))continue;
+  const rat=isRat(x),t={pre:(a,q)=>!isRat(a)&&!isRat(q)&&!(isRate(a)||isRate(q))&&(rat||!isDiff(a)&&!isDiff(q)),tol:()=>0,m:rat?(v,va,vb)=>vb===0?v===0:Math.abs(va/vb-v)<=6e-5*Math.max(1,Math.abs(v)):(v,va,vb)=>Math.abs(va-vb-v)<0.5};
+  const b=best(x,t);if(!b)continue;const [a,q]=b;
+  for(let k=0;k<n;k++){const r=r0+k,R=r+1,v=num(r,x),va=num(r,a),vb=num(r,q);if(v==null||va==null||vb==null||!t.m(v,va,vb))continue;setF(r,x,rat?`IF(${C(q)}${R}=0,0,${C(a)}${R}/${C(q)}${R})`:`${C(a)}${R}-${C(q)}${R}`)}}
+ for(let x=0;x<nc;x++){if(isRat(x)||isDiff(x)||isRate(x)||!/Tổng/.test(H[x]))continue;let b=null,bs=-1;
+  for(let a=x+1;a<Math.min(nc,x+8);a++)for(let q=a+1;q<Math.min(nc,x+9);q++){if(isRat(a)||isRat(q)||isRate(a)||isRate(q)||isDiff(a)||isDiff(q))continue;let ok=0,bad=0;
+   for(let k=0;k<n;k++){const r=r0+k,v=num(r,x),va=num(r,a),vb=num(r,q);if(v==null||va==null||vb==null)continue;if(Math.abs(va+vb-v)<0.5)ok++;else{bad++;break}}
+   const sc=bad?-1:ok*1000-(a-x)-(q-a);if(ok>=2&&sc>bs){bs=sc;b=[a,q]}}
+  if(!b)continue;const [a,q]=b;for(let k=0;k<n;k++){const r=r0+k,R=r+1,v=num(r,x),va=num(r,a),vb=num(r,q);if(v==null||va==null||vb==null||Math.abs(va+vb-v)>=0.5)continue;setF(r,x,`${C(a)}${R}+${C(q)}${R}`)}}
+ for(let x=0;x<nc;x++){if(isRat(x)||isDiff(x)||isRate(x)||!/NSĐP/.test(H[x])||/gốc/i.test(H[x]))continue;
+  const t={pre:(a,q)=>!isRate(a)&&isRate(q)&&!/^STT/.test(H[q])&&/NSNN/.test(H[a]),tol:n=>Math.floor(n*0.2),m:(v,va,vb)=>vb>=0&&vb<=1&&Math.round(va*vb)===Math.round(v)};
+  const b=best(x,t);if(!b)continue;const [a,q]=b;
+  for(let k=0;k<n;k++){const r=r0+k,R=r+1,v=num(r,x),va=num(r,a),vb=num(r,q);if(meta[k].tot||meta[k].open||v==null||va==null||vb==null||!t.m(v,va,vb))continue;setF(r,x,`ROUND(${C(a)}${R}*${C(q)}${R},0)`)}}
+ const rg=ks=>{const o=[];let s0=null,p=null;ks.forEach(k=>{if(s0!==null&&k===p+1){p=k;return}if(s0!==null)o.push([s0,p]);s0=p=k});if(s0!==null)o.push([s0,p]);return o};
+ const memo=/^\s*(trong đó|bao gồm|thu nội địa \(trừ)/i;
+ const sumF=(k,ks,x)=>{const v=num(r0+k,x);if(v==null||done.has(A(r0+k,x)))return;const vals=ks.map(j=>num(r0+j,x)||0),s=vals.reduce((a,b)=>a+b,0);if(Math.abs(s-v)>=0.5)return false;
+  setF(r0+k,x,'SUM('+rg(ks).map(([i,j])=>i===j?C(x)+(r0+i+1):C(x)+(r0+i+1)+':'+C(x)+(r0+j+1)).join(',')+')');return true};
+ const cols=[];for(let x=0;x<nc;x++)if(!isRat(x)&&!isDiff(x)&&!isRate(x))cols.push(x);
+ for(let k=0;k<n;k++){const ch=[];if(meta[k].ri!=null){if(meta[k].pi==='-1'&&/^TỔNG/.test(meta[k].nm)&&!meta[k].open){for(let j=k+1;j<n&&!/^CHI TIẾT/i.test(meta[j].nm);j++)if(meta[j].pi==='-1')ch.push(j)}else if(meta[k].open)meta.forEach((m,j)=>{if(m.pi===meta[k].ri)ch.push(j)})}else if(meta[k].open){const d=meta[k].d;for(let j=k+1;j<n&&!meta[j].tot&&meta[j].d>d;j++)if(meta[j].d===d+1)ch.push(j)}if(!ch.length)continue;
+  const ch2=ch.filter(j=>!memo.test(meta[j].nm));const ok=(ks,x)=>{const v=num(r0+k,x);return v!=null&&Math.abs(ks.reduce((a,j)=>a+(num(r0+j,x)||0),0)-v)<0.5};
+  let j1=null,bs=0;ch2.slice().reverse().forEach(j=>{const ks=ch2.filter(q=>q!==j),sc=cols.filter(x=>ok(ks,x)&&!ok(ch2,x)).length;if(sc>bs){bs=sc;j1=j}});
+  const ch3=j1==null?null:ch2.filter(q=>q!==j1);
+  cols.forEach(x=>{if(ok(ch,x))sumF(k,ch,x);else if(ch2.length<ch.length&&ok(ch2,x))sumF(k,ch2,x);else if(ch3&&ok(ch3,x))sumF(k,ch3,x)})}
+ const body0=meta.map((m,k)=>k).filter(k=>!meta[k].tot);if(body0.length){const md=Math.min(...body0.map(k=>meta[k].d)),top=body0.filter(k=>meta[k].d===md),top2=top.filter(k=>!memo.test(meta[k].nm));
+  meta.forEach((m,k)=>{if(!m.tot)return;cols.forEach(x=>{if(sumF(k,top,x)===false&&top2.length<top.length)sumF(k,top2,x)})})}
+ return nf}
 function withAll(fn){const fs0=JSON.stringify(FS),st0={},pl0={open:new Set(PL.open),hz:PL.hz,kch:PL.kch};
  Object.keys(ST).forEach(k=>{st0[k]={open:new Set(ST[k].open),hz:ST[k].hz}});
  Object.keys(FS).forEach(k=>Object.assign(FS[k],{q:'',loai:'all',min:'',max:''}));
@@ -1525,12 +1563,14 @@ function exportPane(id,all){const go=()=>{if(!paneBox(id)){toast('Không thấy 
   XLSX.utils.book_append_sheet(wb,paneSheet(id,title,all),title.replace(/[\\\/?*\[\]:]/g,' ').slice(0,31).trim()||'Bảng');return {wb,title}};
  try{const o=all?withAll(go):go();if(!o)return;saveWb(o.wb,`${slug(o.title).slice(0,70)}${all?'_toan-bo':''}_${dstamp()}.xlsx`).then(ok=>ok&&toast('Đã xuất: '+o.title+(all?' (toàn bộ)':'')))}
  catch(err){console.error(err);toast('Lỗi khi xuất: '+err.message)}}
+const PMAU=id=>({mtong:'tong',ctong:'tong',mtinh:'tinh',ctinh:'tinh',xa:'xa',xac:'xa',xd:'xa',xdc:'xa',x96:'xa',plk:'tyle',plr:'tyle',pdt:'tyle',plx:'tyle',pld:'tyle',tck:'ss',tcx:'ss'})[id]||null;
 (function(){const m=document.createElement('div');m.id='pxmenu';m.className='menu';document.body.appendChild(m);let cur=null;
  const close=()=>{m.classList.remove('on');cur=null};
  const place=()=>{const b=cur&&document.querySelector(`[data-xl="${cur}"]`);if(!b){close();return}const r=b.getBoundingClientRect(),w=m.offsetWidth||340,h=m.offsetHeight||300;m.style.left=Math.max(8,Math.min(innerWidth-w-8,r.right-w))+'px';m.style.top=(r.bottom+4+h>innerHeight&&r.top-h-4>0?r.top-h-4:Math.max(8,Math.min(r.bottom+4,innerHeight-h-8)))+'px'};
  document.addEventListener('click',e=>{const b=e.target.closest('[data-xl]');
-  if(b){e.stopPropagation();if(cur===b.dataset.xl&&m.classList.contains('on')){close();return}cur=b.dataset.xl;const ck=curMau();
-   m.innerHTML=`<div class="xh">Xuất excel khung này</div><button data-px="vis">Theo bộ lọc đang hiển thị</button><button data-px="all">Toàn bộ <small>(bỏ lọc, mở hết khoản con)</small></button><div class="xh">Mẫu báo cáo chuẩn, có công thức (theo ${E(curPlan().name)})</div>`+XMAU.filter(x=>x[0]!=='man').map(x=>`<button data-pm="${x[0]}">${x[1]}${x[0]===ck?' <small class="rate">đang xem</small>':''}</button>`).join('');
+  if(b){e.stopPropagation();if(cur===b.dataset.xl&&m.classList.contains('on')){close();return}cur=b.dataset.xl;
+   const pk=PMAU(cur),mu=XMAU.find(x=>x[0]===pk);
+   m.innerHTML=`<div class="xh">Xuất excel khung này · có công thức</div><button data-px="vis">Đúng như đang xem <small>(theo lọc, khoản đang mở)</small></button><button data-px="all">Đầy đủ <small>(bỏ lọc, mở hết khoản con)</small></button>`+(mu?`<button data-pm="${mu[0]}">Mẫu chuẩn: ${mu[1].replace(/^Mẫu\s+/,"")} <small>(${E(curPlan().name)})</small></button>`:'');
    m.classList.add('on');place();return}
   const x=e.target.closest('#pxmenu [data-px],#pxmenu [data-pm]');
   if(x){const id=cur;close();if(x.dataset.px)exportPane(id,x.dataset.px==='all');else runMau(x.dataset.pm);return}
