@@ -10,6 +10,15 @@ on:
         description: "Chi dung khi can lui: so phien ban cu muon tra lai (de trong = khong lui)"
         type: string
         default: ""
+      kieu_nhung:
+        description: "Cach nhung web vao script: b64 (ma hoa base64 trong .js) hoac html (tep html)"
+        type: choice
+        options: [b64, html]
+        default: b64
+      trien_khai_thu:
+        description: "Tao ban trien khai THU rieng (link moi, KHONG dung vao link /exec dang chay)"
+        type: boolean
+        default: false
       ghi_chu:
         description: "Ghi chu cho ban trien khai"
         type: string
@@ -40,8 +49,20 @@ jobs:
       - name: Gop web va dau moc phien ban vao thu muc script
         if: ${{ inputs.quay_lai_phien_ban == '' }}
         run: |
-          cp web/app-tai-chinh.html script/app_tai_chinh.html
-          cp web/phan-cap-thu-rieng.html script/phan_cap_thu_rieng.html
+          if [ "${{ inputs.kieu_nhung }}" = "html" ]; then
+            cp web/app-tai-chinh.html script/app_tai_chinh.html
+            cp web/phan-cap-thu-rieng.html script/phan_cap_thu_rieng.html
+          else
+            python3 - <<'PY'
+          import base64
+          out = ["var WEB_PARTS = {};"]
+          for key, f in (("app_tai_chinh", "web/app-tai-chinh.html"), ("phan_cap_thu_rieng", "web/phan-cap-thu-rieng.html")):
+              b = base64.b64encode(open(f, "rb").read()).decode()
+              step = 900000
+              out.append("WEB_PARTS[%r] = [" % key + ",".join("'%s'" % b[i:i+step] for i in range(0, len(b), step)) + "];")
+          open("script/web-data.js", "w").write("\n".join(out))
+          PY
+          fi
           echo "var BUILD_TS = $(date +%s%3N);" > script/build-info.js
       - name: Day ma len script
         if: ${{ inputs.quay_lai_phien_ban == '' }}
@@ -51,6 +72,13 @@ jobs:
         if: ${{ inputs.trien_khai && inputs.quay_lai_phien_ban == '' }}
         working-directory: script
         run: clasp deploy --deploymentId "$DEPLOYMENT_ID" --description "${{ inputs.ghi_chu }}"
+      - name: Tao ban trien khai THU (link rieng, khong dung vao /exec)
+        if: ${{ inputs.trien_khai_thu && inputs.quay_lai_phien_ban == '' }}
+        working-directory: script
+        run: |
+          clasp deploy --description "THU ${{ inputs.kieu_nhung }}: ${{ inputs.ghi_chu }}" | tee /tmp/dep.txt
+          id=$(grep -o 'AKfycb[A-Za-z0-9_-]*' /tmp/dep.txt | head -1)
+          echo "LINK THU: https://script.google.com/macros/s/$id/exec"
       - name: Lui ve phien ban cu
         if: ${{ inputs.quay_lai_phien_ban != '' }}
         working-directory: script

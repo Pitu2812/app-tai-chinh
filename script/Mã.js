@@ -57,6 +57,12 @@ var EMB = { 'app-tai-chinh.html': 'app_tai_chinh', 'phan-cap-thu-rieng.html': 'p
 function embedded_(name) {
   var e = EMB[name];
   if (!e) return null;
+  /* cách 1: web mã hoá base64 trong tệp .js (robot sinh web_<tên>.js, mỗi mảnh là một chuỗi) để HtmlService không đụng vào nội dung */
+  try {
+    var parts = (typeof WEB_PARTS !== 'undefined') ? WEB_PARTS[e] : null;
+    if (parts && parts.length) return Utilities.newBlob(Utilities.base64Decode(parts.join(''))).getDataAsString('UTF-8');
+  } catch (x) {}
+  /* cách 2: tệp html nằm trong script */
   try { return HtmlService.createHtmlOutputFromFile(e).getContent(); } catch (x) { return null; }
 }
 /* ưu tiên web nằm trong script, không có thì lấy tệp mới nhất theo tên trên Drive của chủ script */
