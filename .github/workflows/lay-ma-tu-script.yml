@@ -24,6 +24,7 @@ jobs:
           mkdir -p script
           cd script
           clasp clone 1Cpk571gg4NEv7kjV-gteJ_81973O4kkhQkSfmRyjV3CyYt5SdeuD7E62
+          rm -f app_tai_chinh.html phan_cap_thu_rieng.html build-info.js
           ls -la
       - name: Day len nhanh script-ban-hien-tai
         run: |
