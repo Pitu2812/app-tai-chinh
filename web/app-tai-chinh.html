@@ -1333,14 +1333,15 @@ TC.hierF=function(rows,nk,val,ref,blank){ /* blank: ô tổng chưa có số mà
     const nm=String(rows[i].name||'').trim();
     for(let k=0;k<nk;k++){
       let f=null;
-      if(L[i]===99){
+      if(/^BỘI CHI|^BỘI THU/i.test(nm)){const a=find(/^TỔNG NGUỒN THU/i),b=find(/^TỔNG CHI/i);
+        if(a>=0&&b>=0&&num(val(i,k))&&num(val(a,k))&&num(val(b,k))){const v=val(i,k);if(Math.abs(val(a,k)-val(b,k)-v)<=0.5)f=`${ref(a,k)}-${ref(b,k)}`;else if(Math.abs(val(b,k)-val(a,k)-v)<=0.5)f=`${ref(b,k)}-${ref(a,k)}`}
+        else if(a>=0&&b>=0&&blank&&!num(val(i,k)))f=`${ref(a,k)}-${ref(b,k)}`}
+      else if(L[i]===99){
         if(i===0&&/^TỔNG/i.test(nm)){const t=top();f=fit(i,t.filter(j=>!/huy động|đóng góp/i.test(rows[j].name)),k)||fit(i,t,k)} /* thu: mục V huy động, đóng góp không cộng vào tổng thu */
         else if(/trừ tiền sử dụng đất|- TSDĐ/i.test(nm)){ /* thu nội địa trừ tiền sử dụng đất, xổ số */
           const a=rows.findIndex(r=>/^THU NỘI ĐỊA$/i.test(String(r.name).trim())),b=rows.findIndex((r,j)=>j>i&&hLevel(r.stt,r.name)===5&&/tiền sử dụng đất/i.test(r.name)),c=rows.findIndex((r,j)=>j>i&&hLevel(r.stt,r.name)===5&&/xổ số/i.test(r.name));
           if(a>=0&&b>=0&&num(val(i,k))&&num(val(a,k))){const t=val(a,k)-(val(b,k)||0)-(c>=0?val(c,k)||0:0);if(Math.abs(t-val(i,k))<=0.5)f=`${ref(a,k)}-${ref(b,k)}`+(c>=0?`-${ref(c,k)}`:'')}}
-      }else if(/^BỘI CHI|BỘI THU/i.test(nm)){const a=find(/^TỔNG NGUỒN THU/i),b=find(/^TỔNG CHI/i);
-        if(a>=0&&b>=0&&num(val(i,k))&&num(val(a,k))&&num(val(b,k))){const v=val(i,k);if(Math.abs(val(a,k)-val(b,k)-v)<=0.5)f=`${ref(a,k)}-${ref(b,k)}`;else if(Math.abs(val(b,k)-val(a,k)-v)<=0.5)f=`${ref(b,k)}-${ref(a,k)}`}
-        else if(a>=0&&b>=0&&blank&&!num(val(i,k)))f=`${ref(a,k)}-${ref(b,k)}`}
+      }
       else f=fit(i,kidsOf(i),k);
       if(f)out[i+','+k]=f}}
   return out};
@@ -2075,6 +2076,7 @@ function newReport(el,kind){
 function fillInfo(el){
   const n=$('#i-nam',el);if(n)n.value=S.info.nam;
   el.querySelectorAll('.pyear').forEach(a=>{a.textContent=S.info.nam-1});
+  try{reqRows().forEach(([id,lab])=>{const b=el.querySelector('#fb-'+id+' td.nm b');if(b&&b.firstChild&&b.firstChild.nodeType===3)b.firstChild.textContent=lab})}catch(e){} /* nhãn năm của các ô nhập theo năm báo cáo */
   const r=$('#rulenote',el);if(r)r.innerHTML=S.info.nam&&S.info.nam!==RULE?`<span class="bad-t">Công thức tính trong web theo quy tắc năm ${RULE}. Báo cáo năm ${S.info.nam} có thể có công thức khác, bạn rà kỹ số liệu hoặc báo mình bổ sung.</span>`:`Quy tắc tính: năm ${RULE}. <button class="btn sm" id="ru-go">Xem quy tắc</button>`;
   const rg=$('#ru-go',el);if(rg)rg.onclick=goRules;
 }
@@ -2244,8 +2246,10 @@ async function prepFiles(id,list){
     peek.push({f,kind,nam})}
   /* tệp của năm cũ hơn các tệp còn lại (cùng đợt hoặc đã nạp trước) thì tự xếp vào ô cùng kỳ năm trước */
   const have=Object.values(S.files).flat().map(e=>e.m&&e.m.nam||0);
-  const ref=Math.max(0,...peek.map(x=>x.nam),...have);
-  const multi=keep.length>1||have.some(Boolean);let routed=0;const cnt={};
+  let ref=Math.max(0,...peek.map(x=>x.nam),...have);const ny=+S.info.nam||0;
+  /* năm báo cáo đang chọn là mốc: tệp của năm liền trước (vd tệp cả năm 2025 khi đang làm báo cáo 2026) vào ô cùng kỳ; bạn tự chọn năm thì luôn theo năm đó */
+  if(ny&&(S.namUser?ny>ref:ref===ny-1))ref=ny;
+  const multi=keep.length>1||have.some(Boolean)||ref===ny;let routed=0;const cnt={};
   for(const x of peek){
     let tid=id==='all'?(/chi/i.test(x.f.name)&&!/thu/i.test(x.f.name)?'chi':'thu'):id;
     if((multi||id==='all')&&x.kind){const pre=x.nam&&ref&&x.nam<ref?'p':(x.nam&&ref&&x.nam===ref?'':id[0]==='p'?'p':'');tid=pre+x.kind}
@@ -2269,6 +2273,14 @@ async function addFilesTo(el,id,list){
   if(nw.length){const un=[...new Set(arr.filter(e=>nw.includes(e.name)).flatMap(e=>e.units||[]))];
     TC.log('Nạp báo cáo '+LBL[id],nw.length+' tệp'+(un.length?' · '+(un.length>3?un.length+' đơn vị':un.join(', ')):'')+' · '+nw.slice(0,2).join(', ')+(nw.length>2?'…':''))}
 }
+/* đổi năm báo cáo: tệp năm trước năm báo cáo chuyển sang ô cùng kỳ, tệp đúng năm báo cáo chuyển về ô năm nay */
+async function reRoute(el,ny){const ch=new Set();if(!ny)return;
+  for(const k of ['thu','chi']){const p='p'+k,nm=e=>e.m&&e.m.nam||0;
+    const down=S.files[k].filter(e=>nm(e)&&nm(e)<ny),up=S.files[p].filter(e=>nm(e)>=ny);
+    if(down.length){S.files[k]=S.files[k].filter(e=>!down.includes(e));S.files[p].push(...down);ch.add(k);ch.add(p)}
+    if(up.length){S.files[p]=S.files[p].filter(e=>!up.includes(e));S.files[k].push(...up);ch.add(k);ch.add(p)}}
+  for(const id of ['thu','chi','pthu','pchi'])if(ch.has(id))await loadKind(el,id);
+  if(ch.size)TC.toast('Đã xếp lại tệp theo năm báo cáo '+ny)}
 const reloadAll=async el=>{for(const id of ['thu','chi','pthu','pchi']){if(S.files[id].length)await loadKind(el,id)}};
 
 /* đọc lại toàn bộ danh sách tệp của một ô (có thể gồm nhiều đơn vị); tệp excel làm chuẩn, tệp pdf để đối chiếu */
@@ -2405,7 +2417,7 @@ function wire(el){
     try{S.bieu=await E.parseBieu(f);const b=$('#fb-bieu',el);b.classList.add('ok');$('.nm',b).textContent='Đã nạp: '+f.name;
       $('#cmpbox',el).hidden=false;$('#bd',el).textContent=S.bieu.ngay||'?';if(S.bieu.tinhNsnn)$('#t-nsnn',el).value=fmt(S.bieu.tinhNsnn);
       c.textContent='Đã đọc biểu '+S.bieu.n+' xã, phường.';c.style.color=''}catch(err){c.textContent=err.message;c.style.color='var(--bad)'}};
-  $('#i-nam',el).onchange=()=>{const v=+$('#i-nam',el).value;if(!v)return;S.namUser=true;S.info.nam=v;S.U.forEach(u=>{W(u).info.nam=v;loadSavedFor(W(u))});fillInfo(el);renderUnits(el)};
+  $('#i-nam',el).onchange=async()=>{const v=+$('#i-nam',el).value;if(!v)return;S.namUser=true;S.info.nam=v;S.U.forEach(u=>{W(u).info.nam=v});await reRoute(el,v);S.info.nam=v;S.U.forEach(u=>{W(u).info.nam=v;loadSavedFor(W(u))});fillInfo(el);renderUnits(el)};
   $('#o-lv',el).onclick=()=>runAll(el);
   const opc=$('#o-pc',el);if(opc)opc.onclick=()=>{S.tdOpen=!tdOpen();const p=$('#tpick',el),b=opc;p.hidden=!S.tdOpen;b.classList.toggle('on',S.tdOpen);b.setAttribute('aria-expanded',S.tdOpen);if(S.tdOpen){tdPickBox(el);p.scrollIntoView({behavior:'smooth',block:'start'})}};
   const psy=$('#pc-sync',el);if(psy)psy.onclick=async()=>{const old=psy.textContent;psy.disabled=true;psy.textContent='Đang đồng bộ…';
