@@ -1307,6 +1307,44 @@ function head(sh,lastCol,title,xa,split,opt){
   sh.lines.push({r:2,c1:l1,c2:l2,len:64},{r:2,c1:r1,c2:r2,len:120}); /* hai đường kẻ ngắn dưới "TỈNH TÂY NINH" và "Độc lập - Tự do - Hạnh phúc" */
 }
 const P=(num,den)=>den>0?num/den:'';
+/* công thức cộng theo cấp dòng (dùng cho báo cáo thu chi hàng ngày và các phụ lục): dòng cha = SUM các dòng con trực tiếp đang có trong sheet.
+   Chỉ ghi công thức khi tổng các dòng con đúng bằng số của dòng cha (lệch không quá 0,5), không thì giữ số như cũ, nên công thức luôn ra đúng số đang thấy.
+   rows: [{stt,name}] theo thứ tự trong sheet; val(i,k) số ô; ref(i,k) địa chỉ ô. Trả về map 'i,k' -> công thức. */
+const ROMAN=/^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII)$/;
+const hLevel=(stt,name)=>{const t=String(stt==null?'':stt).trim(),n=String(name||'').trim();
+  if(ROMAN.test(t))return 3; /* I, V, X là số La Mã, không phải chữ cái */
+  if(/^[IVX]+\.\d+$/.test(t))return 4; /* I.1, II.2: mục con của số La Mã */
+  if(/^[A-Z]$/.test(t))return 1;if(/^[A-Z]\.\d+$/.test(t))return 2;
+  if(/^\d+$/.test(t))return 5;if(/^\d+\.\d+$/.test(t))return 6;if(/^\d+\.\d+\.\d+$/.test(t))return 7;
+  if(/^[a-z]$/.test(t))return 8;if(/^[a-z]\.\d+$/.test(t))return 9;
+  if(/^[-+]$/.test(t)||(!t&&/^(Bao gồm:?\s*)?[-+]\s/i.test(n)))return 10;
+  return 99}; /* 99: dòng ghi chú, "Trong đó", "*", "**", dòng không số thứ tự: không tính vào cấp */
+TC.hierF=function(rows,nk,val,ref,blank){ /* blank: ô tổng chưa có số mà các dòng con cũng trống thì vẫn ghi công thức (mẫu để điền tiếp) */
+  const n=rows.length,L=rows.map(r=>hLevel(r.stt,r.name)),out={},num=v=>typeof v==='number'&&isFinite(v);
+  const sumF=(ks,k)=>ks.length===1?ref(ks[0],k):`SUM(${ks.map(j=>ref(j,k)).join(',')})`;
+  const fit=(i,ks,k)=>{const v=val(i,k);if(!ks.length)return null;
+    if(!num(v))return blank&&ks.length>1&&!/^trong đó/i.test(String((rows[i+1]||{}).name||'').trim())&&ks.every(j=>!num(val(j,k)))?sumF(ks,k):null; /* "Trong đó" là liệt kê một phần, không cộng */let t=0,has=false;ks.forEach(j=>{const x=val(j,k);if(num(x)){t+=x;has=true}});
+    return has&&Math.abs(t-v)<=0.5?sumF(ks,k):null};
+  const kidsOf=i=>{const lv=L[i],sc=[];for(let j=i+1;j<n;j++){if(L[j]===99)continue;if(L[j]<=lv)break;sc.push(j)}
+    if(!sc.length)return [];const m=Math.min(...sc.map(j=>L[j]));return sc.filter(j=>L[j]===m)};
+  const top=()=>{const sc=[];for(let j=1;j<n;j++)if(L[j]!==99)sc.push(j);if(!sc.length)return [];const m=Math.min(...sc.map(j=>L[j]));return sc.filter(j=>L[j]===m)};
+  const find=re=>rows.findIndex(r=>re.test(String(r.name||'')));
+  for(let i=0;i<n;i++){
+    const nm=String(rows[i].name||'').trim();
+    for(let k=0;k<nk;k++){
+      let f=null;
+      if(L[i]===99){
+        if(i===0&&/^TỔNG/i.test(nm)){const t=top();f=fit(i,t.filter(j=>!/huy động|đóng góp/i.test(rows[j].name)),k)||fit(i,t,k)} /* thu: mục V huy động, đóng góp không cộng vào tổng thu */
+        else if(/trừ tiền sử dụng đất|- TSDĐ/i.test(nm)){ /* thu nội địa trừ tiền sử dụng đất, xổ số */
+          const a=rows.findIndex(r=>/^THU NỘI ĐỊA$/i.test(String(r.name).trim())),b=rows.findIndex((r,j)=>j>i&&hLevel(r.stt,r.name)===5&&/tiền sử dụng đất/i.test(r.name)),c=rows.findIndex((r,j)=>j>i&&hLevel(r.stt,r.name)===5&&/xổ số/i.test(r.name));
+          if(a>=0&&b>=0&&num(val(i,k))&&num(val(a,k))){const t=val(a,k)-(val(b,k)||0)-(c>=0?val(c,k)||0:0);if(Math.abs(t-val(i,k))<=0.5)f=`${ref(a,k)}-${ref(b,k)}`+(c>=0?`-${ref(c,k)}`:'')}}
+      }else if(/^BỘI CHI|BỘI THU/i.test(nm)){const a=find(/^TỔNG NGUỒN THU/i),b=find(/^TỔNG CHI/i);
+        if(a>=0&&b>=0&&num(val(i,k))&&num(val(a,k))&&num(val(b,k))){const v=val(i,k);if(Math.abs(val(a,k)-val(b,k)-v)<=0.5)f=`${ref(a,k)}-${ref(b,k)}`;else if(Math.abs(val(b,k)-val(a,k)-v)<=0.5)f=`${ref(b,k)}-${ref(a,k)}`}
+        else if(a>=0&&b>=0&&blank&&!num(val(i,k)))f=`${ref(a,k)}-${ref(b,k)}`}
+      else f=fit(i,kidsOf(i),k);
+      if(f)out[i+','+k]=f}}
+  return out};
+
 
 /* ---- sheet THU: khung dòng theo mẫu 16-ThuNSNN2026; số thực hiện lấy từ các khoản lá của TABMIS, dự toán lấy từ phụ lục V theo tên ---- */
 const D=(re,parent)=>({re,parent});
@@ -1450,12 +1488,16 @@ function sheetFrom(st,ctx,name,title,rows,nsdpOnly,notes){
   sh.set(11,1,'A',{b:1,sz:12,h:'center',bd:'head'});sh.set(11,2,'B',{b:1,sz:12,h:'center',bd:'head'});
   [[8,26],[9,30],[10,34]].forEach(([r,h])=>sh.heights[r]=h);sh.freeze=11;
   let r=12;
-  rows.filter(x=>!hide.has(x.id)).forEach(x=>{
+  /* ô tổng ghi công thức SUM các dòng con, ô tỷ lệ ghi công thức chia, để sửa số sau khi xuất thì ô liên quan tự đổi */
+  const vr=rows.filter(x=>!hide.has(x.id)),R0=12,ci=(g,sub)=>cols.findIndex(c=>c.g===g&&c.sub===sub);
+  const HF=TC.hierF(vr,cols.length,(i,k)=>{const c=cols[k];return c.g==='tl'||c.g==='tc'?null:TC.cellVal(vr[i],c.g,c.sub)},(i,k)=>colName(3+k)+(R0+i));
+  vr.forEach((x,i)=>{
     sh.set(r,1,x.stt,{b:x.b?1:0,i:x.i?1:0,sz:12,h:'center',bd:'data',wrap:1});
     sh.set(r,2,x.name,{b:x.b?1:0,i:x.i?1:0,sz:13,bd:'data',wrap:1});
     cols.forEach((c,k)=>{
-      const v=TC.cellVal(x,c.g,c.sub);
-      sh.set(r,3+k,v,{b:x.b||c.g==='tl'||c.g==='tc'?1:0,sz:12,h:'right',bd:'data',nf:c.g==='tl'||c.g==='tc'?'pct':'int'});
+      const v=TC.cellVal(x,c.g,c.sub),pc=c.g==='tl'||c.g==='tc';let f=HF[i+','+k]||null;
+      if(pc){const a=ci('th',c.sub),b=ci(c.g==='tl'?'dt':'ck',c.sub);if(a>=0&&b>=0){const A=colName(3+a)+r,B=colName(3+b)+r;f=`IF(AND(ISNUMBER(${A}),N(${B})>0),${A}/${B},"")`}}
+      sh.set(r,3+k,f&&v==null?'':v,{b:x.b||pc?1:0,sz:12,h:'right',bd:'data',nf:pc?'pct':'int'},f||undefined);
     });
     sh.heights[r]=rowH(x.name,x.b,52);r++;
   });
@@ -1778,10 +1820,11 @@ function sheetPL(st,t,name){
   sh.set(7,1,'STT',H);sh.set(7,2,'Nội dung',H);t.heads.forEach((h,k)=>sh.set(7,3+k,h,H));sh.heights[7]=30;
   sh.set(8,1,'A',H);sh.set(8,2,'B',H);t.heads.forEach((_,k)=>sh.set(8,3+k,String(k+1),H));
   let r=9;
-  t.rows.forEach(x=>{
+  const HF=TC.hierF(t.rows,t.heads.length,(i,k)=>t.rows[i].v[k],(i,k)=>colName(3+k)+(9+i),true); /* ô tổng ghi công thức cộng các dòng con */
+  t.rows.forEach((x,i)=>{
     const B={b:x.b?1:0,i:x.i?1:0,sz:12,bd:'data',wrap:1};
     sh.set(r,1,x.stt,Object.assign({h:'center'},B));sh.set(r,2,x.name,B);
-    x.v.forEach((v,k)=>sh.set(r,3+k,v,Object.assign({h:'right',nf:'int'},B)));
+    x.v.forEach((v,k)=>sh.set(r,3+k,v,Object.assign({h:'right',nf:'int'},B),HF[i+','+k]||undefined));
     sh.heights[r]=rowH(x.name,x.b,54);r++;
   });
   return sh;
