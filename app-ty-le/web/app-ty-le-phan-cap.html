@@ -886,8 +886,8 @@ function khTable(d){const R0=Math.round,rows=i=>({n:KH[i].n,ti:R0(d.kh[i].ti),xa
  const lech=[];if(T.ti+T.xa!==d.tot)lech.push(`tổng các khoản ${F(T.ti+T.xa)} khác tổng thu NSĐP ${F(d.tot)} (lệch ${sgn(T.ti+T.xa-d.tot)})`);
  if(T.ti!==R0(d.ti))lech.push(`cấp tỉnh ${F(T.ti)} khác ${F(d.ti)} (lệch ${sgn(T.ti-R0(d.ti))})`);if(T.xa!==R0(d.xa))lech.push(`cấp xã ${F(T.xa)} khác ${F(d.xa)} (lệch ${sgn(T.xa-R0(d.xa))})`);
  return `<div class="kht"><table><thead><tr><th>Khoản thu NSĐP hưởng</th><th>Tổng</th><th>Cấp tỉnh</th><th>Cấp xã</th></tr></thead><tbody>
- <tr class="gh"><td class="kn">I. Thu NSĐP hưởng 100%</td>${c(s1.ti,s1.xa)}</tr>${g1.map(ln).join('')}
- <tr class="gh"><td class="kn">II. Các khoản thu phân chia</td>${c(s2.ti,s2.xa)}</tr>${g2.map(ln).join('')}
+ <tr class="gh"><td class="kn">I. Các khoản thu phân chia</td>${c(s2.ti,s2.xa)}</tr>${g2.map(ln).join('')}
+ <tr class="gh"><td class="kn">II. Thu NSĐP hưởng 100%</td>${c(s1.ti,s1.xa)}</tr>${g1.map(ln).join('')}
  <tr class="tt"><td class="kn">Tổng thu NSĐP (I + II)</td>${c(T.ti,T.xa)}</tr></tbody></table>`+
  (lech.length?`<p class="lechb" style="white-space:normal;margin:8px 0 0">LỆCH, cần báo: ${lech.join('; ')}.</p>`:`<p class="ok1" style="font-size:12px;margin:6px 0 0">✓ Các khoản cộng lại khớp tổng thu NSĐP ${F(d.tot)} (tỉnh ${F(T.ti)}, xã ${F(T.xa)}).</p>`)+'</div>'}
 function khChart(d){const L=KH.map((k,i)=>({n:k.n,ti:d.kh[i].ti,xa:d.kh[i].xa})).filter(x=>x.ti+x.xa>0).sort((a,b)=>b.ti+b.xa-a.ti-a.xa);
@@ -906,11 +906,11 @@ function xaList(d){const L=XA.map(x=>({n:x.n,ph:x.ph,v:d.xv[x.k]}));const f=ph=>
 function ovHtml(d){const p=d.p,isD=p.id===PA.def,bx=BTCX();
  const pcN=d.pcI.map(i=>KH[i].n).join('; ');
  const info=`<div class="pc tqc"><h4>${E(p.name)}${isD?'<span class="tg df">Mặc định · gửi KK01</span>':''}${p.ro?'<span class="tg">Chỉ đọc</span>':''}</h4><p class="ds">${E(descOf(p))}</p>${okBadge(d)}
-  <dl><dt><b>Tổng thu NSĐP hưởng</b></dt><dd>${F(d.tot)}</dd><dt class="sub">Thu NSĐP hưởng 100%</dt><dd>${F(d.h100)}</dd><dt class="sub">Các khoản thu phân chia (${d.pcI.length} khoản) <span class="info" data-t="${E('Các khoản có tỷ lệ phân chia (NSĐP hưởng dưới 100%): '+pcN+'. Phần NSTW hưởng 100% (phí, lệ phí và thu khác do TW thu) chỉ tính vào thu NSNN.')}">i</span></dt><dd>${F(d.pc)}</dd>
+  <dl><dt><b>Tổng thu NSĐP hưởng</b></dt><dd>${F(d.tot)}</dd><dt class="sub">Các khoản thu phân chia (${d.pcI.length} khoản) <span class="info" data-t="${E('Các khoản có tỷ lệ phân chia (NSĐP hưởng dưới 100%): '+pcN+'. Phần NSTW hưởng 100% (phí, lệ phí và thu khác do TW thu) chỉ tính vào thu NSNN.')}">i</span></dt><dd>${F(d.pc)}</dd><dt class="sub">Thu NSĐP hưởng 100%</dt><dd>${F(d.h100)}</dd>
   <dt>NSĐP cấp tỉnh</dt><dd>${F(d.ti)}</dd><dt>NSĐP 96 xã, phường</dt><dd>${F(d.xa)}</dd><dt class="sub">trong đó ${nPh()} phường</dt><dd>${F(d.ph)}</dd><dt class="sub">trong đó ${XA.length-nPh()} xã</dt><dd>${F(d.xo)}</dd></dl>
   <dl class="dl2"><dt>So với BTC giao ${F(bx)} <span class="info" data-t="${E('Bộ Tài chính giao thu NSĐP '+F(bx)+' (gồm tỉnh, xã, phường). Chênh '+sgn(d.tot-bx)+' là thu khác tại xã do tỉnh giao thêm.')}">i</span></dt><dd>${sgn(d.tot-bx)}</dd><dt>NSĐP tỉnh so với ƯTH 2026</dt><dd>${pct(d.ti,d.uthTi)}</dd><dt>NSĐP xã so với ƯTH 2026</dt><dd>${pct(d.xa,d.uthXa)}</dd><dt>Khoản thu đã đổi tỷ lệ</dt><dd>${d.nk}</dd><dt>Dòng cấp tỉnh bị âm</dt><dd class="${d.neg?'wn1':''}">${d.neg||'không'}</dd></dl></div>`;
  const pie=`<div class="pc"><h4>Cơ cấu thu NSĐP 2027<span style="flex:1"></span><button class="ib sm${TQ.split?' on':''}" id="tqsp">${TQ.split?'Gộp xã, phường':'Tách xã, phường'}</button><span class="info" data-t="${E(xaList(d))}">i</span></h4><p class="ds">${TQ.split?'Cấp tỉnh, phường, xã':'Cấp tỉnh và cấp xã'}, triệu đồng</p>${donut(segsOf(d),F(d.tot),'triệu đồng')}</div>`;
- const bars=`<div class="pc"><h4><span>Thu NSĐP ${TQ.c3==='kv'?'theo khu vực':'theo khoản thu'}</span><span style="flex:1"></span><span class="seg sm" id="tqc3"><button data-c="kv" class="${TQ.c3==='kv'?'on':''}">Theo khu vực</button><button data-c="kh" class="${TQ.c3==='kh'?'on':''}">Theo khoản thu</button></span></h4><p class="ds">${TQ.c3==='kv'?'Theo khu vực kinh tế và nhóm khoản thu':'I. Hưởng 100% và II. Các khoản phân chia, triệu đồng'}, chia cấp tỉnh và cấp xã</p>${TQ.c3==='kv'?kvBars(d):khBars(d)}</div>`;
+ const bars=`<div class="pc"><h4><span>Thu NSĐP ${TQ.c3==='kv'?'theo khu vực':'theo khoản thu'}</span><span style="flex:1"></span><span class="seg sm" id="tqc3"><button data-c="kv" class="${TQ.c3==='kv'?'on':''}">Theo khu vực</button><button data-c="kh" class="${TQ.c3==='kh'?'on':''}">Theo khoản thu</button></span></h4><p class="ds">${TQ.c3==='kv'?'Theo khu vực kinh tế và nhóm khoản thu':'I. Các khoản phân chia và II. Hưởng 100%, triệu đồng'}, chia cấp tỉnh và cấp xã</p>${TQ.c3==='kv'?kvBars(d):khBars(d)}</div>`;
  return `<div class="tqg">${info}${pie}${bars}</div>`}
 function viewPA(){const many=PA.plans.length>1;if(!many)TQ.mode='one';
  if(TQ.mode==='cmp')return viewCmp();
@@ -1018,7 +1018,7 @@ function viewCmp(){const S=cmpSet(),G=S.G,O=S.O,all=[G,...O];
  const R_=(t,k,cls)=>rw(t,d=>F(d[k]),(a,b)=>dm(a[k],b[k]),cls);
  const RP=(t,f)=>rw(t,d=>P(f(d)),(a,b)=>pd(f(a),f(b)));
  const ev=`<div class="pc"><h4>Đánh giá so sánh</h4><p class="ds">Gốc: ${E(G.p.name)}</p><div class="evw"><table class="evt"><thead><tr><th>Chỉ tiêu</th><th>${E(G.p.name)}<br><small>gốc</small></th>${O.map(o=>`<th>${E(o.p.name)}</th><th>Chênh</th>`).join('')}</tr></thead><tbody>
-  ${R_('Tổng thu NSĐP toàn tỉnh','tot')}${R_('Thu NSĐP hưởng 100%','h100','sub')}${R_('Các khoản thu phân chia','pc','sub')}${R_('NSĐP cấp tỉnh','ti')}${R_('NSĐP 96 xã, phường','xa')}${R_(`trong đó ${nPh()} phường`,'ph','sub')}${R_(`trong đó ${XA.length-nPh()} xã`,'xo','sub')}
+  ${R_('Tổng thu NSĐP toàn tỉnh','tot')}${R_('Các khoản thu phân chia','pc','sub')}${R_('Thu NSĐP hưởng 100%','h100','sub')}${R_('NSĐP cấp tỉnh','ti')}${R_('NSĐP 96 xã, phường','xa')}${R_(`trong đó ${nPh()} phường`,'ph','sub')}${R_(`trong đó ${XA.length-nPh()} xã`,'xo','sub')}
   ${RP('Tỷ trọng xã trong NSĐP',d=>pv(d.xa,d.tot))}${RP('Xã giữ lại số thu NSNN tại xã',d=>pv(d.xa,d.xaNN))}${RP('NSĐP xã so với ƯTH 2026',d=>pv(d.xa,d.uthXa))}${RP('NSĐP tỉnh so với ƯTH 2026',d=>pv(d.ti,d.uthTi))}
   <tr><td>Xã, phường tăng / giảm</td><td></td>${XD.map(x=>`<td colspan="2">${x.up} tăng · ${x.dn} giảm</td>`).join('')}</tr>
   <tr><td>Tăng nhiều nhất</td><td></td>${XD.map(x=>`<td>${x.mu>=0?E(XA[x.mu].n):'không có'}</td><td>${x.mu>=0?`<span class="up">${sgn(x.df[x.mu])}</span>`:''}</td>`).join('')}</tr>
