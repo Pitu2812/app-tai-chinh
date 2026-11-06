@@ -470,6 +470,9 @@ header.top h1{flex:1}
 .fabx .fi{font-size:18px;line-height:1;font-weight:700}
 .fabx .fl{display:inline-block;max-width:0;opacity:0;overflow:hidden;transition:max-width .2s,opacity .15s}
 @media (hover:hover){.fabx:hover,.fabx:focus-visible,.fabx[aria-expanded=true]{gap:8px;padding:0 16px}.fabx:hover .fl,.fabx:focus-visible .fl,.fabx[aria-expanded=true] .fl{max-width:220px;opacity:1}}
+
+.umc{border:1px solid var(--ln);border-radius:10px;padding:8px 12px;margin:0 0 12px}.umc summary{cursor:pointer;font-weight:600;padding:4px 0}
+.umcg{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin:8px 0}.umcg label{display:flex;align-items:center;gap:6px;font-size:13.5px}.umcg small,.dlg small{display:block;font-size:12px;margin-top:2px}
 </style></head>
 <body><div id="app"></div>
 <script>/*! xlsx.js (C) 2013-present SheetJS -- http://sheetjs.com */
@@ -3595,12 +3598,20 @@ const kind=a=>/^Đăng nhập/.test(a)?'in':/^Nạp/.test(a)?'load':/^Xuất/.te
 const nextNames=(us,n)=>{let mx=0;us.forEach(u=>{const m=/^bctc(\d+)$/i.exec(u.username);if(m)mx=Math.max(mx,+m[1])});return Array.from({length:n},(_,i)=>PRE+pad(mx+1+i))};
 const lastOf=u=>u.last||((TC.store.get('log',[]).find(x=>x.u===u.username&&x.a==='Đăng nhập')||{}).t||'');
 const rootOnly=()=>TC.user&&TC.user.root;
+/* tên đăng nhập, mật khẩu tự chọn: cùng quy tắc với máy chủ */
+const UN_RE=/^[a-z0-9._-]{3,30}$/;
+const UN_TIP='Tên đăng nhập 3 đến 30 ký tự: chữ thường không dấu, số, dấu chấm, gạch dưới, gạch ngang (ví dụ <b>ketoan.binhduc</b>). Không trùng tài khoản đã có. Tên đăng nhập của tài khoản cao nhất không đổi được.';
+const NM_TIP='Tên hiển thị 1 đến 60 ký tự, gõ có dấu được (ví dụ <b>Kế toán xã Bình Đức</b>). Để trống thì lấy theo tên đăng nhập.';
+const PW_TIP='Mật khẩu 4 đến 100 ký tự. Để trống thì dùng mật khẩu mặc định '+PASS0+'.';
+const unErr=(v,us,self)=>!UN_RE.test(v)?'Tên đăng nhập cần 3 đến 30 ký tự: chữ thường không dấu, số, dấu chấm, gạch dưới, gạch ngang.':us.some(x=>x.username===v&&x.username!==self)?'Tên đăng nhập '+v+' đã có người dùng.':'';
+const pwErr=p=>p.length<4||p.length>100?'Mật khẩu cần 4 đến 100 ký tự.':'';
 
 /* ---------- tài khoản: cùng một bộ lệnh cho hai chế độ (máy chủ script, hoặc lưu trên máy này) ---------- */
 const bad=r=>r&&r.ok===false;
 const A=TC.srv.on?{
   async list(){const r=await TC.srv.call('users');if(bad(r)){TC.toast(r.msg||'Không lấy được danh sách',1);return []}return r.users},
-  add:(names,role,must)=>TC.srv.call('uAdd',{list:names.map(u=>({username:u,name:u.toUpperCase(),role})),pass:PASS0,must}),
+  add:(names,role,must,pass,disp)=>TC.srv.call('uAdd',{list:names.map(u=>({username:u,name:disp||u.toUpperCase(),role})),pass:pass||PASS0,must}),
+  edit:(n,o)=>TC.srv.call('uSet',Object.assign({username:n},o)),
   setRole:(n,r)=>TC.srv.call('uSet',{username:n,role:r}),
   setActive:(n,a)=>TC.srv.call('uSet',{username:n,active:a}),
   setPass:(n,p,must)=>TC.srv.call('uPass',{username:n,pass:p,must}),
@@ -3608,7 +3619,11 @@ const A=TC.srv.on?{
   clearLog:()=>TC.srv.call('logClear')
 }:{
   async list(){return TC.auth.users()},
-  async add(names,role,must){const all=TC.auth.users();for(const u of names){const x=await TC.auth.make(u,u.toUpperCase(),role,PASS0);if(must)x.must=true;all.push(x)}TC.auth.save(all);return {ok:true}},
+  async add(names,role,must,pass,disp){const all=TC.auth.users();for(const u of names){if(all.some(x=>x.username===u))return {ok:false,msg:'Tài khoản '+u+' đã có.'};const x=await TC.auth.make(u,disp||u.toUpperCase(),role,pass||PASS0);if(must)x.must=true;all.push(x)}TC.auth.save(all);return {ok:true}},
+  async edit(n,o){const all=TC.auth.users(),u=all.find(x=>x.username===n);if(!u)return {ok:false,msg:'Không thấy tài khoản.'};
+    if(o.name!==undefined)u.name=o.name;let nn=n;
+    if(o.newUsername!==undefined&&o.newUsername!==n){if(u.root)return {ok:false,msg:'Không đổi tên đăng nhập của tài khoản cao nhất.'};if(all.some(x=>x.username===o.newUsername))return {ok:false,msg:'Tên đăng nhập '+o.newUsername+' đã có người dùng.'};nn=u.username=o.newUsername}
+    TC.auth.save(all);return {ok:true,username:nn,relogin:nn!==n&&TC.user.username===n}},
   async setRole(n,r){const all=TC.auth.users(),u=all.find(x=>x.username===n);if(u.role==='admin'&&r!=='admin'&&all.filter(x=>x.role==='admin'&&x.active).length<2)return {ok:false,msg:'Phải còn ít nhất một quản trị đang dùng'};u.role=r;TC.auth.save(all);if(TC.user.username===n)TC.user.role=r;return {ok:true}},
   async setActive(n,a){const all=TC.auth.users(),u=all.find(x=>x.username===n);if(!a&&u.role==='admin'&&all.filter(x=>x.role==='admin'&&x.active).length<2)return {ok:false,msg:'Phải còn ít nhất một quản trị đang dùng'};u.active=a;TC.auth.save(all);return {ok:true}},
   async setPass(n,p,must){await TC.auth.setPass(n,p);if(must!==undefined){const all=TC.auth.users(),u=all.find(x=>x.username===n);u.must=!!must;TC.auth.save(all)}return {ok:true}},
@@ -3620,15 +3635,22 @@ const doit=async(p,okMsg)=>{const r=await p;if(bad(r)){TC.toast(r.msg||'Không t
 /* ---------- quản lý người dùng ---------- */
 TC.usersModal=async()=>{
   const m=TC.modal('Quản lý người dùng','<div id="um"><p class="muted">Đang tải danh sách…</p></div>',{wide:1});
-  let us=[],must=false;
+  let us=[],must=false;const S1={open:false,un:'',dn:'',pw:'',role:'viewer',err:''};
   const load=async()=>{us=await A.list();draw()};
   const draw=()=>{
     const el=$('#um',m.el);if(!el)return;
     const n=Math.max(1,Math.min(30,+($('#u-n',el)||{}).value||1)),role=($('#u-r',el)||{}).value||'viewer';
     if($('#u-m',el))must=$('#u-m',el).checked;
+    if($('#u-un',el)){S1.open=$('#u-cust',el).open;S1.un=$('#u-un',el).value;S1.dn=$('#u-dn',el).value;S1.pw=$('#u-pw',el).value;S1.role=$('#u-cr',el).value}
     const nm=nextNames(us,n),preview=nm.length>2?`${nm[0]}, ${nm[1]}... ${nm[nm.length-1]}`:nm.join(', ');
     el.innerHTML=`<div class="umk"><span>Tạo thêm</span><input type="number" id="u-n" min="1" max="30" value="${n}" aria-label="Số tài khoản"><span>tài khoản quyền</span><select id="u-r" aria-label="Quyền">${Object.entries(ROLES).map(([k,v])=>`<option value="${k}" ${k===role?'selected':''}>${v}</option>`).join('')}</select></div>
     <button type="button" class="btn pri umadd" id="u-add">Tạo (${esc(preview)} mật khẩu ${PASS0})</button>
+    <details class="umc" id="u-cust" ${S1.open?'open':''}><summary>Tạo một tài khoản tự chọn tên, mật khẩu</summary>
+     <div class="umcg"><div><label for="u-un">Tên đăng nhập ${TC.tip(UN_TIP)}</label><input id="u-un" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="vd ketoan.binhduc" value="${esc(S1.un)}"><small class="muted">3-30 ký tự: a-z, 0-9, . _ -</small></div>
+     <div><label for="u-dn">Tên hiển thị ${TC.tip(NM_TIP)}</label><input id="u-dn" type="text" autocomplete="off" maxlength="60" placeholder="vd Kế toán xã Bình Đức" value="${esc(S1.dn)}"><small class="muted">1-60 ký tự, có dấu được</small></div>
+     <div><label for="u-pw">Mật khẩu ${TC.tip(PW_TIP)}</label><input id="u-pw" type="text" autocomplete="new-password" maxlength="100" placeholder="${PASS0}" value="${esc(S1.pw)}"><small class="muted">4-100 ký tự, trống = ${PASS0}</small></div>
+     <div><label for="u-cr">Quyền</label><select id="u-cr">${Object.entries(ROLES).map(([k,v])=>`<option value="${k}" ${k===S1.role?'selected':''}>${v}</option>`).join('')}</select></div></div>
+     <p class="err" id="u-ce" ${S1.err?'':'hidden'}>${esc(S1.err)}</p><button type="button" class="btn pri" id="u-cadd">Tạo tài khoản này</button></details>
     <label class="umm"><input type="checkbox" id="u-m" ${must?'checked':''} style="width:auto;min-height:0"> Bắt đổi mật khẩu ở lần đăng nhập đầu tiên ${TC.tip('Mặc định <b>tắt</b>: tài khoản mới dùng ngay mật khẩu '+PASS0+'. Bật thì áp dụng cho các tài khoản tạo mới và các lần đặt lại mật khẩu từ lúc này.')}</label>
     <div class="tw umt"><table class="t"><tr><th>Tên</th><th>Quyền</th><th>Hoạt động</th><th>Đăng nhập gần nhất</th><th></th></tr>
     ${us.map(u=>{const me=u.username===TC.user.username,lock=u.root&&!rootOnly();
@@ -3636,14 +3658,21 @@ TC.usersModal=async()=>{
       <td>${u.root?'Quản trị':`<select data-a="rl" aria-label="Quyền của ${esc(u.username)}">${Object.entries(ROLES).map(([k,v])=>`<option value="${k}" ${k===u.role?'selected':''}>${v}</option>`).join('')}</select>`}</td>
       <td>${u.root?'':`<input type="checkbox" data-a="tg" ${u.active?'checked':''} aria-label="Hoạt động ${esc(u.username)}" style="width:auto;min-height:0">`}</td>
       <td class="muted">${esc(dmy(lastOf(u))||'chưa đăng nhập')}</td>
-      <td style="white-space:nowrap;text-align:right">${lock?'':`<button type="button" class="btn sm" data-a="pw">Đặt lại MK</button>`}${u.root||me?'':` <button type="button" class="btn sm" data-a="del">Xóa</button>`}</td></tr>`}).join('')}</table></div>
+      <td style="white-space:nowrap;text-align:right">${lock?'':`<button type="button" class="btn sm" data-a="ed">Sửa tên</button> <button type="button" class="btn sm" data-a="pw">Đặt lại MK</button>`}${u.root||me?'':` <button type="button" class="btn sm" data-a="del">Xóa</button>`}</td></tr>`}).join('')}</table></div>
     <div class="row umf"><button type="button" class="btn sm" id="u-act">Xem nhật ký hoạt động</button><button type="button" class="btn sm" id="u-exp">Tải danh sách</button><span class="muted">Mật khẩu mặc định ${PASS0}. ${TC.srv.on?'Danh sách lưu trên máy chủ, mọi máy dùng chung.':'Danh sách lưu trên máy này.'}</span></div>`;
     $('#u-n',el).oninput=draw;$('#u-r',el).onchange=draw;
+    $('#u-un',el).oninput=e=>{const t=e.target,c=t.selectionStart,v=t.value.toLowerCase().replace(/\s+/g,'');if(v!==t.value){t.value=v;try{t.setSelectionRange(c,c)}catch(x){}}};
     $('#u-act',el).onclick=()=>TC.activityModal();
     $('#u-exp',el).onclick=()=>TC.download(new Blob([JSON.stringify(us.map(({username,name,role,active})=>({username,name,role,active})),null,1)],{type:'application/json'}),'nguoi-dung.json');
     $('#u-add',el).onclick=async()=>{
       const list=nextNames(us,Math.max(1,Math.min(30,+$('#u-n',el).value||1))),r=$('#u-r',el).value,mu=$('#u-m',el).checked;
       if(await doit(A.add(list,r,mu),'Đã tạo '+list.join(', ')+', mật khẩu '+PASS0)){TC.log('Tạo tài khoản',list.join(', ')+' (quyền '+ROLES[r]+')');}
+      load()};
+    const cadd=$('#u-cadd',el);if(cadd)cadd.onclick=async()=>{
+      const un=$('#u-un',el).value.trim().toLowerCase(),dn=$('#u-dn',el).value.trim(),pw=$('#u-pw',el).value,r=$('#u-cr',el).value,mu=$('#u-m',el).checked;
+      const er=unErr(un,us)||(dn.length>60?'Tên hiển thị tối đa 60 ký tự.':'')||(pw?pwErr(pw):'');
+      const ce=$('#u-ce',el);if(er){S1.err=er;ce.textContent=er;ce.hidden=false;return}
+      if(await doit(A.add([un],r,mu,pw||PASS0,dn||un.toUpperCase()),'Đã tạo '+un+(pw?'':', mật khẩu '+PASS0))){TC.log('Tạo tài khoản',un.toUpperCase()+' (quyền '+ROLES[r]+')');Object.assign(S1,{un:'',dn:'',pw:'',err:''});['#u-un','#u-dn','#u-pw'].forEach(k=>{const x=$(k,el);if(x)x.value=''})}
       load()};
     el.querySelectorAll('tr[data-u]').forEach(tr=>{
       const name=tr.dataset.u,get=()=>us.find(x=>x.username===name);
@@ -3651,14 +3680,29 @@ TC.usersModal=async()=>{
         if(await doit(A.setRole(name,rl.value)))TC.log('Đổi quyền',name.toUpperCase()+' thành '+ROLES[rl.value]);load()};
       const tg=$('input[data-a=tg]',tr);if(tg)tg.onchange=async()=>{
         if(await doit(A.setActive(name,tg.checked)))TC.log(tg.checked?'Mở khóa tài khoản':'Khóa tài khoản',name.toUpperCase());load()};
+      const ed=$('button[data-a=ed]',tr);if(ed)ed.onclick=async()=>{
+        const u=get();let msg='',v={un:u.username,dn:u.name||''};
+        for(;;){
+          const d=await TC.dialog('Sửa tên tài khoản '+name.toUpperCase(),`${msg?`<p class="err" style="margin:0 0 8px">${esc(msg)}</p>`:''}<div style="margin-bottom:10px"><label>Tên đăng nhập ${TC.tip(UN_TIP)}</label><input name="un" type="text" value="${esc(v.un)}" autocomplete="off" autocapitalize="none" spellcheck="false" ${u.root?'disabled':''}><small class="muted">${u.root?'Tài khoản cao nhất giữ nguyên tên đăng nhập.':'3-30 ký tự: a-z, 0-9, . _ -'+(u.username===TC.user.username?'. Đổi tên của chính bạn thì phải đăng nhập lại.':'. Người này đăng nhập lại bằng tên mới.')}</small></div><div><label>Tên hiển thị ${TC.tip(NM_TIP)}</label><input name="dn" type="text" value="${esc(v.dn)}" maxlength="60" autocomplete="off"><small class="muted">1-60 ký tự, có dấu được</small></div>`,'Lưu');
+          if(!d)return;
+          v={un:u.root?u.username:String(d.un||'').trim().toLowerCase(),dn:String(d.dn||'').trim()};
+          const o={};if(v.dn!==(u.name||''))o.name=v.dn||v.un.toUpperCase();if(v.un!==u.username)o.newUsername=v.un;
+          if(!Object.keys(o).length)return;
+          msg=(o.newUsername!==undefined?unErr(v.un,us,u.username):'')||(v.dn.length>60?'Tên hiển thị tối đa 60 ký tự.':'');if(msg)continue;
+          const r=await A.edit(name,o);if(bad(r)){msg=r.msg||'Không lưu được';continue}
+          TC.log('Sửa tài khoản',name.toUpperCase()+(o.newUsername?' thành '+o.newUsername.toUpperCase():'')+(o.name?' · tên '+o.name:''));
+          if(r.relogin){TC.toast('Đã đổi tên đăng nhập, bạn đăng nhập lại bằng '+r.username);setTimeout(async()=>{try{if(TC.srv.on){TC.srv.setToken('');TC.srv.onState=null}}catch(e){}TC.forget&&TC.forget();location.reload()},1500);return}
+          TC.toast('Đã lưu tài khoản '+(r.username||name).toUpperCase());return load()}};
       const pw=$('button[data-a=pw]',tr);if(pw)pw.onclick=async()=>{
         const u=get();
         if(u.root||u.username===TC.user.username){
           const d=await TC.dialog('Đổi mật khẩu '+name.toUpperCase(),'<label>Mật khẩu mới (từ 4 ký tự)</label><input type="password" name="p" autocomplete="new-password">','Đổi mật khẩu');
           if(d&&d.p&&d.p.length>=4){if(await doit(A.setPass(name,d.p,false),'Đã đổi mật khẩu '+name.toUpperCase()))TC.log('Đổi mật khẩu',name.toUpperCase())}else if(d)TC.toast('Mật khẩu cần từ 4 ký tự',1);return}
         const mu=$('#u-m').checked;
-        if(await TC.dialog('Đặt lại mật khẩu',`<p style="margin:0">Đặt lại mật khẩu của <b>${esc(name.toUpperCase())}</b> về <b>${PASS0}</b>?${mu?' Khi đăng nhập họ sẽ phải đổi mật khẩu mới.':''}</p>`,'Đặt lại')){
-          if(await doit(A.setPass(name,PASS0,mu),'Đã đặt lại mật khẩu '+name.toUpperCase()+' về '+PASS0))TC.log('Đặt lại mật khẩu',name.toUpperCase());load()}};
+        let msg='';for(;;){
+          const d=await TC.dialog('Đặt lại mật khẩu',`${msg?`<p class="err" style="margin:0 0 8px">${esc(msg)}</p>`:''}<p style="margin:0 0 8px">Đặt mật khẩu mới cho <b>${esc(name.toUpperCase())}</b>.${mu?' Khi đăng nhập họ sẽ phải đổi mật khẩu mới.':''}</p><label>Mật khẩu mới ${TC.tip(PW_TIP)}</label><input name="p" type="text" autocomplete="new-password" maxlength="100" placeholder="${PASS0}"><small class="muted">4-100 ký tự, để trống = ${PASS0}</small>`,'Đặt lại');
+          if(!d)return;const p=d.p||PASS0;msg=pwErr(p);if(msg)continue;
+          if(await doit(A.setPass(name,p,mu),'Đã đặt lại mật khẩu '+name.toUpperCase()+(d.p?'':' về '+PASS0)))TC.log('Đặt lại mật khẩu',name.toUpperCase());return load()}};
       const del=$('button[data-a=del]',tr);if(del)del.onclick=async()=>{
         if(await TC.dialog('Xóa tài khoản',`<p style="margin:0">Xóa tài khoản <b>${esc(name.toUpperCase())}</b>? Không hoàn lại được.</p>`,'Xóa')){
           if(await doit(A.del(name)))TC.log('Xóa tài khoản',name.toUpperCase());load()}};
