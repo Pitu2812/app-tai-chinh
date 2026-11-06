@@ -366,7 +366,37 @@ function userSet_(q) {
     if (!q.active) dropSessions_(ss, u.username);
   }
   if (q.must !== undefined) setUserCell_(ss, u.row, 8, !!q.must);
+  /* tên hiển thị và tên đăng nhập tự chọn (H yêu cầu 06/11/2026); app tỷ lệ phân cấp dùng chung bảng này nên tự đồng bộ */
+  if (q.name !== undefined) {
+    var nm = String(q.name || '').trim();
+    if (!nm || nm.length > 60) return { ok: false, msg: 'Tên hiển thị cần 1 đến 60 ký tự.' };
+    setUserCell_(ss, u.row, 2, nm);
+  }
+  if (q.newUsername !== undefined) {
+    var nn = String(q.newUsername || '').trim().toLowerCase();
+    if (nn !== u.username) {
+      if (u.root) return { ok: false, msg: 'Không đổi tên đăng nhập của tài khoản cao nhất.' };
+      if (!/^[a-z0-9._-]{3,30}$/.test(nn)) return { ok: false, msg: 'Tên đăng nhập cần 3 đến 30 ký tự: chữ thường không dấu, số, dấu chấm, gạch dưới, gạch ngang.' };
+      var lock = LockService.getScriptLock(); lock.waitLock(20000);
+      try {
+        if (findUser_(ss, nn)) return { ok: false, msg: 'Tên đăng nhập ' + nn + ' đã có người dùng.' };
+        setUserCell_(ss, u.row, 1, nn);
+        renameKv_(ss, 'cq:' + u.username, 'cq:' + nn);   // danh sách chuyên quản đi theo tài khoản
+        dropSessions_(ss, u.username);                    // đăng nhập lại bằng tên mới
+      } finally { lock.releaseLock(); }
+      return { ok: true, username: nn, relogin: c.u.username === u.username };
+    }
+  }
   return { ok: true };
+}
+function renameKv_(ss, from, to) {
+  var sh = ss.getSheetByName('kv'), n = sh.getLastRow();
+  if (n < 2) return;
+  var ix = kvIndex_(sh), src = ix.idx[from];
+  if (!src) return;
+  var ts = Math.max(Date.now(), ix.maxTs + 1), old = ix.idx[to];
+  sh.getRange(src.row, 1, 1, 2).setValues([[to, ts]]);
+  if (old) sh.deleteRow(old.row);   // khóa cũ trùng tên mới (của tài khoản đã xóa) thì bỏ
 }
 function userDel_(q) {
   var c = need_(q, 'admin'), ss = c.ss, u = findUser_(ss, q.username);
@@ -383,7 +413,7 @@ function userPass_(q) {
   if (!u) return { ok: false, msg: 'Không thấy tài khoản.' };
   if (u.root && c.u.username !== u.username) return { ok: false, msg: 'Chỉ chính tài khoản cao nhất mới đổi được mật khẩu này.' };
   var p = String(q.pass || '');
-  if (p.length < 4) return { ok: false, msg: 'Mật khẩu cần từ 4 ký tự.' };
+  if (p.length < 4 || p.length > 100) return { ok: false, msg: 'Mật khẩu cần từ 4 đến 100 ký tự.' };
   var salt = Utilities.getUuid().replace(/-/g, '').slice(0, 12);
   setUserCell_(ss, u.row, 4, salt); setUserCell_(ss, u.row, 5, hash_(salt, p));
   if (q.must !== undefined) setUserCell_(ss, u.row, 8, !!q.must);

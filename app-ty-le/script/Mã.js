@@ -90,7 +90,7 @@ function isOwner_() {
   return !!email && email === CFG.OWNER;
 }
 function tokKey_(t) { return 'a:' + Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, t)); }
-function remember_(t, user) { if (t && user) CacheService.getScriptCache().put(tokKey_(t), JSON.stringify(user), 600); }
+function remember_(t, user) { if (t && user) CacheService.getScriptCache().put(tokKey_(t), JSON.stringify(user), 300); }
 function who_(t) {
   if (isOwner_()) return { username: CFG.OWNER, name: CFG.OWNER, role: 'admin' };
   if (!t) return null;
@@ -99,7 +99,7 @@ function who_(t) {
   if (hit) return JSON.parse(hit);
   const r = tc_({ a: 'sso_who', t: t });
   if (!r || !r.ok || !r.user || !CFG.ROLES_OK[r.user.role]) return null;
-  c.put(k, JSON.stringify(r.user), 600);
+  c.put(k, JSON.stringify(r.user), 300);
   return r.user;
 }
 
