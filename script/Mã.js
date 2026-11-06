@@ -360,7 +360,8 @@ function userAdd_(q) {
   var lock = LockService.getScriptLock(); lock.waitLock(20000);
   try {
     (q.list || []).forEach(function (x) {
-      var name = String(x.username || '').trim().toLowerCase();
+      if (/\s/.test(String(x.username || ''))) throw new Error('Tên đăng nhập "' + x.username + '" có khoảng trắng, vui lòng bỏ khoảng trắng.');
+      var name = String(x.username || '').toLowerCase();
       if (!/^[a-z0-9._-]{3,30}$/.test(name)) throw new Error('Tên đăng nhập "' + name + '" không hợp lệ (3-30 ký tự, chữ thường, số, . _ -).');
       if (findUser_(ss, name)) throw new Error('Tài khoản ' + name + ' đã có.');
       var role = ['admin', 'editor', 'viewer', 'pc'].indexOf(x.role) >= 0 ? x.role : 'viewer';
@@ -397,7 +398,8 @@ function userSet_(q) {
     setUserCell_(ss, u.row, 2, nm);
   }
   if (q.newUsername !== undefined) {
-    var nn = String(q.newUsername || '').trim().toLowerCase();
+    if (/\s/.test(String(q.newUsername || ''))) return { ok: false, msg: 'Tên đăng nhập không được có khoảng trắng.' };
+    var nn = String(q.newUsername || '').toLowerCase();
     if (nn !== u.username) {
       if (u.root) return { ok: false, msg: 'Không đổi tên đăng nhập của tài khoản cao nhất.' };
       if (!/^[a-z0-9._-]{3,30}$/.test(nn)) return { ok: false, msg: 'Tên đăng nhập cần 3 đến 30 ký tự: chữ thường không dấu, số, dấu chấm, gạch dưới, gạch ngang.' };
