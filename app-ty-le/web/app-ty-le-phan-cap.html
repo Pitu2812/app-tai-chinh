@@ -878,7 +878,9 @@ function khTable(d){const R0=Math.round,rows=i=>({n:KH[i].n,ti:R0(d.kh[i].ti),xa
  <tr class="gh"><td class="kn">II. Các khoản thu phân chia</td>${c(s2.ti,s2.xa)}</tr>${g2.map(ln).join('')}
  <tr class="tt"><td class="kn">Tổng thu NSĐP (I + II)</td>${c(T.ti,T.xa)}</tr></tbody></table>`+
  (lech.length?`<p class="lechb" style="white-space:normal;margin:8px 0 0">LỆCH, cần báo: ${lech.join('; ')}.</p>`:`<p class="ok1" style="font-size:12px;margin:6px 0 0">✓ Các khoản cộng lại khớp tổng thu NSĐP ${F(d.tot)} (tỉnh ${F(T.ti)}, xã ${F(T.xa)}).</p>`)+'</div>'}
-function khBars(d){return khTable(d)}
+function khChart(d){const L=KH.map((k,i)=>({n:k.n,ti:d.kh[i].ti,xa:d.kh[i].xa})).filter(x=>x.ti+x.xa>0).sort((a,b)=>b.ti+b.xa-a.ti-a.xa);
+ const top=L.slice(0,8),rest=L.slice(8);if(rest.length)top.push({n:`Các khoản khác (${rest.length})`,ti:rest.reduce((a,x)=>a+x.ti,0),xa:rest.reduce((a,x)=>a+x.xa,0)});return stBars(top)}
+function khBars(d){return khChart(d)+'<div style="height:10px"></div>'+khTable(d)}
 const kvBars=d=>stBars(d.kv.filter(x=>x.ti||x.xa));
 /* thanh phân kỳ: tăng bên phải, giảm bên trái */
 function divBars(items,unit){const mx=Math.max(...items.map(x=>Math.abs(x.v)),1);
