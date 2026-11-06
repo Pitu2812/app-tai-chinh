@@ -19,7 +19,7 @@ const CFG = {
   HTML: 'app-ty-le-phan-cap.html',
   KK_FILE: 'so-lieu-gui-KK01-2027.json',
   KEYS: /^pcr:(PA|B2)$/,
-  TC_URL: 'https://script.google.com/macros/s/AKfycbxoUmOzXZFN1EXGTfe7SsriHl2zpQfXVndLwqQeZKBmjMS28BYe2GsVS9sdklrcG6P5/exec',   // app tài chính: nơi cấp tài khoản dùng chung
+  TC_URL: 'https://script.google.com/macros/s/AKfycbxBARMnl0xM-XEgMLm4J0UdmB8b-7rkD4INKkhbuhMplxhoGUvJ1deN9dz1UBCxd3JT/exec',   // TAM THOI link thu; doi ve /exec chinh truoc khi len chinh. app tài chính: nơi cấp tài khoản dùng chung
   ROLES_OK: { admin: 1, pc: 1 }
 };
 
