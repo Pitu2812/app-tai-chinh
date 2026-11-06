@@ -46,11 +46,20 @@ function autoLogin_(html) {
   try {
     var me = Session.getActiveUser().getEmail(), owner = Session.getEffectiveUser().getEmail();
     if (!me || !owner || me.toLowerCase() !== owner.toLowerCase()) return html;
-    var ss = ss_(), u = findUser_(ss, CFG.ADMIN_USER);
-    if (!u || !u.active) return html;
-    var token = startSession_(ss, u.username, true);
+    var token = ownerToken_();
+    if (!token) return html;
     return '<script>try{localStorage.setItem("tc_tok","' + token + '")}catch(e){}<\/script>' + html;
   } catch (e) { return html; }
+}
+/* B (H duyệt 05/11/2026): chủ script mở app thì dùng lại phiên đang còn trong bộ nhớ, không mở bảng tính và ghi thêm phiên mỗi lần tải */
+function ownerToken_() {
+  var c = CacheService.getScriptCache(), t = c.get('own_tok');
+  if (t && c.get('s:' + t)) return t;
+  var ss = ss_(), u = findUser_(ss, CFG.ADMIN_USER);
+  if (!u || !u.active) return '';
+  t = startSession_(ss, u.username, true);
+  c.put('own_tok', t, 21000);
+  return t;
 }
 /* web nằm ngay trong dự án script (robot GitHub đẩy lên cùng mã): tên tệp web -> tên tệp html trong script */
 var EMB = { 'app-tai-chinh.html': 'app_tai_chinh', 'phan-cap-thu-rieng.html': 'phan_cap_thu_rieng' };
@@ -103,7 +112,7 @@ function getGated(app, token) {
       var me = Session.getActiveUser().getEmail(), owner = Session.getEffectiveUser().getEmail();
       if (me && owner && me.toLowerCase() === owner.toLowerCase()) {
         var a = findUser_(ss, CFG.ADMIN_USER);
-        if (a && a.active) { u = a; newTok = startSession_(ss, a.username, true); }
+        if (a && a.active) { u = a; newTok = ownerToken_(); }
       }
     } catch (e) {}
   }
@@ -132,7 +141,7 @@ function setup() {
   var us = ss.getSheetByName('users');
   if (us.getLastRow() < 2) {
     var salt = Utilities.getUuid().replace(/-/g, '').slice(0, 12);
-    us.appendRow([CFG.ADMIN_USER, CFG.ADMIN_USER, 'admin', salt, hash_(salt, CFG.ADMIN_PASS || Utilities.getUuid()), true, true, false, '', new Date().toISOString()]);
+    usersDrop_(); us.appendRow([CFG.ADMIN_USER, CFG.ADMIN_USER, 'admin', salt, hash_(salt, CFG.ADMIN_PASS || Utilities.getUuid()), true, true, false, '', new Date().toISOString()]);
   }
   Logger.log('Xong. Bảng dữ liệu: ' + ss.getUrl());
   return ss.getUrl();
@@ -166,7 +175,16 @@ function api(s) {
 }
 
 /* ---------- người dùng ---------- */
+/* A (H duyệt 05/11/2026): nhớ bảng người dùng 5 phút, mọi chỗ ghi bảng gọi usersDrop_() để xoá bản nhớ */
+function usersDrop_() { CacheService.getScriptCache().remove('users'); }
 function users_(ss) {
+  var c = CacheService.getScriptCache(), hit = c.get('users');
+  if (hit) { try { return JSON.parse(hit); } catch (e) {} }
+  var list = usersRead_(ss);
+  try { var j = JSON.stringify(list); if (j.length < 90000) c.put('users', j, 300); } catch (e) {}
+  return list;
+}
+function usersRead_(ss) {
   var sh = ss.getSheetByName('users'), n = sh.getLastRow();
   if (n < 2) return [];
   return sh.getRange(2, 1, n - 1, 10).getValues().map(function (r, i) {
@@ -180,7 +198,7 @@ function findUser_(ss, name) {
   for (var i = 0; i < us.length; i++) if (us[i].username === name) return us[i];
   return null;
 }
-function setUserCell_(ss, row, col, val) { ss.getSheetByName('users').getRange(row, col).setValue(val); }
+function setUserCell_(ss, row, col, val) { ss.getSheetByName('users').getRange(row, col).setValue(val); usersDrop_(); }
 
 /* ---------- số phiên bản web: Quản trị bấm "Cập nhật phiên bản mới" thì đổi số này, các máy đang mở thấy số khác sẽ tự tải lại ---------- */
 function prop_(k) { return PropertiesService.getScriptProperties().getProperty(k); }
@@ -189,7 +207,9 @@ function auto_() { return prop_("AUTO_UPDATE") !== "0"; }
 function fileTs_() {
   var c = CacheService.getScriptCache(), v = c.get('filets');
   if (v) return +v;
-  var it = DriveApp.getFilesByName(CFG.APPS['']), t = (typeof BUILD_TS !== 'undefined') ? +BUILD_TS : 0;   // BUILD_TS: robot GitHub ghi lúc đẩy mã
+  /* B2 (H duyệt 05/11/2026): web nằm trong kho, robot ghi BUILD_TS lúc đẩy mã nên khỏi tìm tệp trên Drive */
+  if (typeof BUILD_TS !== 'undefined' && +BUILD_TS) { c.put('filets', String(+BUILD_TS), 21600); return +BUILD_TS; }
+  var it = DriveApp.getFilesByName(CFG.APPS['']), t = 0;
   while (it.hasNext()) { var f = it.next().getLastUpdated().getTime(); if (f > t) t = f; }
   c.put('filets', String(t), 60);
   return t;
@@ -288,7 +308,7 @@ function me_(q) {
     var me = Session.getActiveUser().getEmail(), owner = Session.getEffectiveUser().getEmail();
     if (me && owner && me.toLowerCase() === owner.toLowerCase()) {
       var a = findUser_(ss, CFG.ADMIN_USER);
-      if (a && a.active) return { ok: true, token: startSession_(ss, a.username, true), user: pub_(a), ver: ver_(), auto: auto_() };
+      if (a && a.active) return { ok: true, token: ownerToken_(), user: pub_(a), ver: ver_(), auto: auto_() };
     }
   } catch (e) {}
   return { ok: false, err: 'auth', msg: 'Phiên đăng nhập đã hết hạn.' };
@@ -318,7 +338,7 @@ function userAdd_(q) {
       var pass = String(q.pass || '');
       if (pass.length < 4) throw new Error('Mật khẩu cần từ 4 ký tự.');
       var salt = Utilities.getUuid().replace(/-/g, '').slice(0, 12);
-      sh.appendRow([name, x.name || name.toUpperCase(), role, salt, hash_(salt, pass), true, false, !!q.must, '', new Date().toISOString()]);
+      sh.appendRow([name, x.name || name.toUpperCase(), role, salt, hash_(salt, pass), true, false, !!q.must, '', new Date().toISOString()]); usersDrop_();
       added.push(name);
     });
   } finally { lock.releaseLock(); }
@@ -350,7 +370,7 @@ function userDel_(q) {
   if (u.username === c.u.username) return { ok: false, msg: 'Không tự xóa tài khoản của mình.' };
   if (u.role === 'admin' && u.active && adminCount_(ss, u.username) < 1) return { ok: false, msg: 'Không xóa được quản trị cuối cùng.' };
   dropSessions_(ss, u.username);
-  ss.getSheetByName('users').deleteRow(u.row);
+  ss.getSheetByName('users').deleteRow(u.row); usersDrop_();
   return { ok: true };
 }
 function userPass_(q) {
