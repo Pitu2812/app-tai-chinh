@@ -14,6 +14,10 @@ on:
         description: "Chi dung khi can lui: so phien ban cu muon tra lai"
         type: string
         default: ""
+      ma_link_thu:
+        description: "Tuy chon: ma link THU da co (AKfycb...) de cap nhat dung link do thay vi tao link moi"
+        type: string
+        default: ""
       ghi_chu:
         description: "Ghi chu cho ban trien khai"
         type: string
@@ -63,7 +67,11 @@ jobs:
         if: ${{ inputs.trien_khai_thu && inputs.quay_lai_phien_ban == '' }}
         working-directory: app-ty-le/script
         run: |
-          clasp deploy --description "THU: ${{ inputs.ghi_chu }}" | tee /tmp/dep.txt
+          if [ -n "${{ inputs.ma_link_thu }}" ]; then
+            clasp deploy --deploymentId "${{ inputs.ma_link_thu }}" --description "THU: ${{ inputs.ghi_chu }}" | tee /tmp/dep.txt
+          else
+            clasp deploy --description "THU: ${{ inputs.ghi_chu }}" | tee /tmp/dep.txt
+          fi
           id=$(grep -o 'AKfycb[A-Za-z0-9_-]*' /tmp/dep.txt | head -1)
           echo "LINK THU: https://script.google.com/macros/s/$id/exec"
       - name: Lui ve phien ban cu

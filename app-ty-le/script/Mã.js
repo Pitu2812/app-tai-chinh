@@ -65,9 +65,13 @@ function getApp(t, k, u, p) {
   } else user = who_(tok);
   if (!user) return { ok: false, msg: '' };
   if (!CFG.ROLES_OK[user.role]) return { ok: false, msg: 'Tài khoản này chưa được cấp quyền Phân cấp hoặc Quản trị.' };
+  if (!isOwner_()) remember_(tok, user);
   let html = appHtml_();
   /* trang gửi kèm mã phiên ở mỗi lệnh gọi máy chủ */
-  html = html.replace('JSON.stringify(Object.assign({a},p||{}))', 'JSON.stringify(Object.assign({a},p||{},{t:window.PCR_TOK||""}))');
+  html = html.replace('JSON.stringify(Object.assign({a},p||{}))', 'JSON.stringify(Object.assign({a},p||{},{t:pcrTok_()}))');
+  const sTok = isOwner_() ? '' : tok;
+  const inj = '<script>window.PCR_TOK=' + JSON.stringify(sTok) + ';function pcrTok_(){var t=window.PCR_TOK||"";if(!t){try{t=localStorage.getItem("pcr_tok")||""}catch(e){}}return t}<\/script>';
+  html = /<head[^>]*>/i.test(html) ? html.replace(/<head[^>]*>/i, function (m) { return m + inj; }) : inj + html;
   return { ok: true, html: html, token: isOwner_() ? '' : tok };
 }
 
@@ -81,10 +85,12 @@ function isOwner_() {
   const email = (Session.getActiveUser().getEmail() || '').toLowerCase();
   return !!email && email === CFG.OWNER;
 }
+function tokKey_(t) { return 'a:' + Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, t)); }
+function remember_(t, user) { if (t && user) CacheService.getScriptCache().put(tokKey_(t), JSON.stringify(user), 600); }
 function who_(t) {
   if (isOwner_()) return { username: CFG.OWNER, name: CFG.OWNER, role: 'admin' };
   if (!t) return null;
-  const c = CacheService.getScriptCache(), k = 'a:' + Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, t));
+  const c = CacheService.getScriptCache(), k = tokKey_(t);
   const hit = c.get(k);
   if (hit) return JSON.parse(hit);
   const r = tc_({ a: 'sso_who', t: t });
@@ -101,6 +107,7 @@ function api(q) {
     const r = tc_({ a: 'sso_login', u: o.u, p: o.p });
     if (!r.ok) return out_(r);
     if (!r.user || !CFG.ROLES_OK[r.user.role]) return out_({ ok: false, err: 'perm', msg: 'Tài khoản này chưa được cấp quyền Phân cấp hoặc Quản trị.' });
+    remember_(r.token, r.user);
     return out_({ ok: true, token: r.token, user: r.user });
   }
   if (o.a === 'redeem') {
