@@ -179,6 +179,7 @@ td input.e.rt.ch{background:#fff1c9;color:#8a5a00}
 .kht{max-height:340px;overflow:auto}.kht table{width:100%;border-collapse:collapse;font-size:12.5px}.kht th{position:sticky;top:0;background:#fff;text-align:right;font-weight:600;color:var(--mut);padding:3px 6px;border-bottom:1px solid var(--ln)}.kht th:first-child,.kht td.kn{text-align:left}
 .kht td{padding:3px 6px;text-align:right;font-variant-numeric:tabular-nums;border-bottom:1px solid #f0f3f7}.kht td.kn{white-space:normal}.kht tr.gh td{font-weight:700;background:#eef4fc}.kht tr.tt td{font-weight:700;border-top:2px solid var(--ln)}.kht tr:not(.gh):not(.tt) td.kn{padding-left:1.4em}
 .pst{display:inline-block;font-size:11px;font-weight:700;border-radius:99px;padding:0 7px;margin-left:4px}.pst.ok{background:#e3f5ec;color:var(--ok)}.pst.no{background:#fde8e6;color:#c8372d}.pd{font-style:normal;font-size:12px}.pd.ok{color:var(--ok)}.pd.no{color:#c8372d}
+th,.rz2 th,.evt th,.kht th,.kht th:first-child{text-align:center!important}tr.grp td{font-weight:700;background:#eef4fc!important}tr.grp td.nm{text-align:left}
 </style>
 </head><body><div id="gate"><div class="gbox"><img class="glogo" id="glogo" alt=""><h1>App tỷ lệ phân cấp</h1><p class="gs" id="gs">Đang kiểm tra tài khoản Google…</p>
 <div class="ge" id="ge" role="alert"></div><button class="gb" id="g-retry" type="button" hidden>Thử lại</button></div></div>
@@ -528,7 +529,13 @@ function zapply(box){const id=box.dataset.z,s=zget(id),t=box.querySelector('tabl
 const zbar=id=>{const s=zget(id);return `<span class="zbar">Cỡ bảng <button class="ib sm" data-zm="${id}">−</button><b id="zv-${id}">${s.z}%</b><button class="ib sm" data-zp="${id}">+</button><button class="ib sm ${s.fit?'on':''}" data-zf="${id}">Vừa khung</button></span>`};
 const srtBadge=id=>{if(!sorted(id))return '';const st=fs(id);return `<button class="ib sm srt" data-rs="${id}" title="Bấm để bỏ sắp xếp, về thứ tự gốc">Sắp theo: ${E(SKL[id+'|'+st.k]||'')} ${st.d==='desc'?'▼':'▲'} ✕</button>`};
 const pane=(id,title,inner,extra,tool)=>`<div class="pane"><div class="phead"><h3>${title}</h3>${srtBadge(id)}${extra||''}${zbar(id)}<button class="ib sm pxl" data-xl="${id}" title="Xuất excel khung này"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v12m0 0-4-4m4 4 4-4M4 20h16"/></svg> Excel</button></div>${tool||''}<div class="wscroll${/^m(tong|tinh)$/.test(id)?' free':''}" data-z="${id}">${inner}</div></div>`;
-function zall(){document.querySelectorAll('.wscroll[data-z]').forEach(zapply);
+const FHC=document.createElement('canvas').getContext('2d');
+function fitHeads(){document.querySelectorAll('table.rz th,.rz2 th,.evt th,.kht th').forEach(h=>{h.style.fontSize='';const cs=getComputedStyle(h),b=parseFloat(cs.fontSize);
+  const avail=h.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight)-(h.querySelector('.ar')?10:0);if(!(avail>0))return;
+  FHC.font=`${cs.fontWeight} ${b}px ${cs.fontFamily}`;
+  const w=Math.max(...(h.textContent||'').replace(/[⇅▲▼]/g,'').split(/\s+/).map(x=>FHC.measureText(x).width),0);
+  if(w>avail)h.style.fontSize=Math.max(b*0.62,b*avail/w).toFixed(2)+'px'})}
+function zall(){document.querySelectorAll('.wscroll[data-z]').forEach(zapply);try{fitHeads()}catch(_){}
  document.querySelectorAll('[data-zm]').forEach(b=>b.onclick=()=>{const s=zget(b.dataset.zm);s.fit=false;s.z=Math.max(40,s.z-10);zlayout(b.closest('.pane').querySelector('.wscroll'))});
  document.querySelectorAll('[data-zp]').forEach(b=>b.onclick=()=>{const s=zget(b.dataset.zp);s.fit=false;s.z=Math.min(220,s.z+10);zlayout(b.closest('.pane').querySelector('.wscroll'))});
  document.querySelectorAll('[data-zf]').forEach(b=>b.onclick=()=>{const s=zget(b.dataset.zf);s.fit=!s.fit;zlayout(b.closest('.pane').querySelector('.wscroll'))});
@@ -738,9 +745,9 @@ function plKhoan(kx,pc){const c=PL.cols,id='plk',st=fs(id),cp=curPlan(),lock=PL.
  /* hàng: {kind:'k'|'l', i, k, key?, l?, d, ...số} */
  const keyOf=r=>r.kind==='k'?null:r.key;
  const lvs=r=>r.k.fixed?[]:leavesOf(r.k,keyOf(r));
- const cols=[{t:'Khoản thu',cls:'nm',stk:1,sk:'name',sl:'Tên khoản thu',f:it=>{if(it.tot)return E(it.n);
+ const cols=[{t:'Khoản thu',cls:'nm',stk:1,sk:'name',sl:'Tên khoản thu',f:it=>{if(it.tot)return E(it.n);if(it.kind==='g')return `<b>${E(it.n)}</b>`;
   const op=it.kind==='k'?it.k.lines.length>1:!!(it.l&&it.l.grp),on=PL.open.has(it.kind==='k'?'k'+it.i:it.key);
-  return `<span class="nmw" style="padding-left:${(it.d||0)*1.1}em">${op?`<span class="car cb" data-op="${it.kind==='k'?'k'+it.i:it.key}">${on?'▾':'▸'}</span>`:'<span class="car"></span>'}${E(it.n)}</span>`}}];
+  return `<span class="nmw" style="padding-left:${(it.d||0)*1.1}em">${op?`<span class="car cb" data-op="${it.kind==='k'?'k'+it.i:it.key}">${on?'▾':'▸'}</span>`:'<span class="car"></span>'}${it.kind==='k'&&it.num?it.num+'. ':''}${E(it.n)}</span>`}}];
  /* tick xã giữ 100% */
  /* (bỏ cột Xã giữ 100%: mọi phương án cùng một mẫu bảng, chỉ khác tỷ lệ bên trong) */
  const btP=it=>{if(it.tot)return btcR(0);if(it.kind==='k')return it.k.fixed?null:btcK(it.k);if(it.l&&!it.l.grp)return btcLine(it.l);const L=lvs(it);return L.length?btcLine(L[0]):null};
@@ -765,14 +772,19 @@ function plKhoan(kx,pc){const c=PL.cols,id='plk',st=fs(id),cp=curPlan(),lock=PL.
  const CK=chkPlan(cp),ckd=new Map(CK.out.map(x=>[x.i,x.d]));
  cols.push({t:'Kiểm tra khớp',cls:'rc',sk:'ck',sl:'Kiểm tra khớp số chốt',f:it=>{if(it.tot)return CK.t?lechTag(CK.t,`Tổng NSĐP toàn tỉnh lệch so với số chốt ${F(BASE.rows[0].v[5])}`):'<span class="ck ok">✓ khớp</span>';
   if(it.kind!=='k')return '';const d=ckd.get(it.i)||0;return d?lechTag(d,`NSĐP của khoản ${it.k.n} lệch ${d>0?'+':'−'}${F(Math.abs(d))} so với số của khoản ở ${PA1N()} (đang ghim tổng). Do làm tròn tỷ lệ 6 số lẻ hoặc tỉnh không đủ số để bù.`):'<span class="ck ok">✓</span>'}});
+ const GF={nt:it=>F(it.nti+it.nxa),nti:it=>F(it.nti),nxa:it=>F(it.nxa),dt:it=>`<b>${F(it.dti+it.dx)}</b>`,dti:it=>F(it.dti),dx:it=>F(it.dx),df:it=>FS_(it.dti+it.dx-it.gti-it.gx)};
+ cols.forEach(c=>{const f0=c.f;if(c.sk==='name')return;c.f=(it,ix)=>it.kind==='g'?(GF[c.sk]?GF[c.sk](it):''):f0(it,ix)});
  const KEYS={stt:x=>x.o,name:x=>x.n,tick:x=>hasOv(x.i)?1:0,rg:x=>x.nti+x.nxa?(x.gti+x.gx)/(x.nti+x.nxa):0,s0:x=>x.nti+x.nxa?1-(x.gti+x.gx)/(x.nti+x.nxa):0,s1:x=>x.nti+x.nxa?1-(x.dti+x.dx)/(x.nti+x.nxa):0,nt:x=>x.nti+x.nxa,nti:x=>x.nti,nxa:x=>x.nxa,dt:x=>x.dti+x.dx,dti:x=>x.dti,dx:x=>x.dx,df:x=>Math.abs(x.dti+x.dx-x.gti-x.gx)};
  const q=nz(st.q);let L=kx.filter(r=>!(PL.hz&&r.k.nsnn===0)&&(!q||nz(r.n).includes(q))&&(!PL.kch||khChanged(r.i)));
  L.sort(cmpFn(KEYS,st));
  const mkT=(n,arr)=>({tot:1,n,i:-1,nti:arr.reduce((a,r)=>a+r.nti,0),nxa:arr.reduce((a,r)=>a+r.nxa,0),dti:arr.reduce((a,r)=>a+r.dti,0),dx:arr.reduce((a,r)=>a+r.dx,0),gti:arr.reduce((a,r)=>a+r.gti,0),gx:arr.reduce((a,r)=>a+r.gx,0)});
  const tops=[{item:mkT('Tổng cộng các khoản thu',kx)}];if(L.length<kx.length)tops.push({item:mkT(`Cộng theo bộ lọc (${L.length} khoản)`,L)});
- const rows=[];L.forEach(r=>{r.kind='k';r.d=0;rows.push({item:r,cls:`px ${PL.sel===r.i?'sel':''}`,attr:`data-i="${r.i}" data-lv="0"${PL.open.has('k'+r.i)&&r.k.lines.length>1?' data-op="1"':''}`});
+ const pcSet=new Set(KH.map((k,i)=>isPC(k)?i:-1).filter(i=>i>=0)),G1=L.filter(r=>pcSet.has(r.i)),G2=L.filter(r=>!pcSet.has(r.i)&&!r.k.fixed),G3=L.filter(r=>r.k.fixed);
+ const grp=(t,arr)=>Object.assign(mkT(t,arr),{kind:'g',tot:0,o:-1});
+ const GR=[['I. Các khoản thu phân chia',G1],['II. Các khoản thu NSĐP hưởng 100%',G2],['III. Thu NSTW hưởng 100% (không chia NSĐP)',G3]].filter(x=>x[1].length);
+ const rows=[];GR.forEach(([gt,arr])=>{rows.push({item:grp(gt,arr),cls:'px grp',attr:'data-grp="1"'});arr.forEach((r,ix)=>{r.num=ix+1;r.kind='k';r.d=0;rows.push({item:r,cls:`px ${PL.sel===r.i?'sel':''}`,attr:`data-i="${r.i}" data-lv="0"${PL.open.has('k'+r.i)&&r.k.lines.length>1?' data-op="1"':''}`});
   if(PL.open.has('k'+r.i)&&r.k.lines.length>1)r.k.lines.forEach(l=>{const pg=l.d===2?r.k.lines.find(g=>g.grp&&g.children.includes(l.key)):null;if(pg&&!PL.open.has(pg.key))return;
-   const a=lAgg(r.k,l),nm=l.label||'';rows.push({item:Object.assign({kind:'l',i:r.i,k:r.k,l,key:l.key,n:nm,o:r.o,d:l.d},a),cls:`px ln ${PL.sel===r.i?'sel':''}`,attr:`data-i="${r.i}" data-lv="${l.d||1}"${l.grp&&PL.open.has(l.key)?' data-op="1"':''}`})})});
+   const a=lAgg(r.k,l),nm=l.label||'';rows.push({item:Object.assign({kind:'l',i:r.i,k:r.k,l,key:l.key,n:nm,o:r.o,d:l.d},a),cls:`px ln ${PL.sel===r.i?'sel':''}`,attr:`data-i="${r.i}" data-lv="${l.d||1}"${l.grp&&PL.open.has(l.key)?' data-op="1"':''}`})})})});
  const tool=ptool(id,cols,{dl:'dl-kh',ph:'Tìm hoặc chọn khoản thu...',cnt:`${L.length}/${kx.length} khoản`,extra:`${chip(PL.hz,'id="khz"','Ẩn khoản bằng 0')}${chip(PL.kch,'id="kch"','Chỉ khoản đã sửa')}<button class="ib sm" id="kop">${PL.open.size?'Thu gọn khu vực':'Mở hết khu vực'}</button>`});
  let right='';const i=PL.sel,k=KH[i];
  if(i>=0){const rid='plr',rs=fs(rid);
