@@ -176,6 +176,9 @@ td input.e.rt.ch{background:#fff1c9;color:#8a5a00}
 @media(max-width:700px){.pie2.n3,.pie2.n4,.tqg.one .pie2.n3,.tqg.one .pie2.n4{grid-template-columns:1fr}}
 .cmpb.on{background:#fde8e6;color:#c8372d;border-color:#f0a59e}
 #pxmenu{position:fixed;z-index:300;min-width:330px;right:auto}#pxmenu .xh{font-size:11.5px;color:var(--mut);padding:6px 12px 4px;font-weight:600}#pxmenu .xh+button{margin-top:0}#pxmenu small{color:var(--mut);font-weight:400}.pxl{white-space:nowrap;margin-left:2px}.pxl svg{vertical-align:-2px}
+.kht{max-height:340px;overflow:auto}.kht table{width:100%;border-collapse:collapse;font-size:12.5px}.kht th{position:sticky;top:0;background:#fff;text-align:right;font-weight:600;color:var(--mut);padding:3px 6px;border-bottom:1px solid var(--ln)}.kht th:first-child,.kht td.kn{text-align:left}
+.kht td{padding:3px 6px;text-align:right;font-variant-numeric:tabular-nums;border-bottom:1px solid #f0f3f7}.kht td.kn{white-space:normal}.kht tr.gh td{font-weight:700;background:#eef4fc}.kht tr.tt td{font-weight:700;border-top:2px solid var(--ln)}.kht tr:not(.gh):not(.tt) td.kn{padding-left:1.4em}
+.pst{display:inline-block;font-size:11px;font-weight:700;border-radius:99px;padding:0 7px;margin-left:4px}.pst.ok{background:#e3f5ec;color:var(--ok)}.pst.no{background:#fde8e6;color:#c8372d}.pd{font-style:normal;font-size:12px}.pd.ok{color:var(--ok)}.pd.no{color:#c8372d}
 </style>
 </head><body><div id="gate"><div class="gbox"><img class="glogo" id="glogo" alt=""><h1>App tỷ lệ phân cấp</h1><p class="gs" id="gs">Đang kiểm tra tài khoản Google…</p>
 <div class="ge" id="ge" role="alert"></div><button class="gb" id="g-retry" type="button" hidden>Thử lại</button></div></div>
@@ -483,7 +486,7 @@ const D=M0.rows.map((_,i)=>depth(i));const par=D.map((d,i)=>{if(d===0)return -1;
 const kids=D.map((d,i)=>i+1<N&&D[i+1]>d);
 const allOpen=()=>new Set(D.map((d,i)=>kids[i]?i:-1).filter(i=>i>=0)),top0=()=>new Set(D.map((d,i)=>d===0?i:-1).filter(i=>i>=0));
 const mk=g=>({g,open:top0(),hz:false});
-const ST={tong:mk({r27:true,r26:false,rdt:false,dt26:true,uth:true,dt27:true,dif:true,pct:true}),tinh:mk({r27:true,r26:false,rdt:false,dt26:true,uth:true,dt27:true,dif:true,pct:true}),xa:mk({r27:true,r26:false,rdt:false,dt26:false,uth:true,dt27:true,dif:false,pct:false})};
+const ST={tong:mk({r27:true,r26:false,rdt:false,dt26:true,uth:true,dt27:true,dif:true,pct:true,ti:true,xa:true}),tinh:mk({r27:true,r26:false,rdt:false,dt26:true,uth:true,dt27:true,dif:true,pct:true}),xa:mk({r27:true,r26:false,rdt:false,dt26:false,uth:true,dt27:true,dif:false,pct:false})};
 const buildXA=()=>{XA=M.xn.map((n,k)=>({k,o:k,n,v:M.xr[k][0],ph:/^Phường/.test(n)}));ISPH=XA.map(x=>x.ph)};
 let view='tong',sel=-1,LAY='right',KPI=true;const isR=()=>LAY==='right'&&innerWidth>=900;
 const SP={xa:55,pl:60,ss:50};
@@ -552,7 +555,8 @@ const colsHdr=(on)=>on?[{t:'Gốc',cls:'gc',stk:1,sl:'STT gốc',sk:'orig',f:(it
 const nameCell=i=>{const r=R[i],d=D[i];return `<span class="nmw" style="padding-left:${d*.9}em">${kids[i]?'<span class="car">▸</span>':'<span class="car"></span>'}${E(r.n.replace(/^\s*[-+]\s*/,''))}${r.new&&d<=1?'<span class="rate" style="margin-left:.5em;background:#fff1c9;color:#8a5a00">mới</span>':''}${r.note&&d<=1?`<span class="info" data-t="${E(r.note.slice(0,240))}">i</span>`:''}</span>`};
 function numCols(S,o){const G=S.g,c=[];const sk=k=>o.sort?k:null;
  const two=(g,fn,k)=>[0,1].map(j=>({g,t:j?'NSĐP':'NSNN',sk:sk(k+j),f:it=>fn(it.v,j)}));
- if(G.dt26)c.push(...two('DT 2026',(v,j)=>F(v[j]),'v'));if(G.uth)c.push(...[0,1].map(j=>({g:'ƯTH 2026',t:j?'NSĐP':'NSNN',sk:sk('u'+j),f:it=>F(it.v[2+j])})));if(G.dt27)c.push(...[0,1].map(j=>({g:'DT 2027',t:j?'NSĐP':'NSNN',sk:sk('w'+j),f:it=>F(it.v[4+j])})));
+ const sb=(g,base,kp)=>[0,1].forEach(j=>{const nm=j?'NSĐP':'NSNN';c.push({g,t:nm,sk:sk(kp+j),f:it=>F(it.v[base+j])});if(o.sub&&G.ti)c.push({g,t:nm+' tỉnh',sk:sk(kp+'t'+j),f:it=>F(it.r.ti[base+j])});if(o.sub&&G.xa)c.push({g,t:nm+' xã',sk:sk(kp+'x'+j),f:it=>F(it.r.xa[base+j])})});
+ if(G.dt26)sb('DT 2026',0,'v');if(G.uth)c.push(...[0,1].map(j=>({g:'ƯTH 2026',t:j?'NSĐP':'NSNN',sk:sk('u'+j),f:it=>F(it.v[2+j])})));if(G.dt27)sb('DT 2027',4,'w');
  if(G.dif){c.push(...[0,1].map(j=>({g:'ƯTH − DT 2026',t:j?'NSĐP':'NSNN',sk:sk('a'+j),f:it=>it.v[j]==null?'':FS_((it.v[2+j]||0)-(it.v[j]||0))})));c.push(...[0,1].map(j=>({g:'DT 2027 − DT 2026',t:j?'NSĐP':'NSNN',sk:sk('b'+j),f:it=>it.v[j]==null?'':FS_((it.v[4+j]||0)-(it.v[j]||0))})))}
  if(G.pct){c.push(...[0,1].map(j=>({g:'ƯTH / DT 2026',t:j?'NSĐP':'NSNN',sk:sk('c'+j),f:it=>it.v[j]?P(it.v[2+j]/it.v[j]):''})));c.push(...[0,1].map(j=>({g:'DT 2027 / DT 2026',t:j?'NSĐP':'NSNN',sk:sk('e'+j),f:it=>it.v[j]?P(it.v[4+j]/it.v[j]):''})))}
  return c}
@@ -561,7 +565,7 @@ function rateCols(S,sort){const G=S.g,c=[];const rt=x=>t=>t==null?'':`<span clas
 const XKEYS={stt:x=>x.o,orig:x=>x.o,name:x=>x.n,v0:x=>x.v[0],v1:x=>x.v[1],u0:x=>x.v[2],u1:x=>x.v[3],w0:x=>x.v[4],w1:x=>x.v[5],a0:x=>x.v[2]-x.v[0],a1:x=>x.v[3]-x.v[1],b0:x=>x.v[4]-x.v[0],b1:x=>x.v[5]-x.v[1],c0:x=>x.v[0]?x.v[2]/x.v[0]:0,c1:x=>x.v[1]?x.v[3]/x.v[1]:0,e0:x=>x.v[0]?x.v[4]/x.v[0]:0,e1:x=>x.v[1]?x.v[5]/x.v[1]:0};
 function vis(S){const v=[];for(let i=0;i<N;i++){let ok=true,p=par[i];while(p>=0){if(!S.open.has(p)){ok=false;break}p=par[p]}if(ok)v.push(i)}return v}
 const r27v=it=>VIEW&&VIEW.changed&&it.v&&it.v[4]?it.v[5]/it.v[4]:it.r.r27;
-const MKEYS=Object.assign({},XKEYS,{name:x=>x.n,r27:x=>r27v(x)||0,r26:x=>x.r.r26||0,rdt:x=>x.r.rdt||0});
+const MKEYS=Object.assign({},XKEYS,{vt0:x=>x.r.ti[0],vt1:x=>x.r.ti[1],vx0:x=>x.r.xa[0],vx1:x=>x.r.xa[1],wt0:x=>x.r.ti[4],wt1:x=>x.r.ti[5],wx0:x=>x.r.xa[4],wx1:x=>x.r.xa[5],name:x=>x.n,r27:x=>r27v(x)||0,r26:x=>x.r.r26||0,rdt:x=>x.r.rdt||0});
 function rowsMain(S,get,sk,id){const out=[],st=id?fs(id):null,srt=st&&sorted(id),cache={};
  const it=i=>cache[i]||(cache[i]={i,o:i,n:R[i].n,r:R[i],v:get(i)});
  const ch={};for(let i=0;i<N;i++)(ch[par[i]]=ch[par[i]]||[]).push(i);
@@ -574,7 +578,7 @@ const chip=(on,att,t)=>`<label class="chip ${on?'on':''}"><input type="checkbox"
 const OPT={open:false};
 const optWrap=(row,panel)=>`<div class="bar opb"><button class="ib sm${OPT.open?' on':''}" id="optb" title="Hiện hoặc ẩn các tùy chọn cột, chia khung">⚙ Tùy chỉnh bảng ${OPT.open?'▴':'▾'}</button>${row||''}</div><div class="optp" id="optp" ${OPT.open?'':'hidden'}>${panel}</div>`;
 function optBind(){const b=document.getElementById('optb'),p=document.getElementById('optp');if(!b||!p)return;b.onclick=()=>{OPT.open=!OPT.open;p.hidden=!OPT.open;b.classList.toggle('on',OPT.open);b.textContent=`⚙ Tùy chỉnh bảng ${OPT.open?'▴':'▾'}`}}
-function colCtl(S,xa){const g=S.g;const chips=`<span class="lb">Hiện cột:</span>${chip(g.r27,'data-g="r27"','Tỷ lệ NSĐP 2027')}${chip(g.r26,'data-g="r26"','Tỷ lệ 2026')}${chip(g.rdt,'data-g="rdt"','Tỷ lệ DT 2026')}<span style="width:6px"></span>${chip(g.dt26,'data-g="dt26"','DT 2026')}${chip(g.uth,'data-g="uth"','ƯTH 2026')}${chip(g.dt27,'data-g="dt27"','DT 2027')}${chip(g.dif,'data-g="dif"','Chênh lệch (giá trị)')}${chip(g.pct,'data-g="pct"','Tỷ lệ % so sánh')}`;
+function colCtl(S,xa){const g=S.g;const chips=`<span class="lb">Hiện cột:</span>${chip(g.r27,'data-g="r27"','Tỷ lệ NSĐP 2027')}${chip(g.r26,'data-g="r26"','Tỷ lệ 2026')}${chip(g.rdt,'data-g="rdt"','Tỷ lệ DT 2026')}<span style="width:6px"></span>${chip(g.dt26,'data-g="dt26"','DT 2026')}${chip(g.uth,'data-g="uth"','ƯTH 2026')}${chip(g.dt27,'data-g="dt27"','DT 2027')}${view==='tong'?`<span style="width:6px"></span>${chip(g.ti,'data-g="ti"','Cột cấp tỉnh')}${chip(g.xa,'data-g="xa"','Cột cấp xã')}`:''}${chip(g.dif,'data-g="dif"','Chênh lệch (giá trị)')}${chip(g.pct,'data-g="pct"','Tỷ lệ % so sánh')}`;
  return optWrap(xa?'':`${chip(S.hz,'id="hz"','Ẩn dòng bằng 0')}<button class="ib sm" id="oa">Mở hết</button><button class="ib sm" id="ca">Thu gọn</button>`,`<div class="bar">${chips}</div>`+(xa?`<div class="bar">${splitCtl('xa')}</div>`:''))}
 function colBind(S){document.querySelectorAll('#ctl [data-g]').forEach(x=>x.onchange=()=>{S.g[x.dataset.g]=x.checked;draw(true)});const hz=document.getElementById('hz');if(hz)hz.onchange=()=>{S.hz=hz.checked;draw(true)};const oa=document.getElementById('oa');if(oa)oa.onclick=()=>{S.open=allOpen();draw(true)};const ca=document.getElementById('ca');if(ca)ca.onclick=()=>{S.open=new Set([0]);draw(true)}}
 const splitCtl=k=>`<span class="lb">Chia khung</span><input type="range" min="25" max="80" step="5" value="${SP[k]}" id="spr"><b id="spv" style="font-size:12px;min-width:5.5em">${SP[k]}% | ${100-SP[k]}%</b>${[[50,'50/50'],[65,'65/35'],[80,'80/20']].map(([a,b])=>`<button class="ib sm" data-sp="${a}">${b}</button>`).join('')}<div class="seg sm" id="ly"><button data-v="right" class="${isR()?'on':''}">bên phải</button><button data-v="below" class="${!isR()?'on':''}">bên dưới</button></div>`;
@@ -587,7 +591,7 @@ function viewMain(){
  const S=ST[view];
  if(view!=='xa'){const key=view==='tinh'?'ti':'v';
   document.getElementById('ctl').innerHTML=colCtl(S,false);
-  const cols=[{t:'Khoản thu',cls:'nm',stk:1,sk:'name',sl:'Tên khoản thu',f:it=>nameCell(it.i)},...rateCols(S,true),...numCols(S,{sort:true})];
+  const cols=[{t:'Khoản thu',cls:'nm',stk:1,sk:'name',sl:'Tên khoản thu',f:it=>nameCell(it.i)},...rateCols(S,true),...numCols(S,{sort:true,sub:view==='tong'})];
   document.getElementById('body').innerHTML=`<div class="split" style="grid-template-columns:minmax(0,1fr)">${pane('m'+view,(view==='tong'?'Tổng hợp tỉnh + xã':'Cấp tỉnh')+paTag(),tbl('m'+view,cols,rowsMain(S,i=>R[i][key],view,'m'+view),null,true))}</div>`;colBind(S);return}
  document.getElementById('ctl').innerHTML=colCtl(S,true);colBind(S);
  const id='xa',st=fs(id),all=XA;
@@ -862,8 +866,19 @@ const cut=v=>{const a=Math.abs(v);return a>=1e6?(v/1e6).toLocaleString('vi-VN',{
 /* thanh ngang xếp chồng tỉnh / xã */
 function stBars(L){const mx=Math.max(...L.map(x=>x.ti+x.xa),1);
  return `<div class="lgd"><span><i style="background:${CC.ti}"></i>Cấp tỉnh</span><span><i style="background:${CC.xa}"></i>Cấp xã</span></div>`+L.map(x=>`<div class="hb" title="${E(x.n)}: tỉnh ${F(x.ti)}, xã ${F(x.xa)}"><span class="hl">${E(x.n)}</span><span class="ht"><span class="hs" style="width:${(Math.max(0,x.ti)/mx*100).toFixed(2)}%;background:${CC.ti}"></span><span class="hs" style="width:${(Math.max(0,x.xa)/mx*100).toFixed(2)}%;background:${CC.xa}"></span></span><span class="hv">${cut(x.ti+x.xa)}</span></div>`).join('')}
-function khBars(d){const L=KH.map((k,i)=>({n:k.n,ti:d.kh[i].ti,xa:d.kh[i].xa})).filter(x=>x.ti+x.xa>0).sort((a,b)=>b.ti+b.xa-a.ti-a.xa);
- const top=L.slice(0,8),rest=L.slice(8);if(rest.length)top.push({n:`Các khoản khác (${rest.length})`,ti:rest.reduce((a,x)=>a+x.ti,0),xa:rest.reduce((a,x)=>a+x.xa,0)});return stBars(top)}
+function khTable(d){const R0=Math.round,rows=i=>({n:KH[i].n,ti:R0(d.kh[i].ti),xa:R0(d.kh[i].xa)});
+ const all=KH.map((k,i)=>({i,k})).filter(x=>!x.k.fixed&&(d.kh[x.i].ti||d.kh[x.i].xa));
+ const g1=all.filter(x=>!d.pcI.includes(x.i)).map(x=>rows(x.i)),g2=all.filter(x=>d.pcI.includes(x.i)).map(x=>rows(x.i));
+ const sm=L=>({ti:L.reduce((a,x)=>a+x.ti,0),xa:L.reduce((a,x)=>a+x.xa,0)}),s1=sm(g1),s2=sm(g2),T={ti:s1.ti+s2.ti,xa:s1.xa+s2.xa};
+ const c=(a,b)=>`<td>${F(a+b)}</td><td>${F(a)}</td><td>${F(b)}</td>`,ln=(x,i)=>`<tr><td class="kn">${i+1}. ${E(x.n)}</td>${c(x.ti,x.xa)}</tr>`;
+ const lech=[];if(T.ti+T.xa!==d.tot)lech.push(`tổng các khoản ${F(T.ti+T.xa)} khác tổng thu NSĐP ${F(d.tot)} (lệch ${sgn(T.ti+T.xa-d.tot)})`);
+ if(T.ti!==R0(d.ti))lech.push(`cấp tỉnh ${F(T.ti)} khác ${F(d.ti)} (lệch ${sgn(T.ti-R0(d.ti))})`);if(T.xa!==R0(d.xa))lech.push(`cấp xã ${F(T.xa)} khác ${F(d.xa)} (lệch ${sgn(T.xa-R0(d.xa))})`);
+ return `<div class="kht"><table><thead><tr><th>Khoản thu NSĐP hưởng</th><th>Tổng</th><th>Cấp tỉnh</th><th>Cấp xã</th></tr></thead><tbody>
+ <tr class="gh"><td class="kn">I. Thu NSĐP hưởng 100%</td>${c(s1.ti,s1.xa)}</tr>${g1.map(ln).join('')}
+ <tr class="gh"><td class="kn">II. Các khoản thu phân chia</td>${c(s2.ti,s2.xa)}</tr>${g2.map(ln).join('')}
+ <tr class="tt"><td class="kn">Tổng thu NSĐP (I + II)</td>${c(T.ti,T.xa)}</tr></tbody></table>`+
+ (lech.length?`<p class="lechb" style="white-space:normal;margin:8px 0 0">LỆCH, cần báo: ${lech.join('; ')}.</p>`:`<p class="ok1" style="font-size:12px;margin:6px 0 0">✓ Các khoản cộng lại khớp tổng thu NSĐP ${F(d.tot)} (tỉnh ${F(T.ti)}, xã ${F(T.xa)}).</p>`)+'</div>'}
+function khBars(d){return khTable(d)}
 const kvBars=d=>stBars(d.kv.filter(x=>x.ti||x.xa));
 /* thanh phân kỳ: tăng bên phải, giảm bên trái */
 function divBars(items,unit){const mx=Math.max(...items.map(x=>Math.abs(x.v)),1);
@@ -881,7 +896,7 @@ function ovHtml(d){const p=d.p,isD=p.id===PA.def,bx=BTCX();
   <dt>NSĐP cấp tỉnh</dt><dd>${F(d.ti)}</dd><dt>NSĐP 96 xã, phường</dt><dd>${F(d.xa)}</dd><dt class="sub">trong đó ${nPh()} phường</dt><dd>${F(d.ph)}</dd><dt class="sub">trong đó ${XA.length-nPh()} xã</dt><dd>${F(d.xo)}</dd></dl>
   <dl class="dl2"><dt>So với BTC giao ${F(bx)} <span class="info" data-t="${E('Bộ Tài chính giao thu NSĐP '+F(bx)+' (gồm tỉnh, xã, phường). Chênh '+sgn(d.tot-bx)+' là thu khác tại xã do tỉnh giao thêm.')}">i</span></dt><dd>${sgn(d.tot-bx)}</dd><dt>NSĐP tỉnh so với ƯTH 2026</dt><dd>${pct(d.ti,d.uthTi)}</dd><dt>NSĐP xã so với ƯTH 2026</dt><dd>${pct(d.xa,d.uthXa)}</dd><dt>Khoản thu đã đổi tỷ lệ</dt><dd>${d.nk}</dd><dt>Dòng cấp tỉnh bị âm</dt><dd class="${d.neg?'wn1':''}">${d.neg||'không'}</dd></dl></div>`;
  const pie=`<div class="pc"><h4>Cơ cấu thu NSĐP 2027<span style="flex:1"></span><button class="ib sm${TQ.split?' on':''}" id="tqsp">${TQ.split?'Gộp xã, phường':'Tách xã, phường'}</button><span class="info" data-t="${E(xaList(d))}">i</span></h4><p class="ds">${TQ.split?'Cấp tỉnh, phường, xã':'Cấp tỉnh và cấp xã'}, triệu đồng</p>${donut(segsOf(d),F(d.tot),'triệu đồng')}</div>`;
- const bars=`<div class="pc"><h4><span>Thu NSĐP ${TQ.c3==='kv'?'theo khu vực':'theo khoản thu'}</span><span style="flex:1"></span><span class="seg sm" id="tqc3"><button data-c="kv" class="${TQ.c3==='kv'?'on':''}">Theo khu vực</button><button data-c="kh" class="${TQ.c3==='kh'?'on':''}">Theo khoản thu</button></span></h4><p class="ds">${TQ.c3==='kv'?'Theo khu vực kinh tế và nhóm khoản thu':'8 khoản lớn nhất'}, chia cấp tỉnh và cấp xã</p>${TQ.c3==='kv'?kvBars(d):khBars(d)}</div>`;
+ const bars=`<div class="pc"><h4><span>Thu NSĐP ${TQ.c3==='kv'?'theo khu vực':'theo khoản thu'}</span><span style="flex:1"></span><span class="seg sm" id="tqc3"><button data-c="kv" class="${TQ.c3==='kv'?'on':''}">Theo khu vực</button><button data-c="kh" class="${TQ.c3==='kh'?'on':''}">Theo khoản thu</button></span></h4><p class="ds">${TQ.c3==='kv'?'Theo khu vực kinh tế và nhóm khoản thu':'I. Hưởng 100% và II. Các khoản phân chia, triệu đồng'}, chia cấp tỉnh và cấp xã</p>${TQ.c3==='kv'?kvBars(d):khBars(d)}</div>`;
  return `<div class="tqg">${info}${pie}${bars}</div>`}
 function viewPA(){const many=PA.plans.length>1;if(!many)TQ.mode='one';
  if(TQ.mode==='cmp')return viewCmp();
@@ -1053,8 +1068,31 @@ const PNOTES=[
   'Thuế tối thiểu toàn cầu 1.450.000 đang tính trong TNDN khu vực vốn nước ngoài, NSĐP 80%, giống số Bộ Tài chính và Mẫu 30. Luật NSNN 2025 Điều 36.1.n ghi khoản này NSTW hưởng 100%, cần xem lại khi có hướng dẫn chính thức.',
   'Làm tròn: tiền là số nguyên, tỷ lệ tối đa 6 số lẻ; tổng tỉnh và tổng 96 xã làm tròn từ trên xuống, phần chênh dồn vào thu khác ngân sách của cấp đó.',
   'Căn cứ đã đối chiếu: Luật NSNN 89/2025/QH15 (Điều 36, 38), Nghị quyết 19/2025/NQ-HĐND tỉnh, Mẫu 30 và sheet Cách tính TW. Chưa có Nghị định 73/2026, Thông tư 26/2026 và văn bản phân cấp quản lý thuế để đối chiếu.'];
-function proposeHtml(p,d){const pr=propose(p),ul=`<ul class="pnt">${PNOTES.map(n=>`<li>${E(n)}</li>`).join('')}</ul>`;
- if(p.ro||(pr&&pr.ok))return `<details class="pc ppn okp"><summary><span class="pok">✓ ${E(p.name)} khớp số chốt ${F(BASE.rows[0].v[5])}${p.ro?'':', không cần chỉnh'}.</span><span class="plk">Đề xuất và ghi chú pháp lý ▸</span></summary>${ul}</details>`;
+
+/* ghi chú động: mỗi dòng ghi chú kiểm lại theo tỷ lệ của phương án đang xem, báo phù hợp hoặc không phù hợp */
+function pntCheck(p){const V=viewFor(p),TOL=150,lin=[];
+ KH.forEach((k,i)=>(k.lines||[]).forEach(l=>{if(l.grp)return;const n=lnVal(BASE,l,'ti',4)+lnVal(BASE,l,'xa',4),a=lnVal(V,l,'ti',5)+lnVal(V,l,'xa',5);if(!n)return;lin.push({i,k,l,n,a,b:btcLine(l),dv:a-n*btcLine(l)})}));
+ const gt=KH.findIndex(k=>/giá trị gia tăng/i.test(k.n)),ks=KH.findIndex(k=>/khoáng sản/i.test(k.n));
+ const lt=x=>`${x.k.n}${x.l.label&&(x.k.lines||[]).filter(q=>!q.grp).length>1?' – '+x.l.label.replace(/^Thu từ /,'').replace(/\s*\(.*$/,''):''}: NSĐP ${P(x.a/x.n)}, quy định ${P(x.b)}`;
+ const dev=f=>lin.filter(x=>f(x)&&Math.abs(x.dv)>TOL),res=bad=>bad.length?{st:'no',d:'Không phù hợp: '+bad.slice(0,6).map(lt).join('; ')+(bad.length>6?`; còn ${bad.length-6} dòng nữa`:'')+'.'}:null;
+ const o=[];
+ o.push(res(dev(x=>x.i!==gt&&x.i!==ks&&!x.l.fix))||{st:'ok',d:'Phù hợp: các khoản giữ đúng tỷ lệ Bộ Tài chính giao (trừ GTGT, khoáng sản xét riêng).'});
+ const g=lin.filter(x=>x.i===gt),gn=g.reduce((a,x)=>a+x.n,0),ga=g.reduce((a,x)=>a+x.a,0),chot=V.rows[0].v[5]-BASE.rows[0].v[5];
+ o.push({st:chot?'no':'ok',d:(chot?'Không phù hợp: ':'Phù hợp: ')+`tỷ lệ GTGT hiện tại ${P(gn?ga/gn:0)}, tổng thu NSĐP ${F(V.rows[0].v[5])}${chot?' lệch '+sgn(chot)+' so với số chốt '+F(BASE.rows[0].v[5]):' khớp số chốt '+F(BASE.rows[0].v[5])}.`});
+ const fx=lin.filter(x=>x.l.fix||x.b===0),fb=fx.filter(x=>Math.abs(x.a)>0.5);
+ o.push(fb.length?{st:'no',d:'Không phù hợp: phần NSTW hưởng 100% đang có thu NSĐP: '+fb.map(x=>x.k.n+' '+F(x.a)).join('; ')+'.'}:{st:'ok',d:'Phù hợp: phần NSTW hưởng 100% không có thu NSĐP.'});
+ o.push(res(dev(x=>x.i===ks))||{st:'ok',d:'Phù hợp: giấy phép TW cấp NSĐP 30%, giấy phép địa phương cấp NSĐP 100%.'});
+ const tt=lin.find(x=>x.l.key==='0.2');
+ o.push(tt&&Math.abs(tt.dv)>TOL?{st:'no',d:`Không phù hợp: NSĐP hiện ${P(tt.a/tt.n)}, số Bộ Tài chính và Mẫu 30 là ${P(tt.b)}.`}:{st:'ok',d:'Phù hợp: NSĐP 80%, giống số Bộ Tài chính và Mẫu 30 (Luật NSNN 2025 Điều 36.1.n cần xem lại khi có hướng dẫn).'});
+ let frac=0;for(const r of V.rows)for(const k of ['v','ti','xa'])if((r[k]||[]).some(x=>x!=null&&Math.abs(x-Math.round(x))>1e-9))frac++;
+ const r0=V.rows[0],dk=Math.round(r0.ti[5])+Math.round(r0.xa[5])-Math.round(r0.v[5]);
+ o.push(frac||dk?{st:'no',d:'Không phù hợp: '+(frac?frac+' dòng có số lẻ. ':'')+(dk?`tỉnh + xã lệch tổng ${sgn(dk)}.`:'')}:{st:'ok',d:`Phù hợp: toàn số nguyên, tỉnh ${F(r0.ti[5])} + xã ${F(r0.xa[5])} = ${F(r0.v[5])}.`});
+ o.push({st:'',d:''});
+ return o}
+const pntHtml=p=>{const c=pntCheck(p);return `<ul class="pnt">${PNOTES.map((n,i)=>`<li>${E(n)}${c[i].st?` <span class="pst ${c[i].st}">${c[i].st==='ok'?'Phù hợp':'Không phù hợp'}</span><br><em class="pd ${c[i].st}">${E(c[i].d)}</em>`:''}</li>`).join('')}</ul>`},
+ pntBad=p=>pntCheck(p).filter(x=>x.st==='no').length;
+function proposeHtml(p,d){const pr=propose(p),ul=pntHtml(p),nb=pntBad(p),nbt=nb?` <span class="pst no">${nb} ghi chú không phù hợp</span>`:'';
+ if(p.ro||(pr&&pr.ok))return `<details class="pc ppn okp"><summary><span class="pok">✓ ${E(p.name)} khớp số chốt ${F(BASE.rows[0].v[5])}${p.ro?'':', không cần chỉnh'}.</span>${nbt}<span class="plk">Đề xuất và ghi chú pháp lý ▸</span></summary>${ul}</details>`;
  const c=chkPlan(p);
  return `<div class="pc ppn badp"><h4>Đề xuất để khớp số chốt</h4><p class="pbad">${E(p.name)} chưa khớp: tổng lệch ${c.t>0?'+':c.t<0?'−':''}${F(Math.abs(c.t))}${c.out.length?', '+c.out.length+' khoản lệch so với số của khoản':''}.</p>`+
   (pr.steps.length?`<p class="ds">Đề xuất: chỉ chỉnh tỷ lệ cấp tỉnh trong phần NSĐP (phần NSTW hưởng giữ nguyên theo Luật NSNN; HĐND tỉnh quyết định chia phần NSĐP giữa tỉnh và xã):</p><ol class="pst">${pr.steps.map(st=>`<li>${E(st.kh)}${st.name&&st.name!==st.kh?' – '+E(st.name):''}: tỷ lệ cấp tỉnh từ <b>${P6(st.from)}</b> thành <b>${P6(st.to)}</b> (NSĐP tỉnh ${st.amt>0?'+':'−'}${F(Math.abs(st.amt))})</li>`).join('')}</ol><p class="ds">${pr.left?`Sau khi áp dụng còn lệch ${pr.left>0?'+':'−'}${F(Math.abs(pr.left))}, em chỉnh thêm bằng tay.`:'Sau khi áp dụng: tổng khớp đúng số chốt.'}</p><button class="ib sm pri" id="papl">Áp dụng đề xuất</button>`:'<p class="ds">Chưa tìm được cách chỉnh tự động, em chỉnh tỷ lệ cấp tỉnh ở bảng Khu vực bên dưới.</p>')+
@@ -1523,7 +1561,7 @@ function paneF(ws,c,nh){const body=c.tBodies[0];if(!body||!ws['!ref'])return 0;
  const meta=rows.map(tr=>{const m=tr.className.match(/\bd(\d)\b/),nm=tr.querySelector('td.nm'),lv=tr.getAttribute('data-lv');return{ri:tr.getAttribute('data-ri'),pi:tr.getAttribute('data-pi'),d:lv!=null?+lv:m?+m[1]:0,tot:/\btot\b/.test(tr.className),open:tr.hasAttribute('data-op')||/\bopen\b/.test(tr.className)&&/\bp\b/.test(tr.className),nm:nm?nm.textContent.trim():''}});
  const isRat=x=>/\//.test(H[x]),isDiff=x=>!isRat(x)&&/−|Chênh/i.test(H[x]),isRate=x=>/Tỷ lệ|Tỷ trọng|hưởng|%/i.test(H[x])&&!/NSĐP gốc|NSĐP theo|Thu NSĐP/.test(H[x])||/^STT/.test(H[x]);
  const done=new Set();let nf=0;const setF=(r,x,f)=>{const k=A(r,x);ws[k]=Object.assign({},ws[k],{t:'n',f});done.add(k);nf++};
- const best=(x,test)=>{let b=null,bs=-1;const lo=Math.max(0,x-12),hi=Math.min(nc,x+13);for(let a=lo;a<hi;a++)for(let q=lo;q<hi;q++){if(a===q||a===x||q===x)continue;const sc0=test.pre(a,q);if(sc0===false)continue;let ok=0,bad=0;
+ const best=(x,test)=>{let b=null,bs=-1;const lo=Math.max(0,x-26),hi=Math.min(nc,x+27);for(let a=lo;a<hi;a++)for(let q=lo;q<hi;q++){if(a===q||a===x||q===x)continue;const sc0=test.pre(a,q);if(sc0===false)continue;let ok=0,bad=0;
    for(let k=0;k<n;k++){const r=r0+k,v=num(r,x),va=num(r,a),vb=num(r,q);if(v==null||va==null||vb==null)continue;if(test.m(v,va,vb))ok++;else{bad++;if(bad>test.tol(n))break}}
    if(bad>test.tol(n)||ok<2)continue;const sc=ok*1000+(a<x&&q<x?500:0)+(a>q?100:0)-((x-a)+(x-q))*(a<x&&q<x?1:0)/1000;if(sc>bs){bs=sc;b=[a,q]}}return b};
  for(let x=0;x<nc;x++){if(!isRat(x)&&!isDiff(x))continue;
@@ -1539,6 +1577,8 @@ function paneF(ws,c,nh){const body=c.tBodies[0];if(!body||!ws['!ref'])return 0;
   const t={pre:(a,q)=>!isRate(a)&&isRate(q)&&!/^STT/.test(H[q])&&/NSNN/.test(H[a]),tol:n=>Math.floor(n*0.2),m:(v,va,vb)=>vb>=0&&vb<=1&&Math.round(va*vb)===Math.round(v)};
   const b=best(x,t);if(!b)continue;const [a,q]=b;
   for(let k=0;k<n;k++){const r=r0+k,R=r+1,v=num(r,x),va=num(r,a),vb=num(r,q);if(meta[k].tot||meta[k].open||v==null||va==null||vb==null||!t.m(v,va,vb))continue;setF(r,x,`ROUND(${C(a)}${R}*${C(q)}${R},0)`)}}
+ for(let x=0;x<nc;x++){const m=/^(DT 20\d\d) (NSNN|NSĐP)$/.exec(H[x]);if(!m)continue;const a=H.indexOf(m[1]+' '+m[2]+' tỉnh'),q=H.indexOf(m[1]+' '+m[2]+' xã');if(a<0||q<0)continue;
+  for(let k=0;k<n;k++){const r=r0+k,R=r+1,v=num(r,x),va=num(r,a),vb=num(r,q);if(v==null||va==null||vb==null||done.has(A(r,x))||Math.abs(va+vb-v)>=0.5)continue;setF(r,x,`${C(a)}${R}+${C(q)}${R}`)}}
  const rg=ks=>{const o=[];let s0=null,p=null;ks.forEach(k=>{if(s0!==null&&k===p+1){p=k;return}if(s0!==null)o.push([s0,p]);s0=p=k});if(s0!==null)o.push([s0,p]);return o};
  const memo=/^\s*(trong đó|bao gồm|thu nội địa \(trừ)/i;
  const sumF=(k,ks,x)=>{const v=num(r0+k,x);if(v==null||done.has(A(r0+k,x)))return;const vals=ks.map(j=>num(r0+j,x)||0),s=vals.reduce((a,b)=>a+b,0);if(Math.abs(s-v)>=0.5)return false;
