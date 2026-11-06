@@ -227,3 +227,10 @@ function kiemTra() {
   Logger.log('Tệp app: ' + (f ? f.getName() + ' · ' + f.getSize() + ' byte · ' + f.getLastUpdated() : 'CHƯA CÓ'));
   Logger.log('Chỉ mục dữ liệu: ' + JSON.stringify(idx_()));
 }
+
+/* chạy MỘT LẦN trong trình soạn thảo bằng takikj02 để cấp quyền kết nối app tài chính (UrlFetchApp); sau đó ai đăng nhập bằng tài khoản app tài chính cũng dùng được */
+function capQuyen() {
+  const r = tc_({ a: 'sso_who', t: 'kiem-tra' });
+  Logger.log('Kết nối app tài chính: ' + JSON.stringify(r) + ' (err=auth nghĩa là thông, đã có quyền)');
+  return r;
+}
