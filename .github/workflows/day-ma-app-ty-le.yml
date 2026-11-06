@@ -14,6 +14,10 @@ on:
         description: "Chi dung khi can lui: so phien ban cu muon tra lai"
         type: string
         default: ""
+      ma_link_thu:
+        description: "Tuy chon: ma link THU da co (AKfycb...) de cap nhat dung link do thay vi tao link moi"
+        type: string
+        default: ""
       ghi_chu:
         description: "Ghi chu cho ban trien khai"
         type: string
@@ -45,10 +49,11 @@ jobs:
         if: ${{ inputs.quay_lai_phien_ban == '' }}
         run: |
           python3 - <<'PY'
-          import base64
-          b = base64.b64encode(open("app-ty-le/web/app-ty-le-phan-cap.html", "rb").read()).decode()
-          step = 900000
-          open("app-ty-le/script/web-data.js", "w").write("var WEB_PARTS = {};\nWEB_PARTS.app_ty_le = [" + ",".join("'%s'" % b[i:i+step] for i in range(0, len(b), step)) + "];")
+          import base64, gzip
+          # D1 (H duyet 06/11/2026): web nen gzip + base64 trong tep .html, script khoi nap khoi web moi lan goi
+          b = base64.b64encode(gzip.compress(open("app-ty-le/web/app-ty-le-phan-cap.html", "rb").read(), 9)).decode()
+          open("app-ty-le/script/w64_app_ty_le.html", "w").write(b)
+          print("w64_app_ty_le", len(b))
           PY
           echo "var BUILD_TS = $(date +%s%3N);" > app-ty-le/script/build-info.js
       - name: Day ma len script
@@ -63,7 +68,11 @@ jobs:
         if: ${{ inputs.trien_khai_thu && inputs.quay_lai_phien_ban == '' }}
         working-directory: app-ty-le/script
         run: |
-          clasp deploy --description "THU: ${{ inputs.ghi_chu }}" | tee /tmp/dep.txt
+          if [ -n "${{ inputs.ma_link_thu }}" ]; then
+            clasp deploy --deploymentId "${{ inputs.ma_link_thu }}" --description "THU: ${{ inputs.ghi_chu }}" | tee /tmp/dep.txt
+          else
+            clasp deploy --description "THU: ${{ inputs.ghi_chu }}" | tee /tmp/dep.txt
+          fi
           id=$(grep -o 'AKfycb[A-Za-z0-9_-]*' /tmp/dep.txt | head -1)
           echo "LINK THU: https://script.google.com/macros/s/$id/exec"
       - name: Lui ve phien ban cu
