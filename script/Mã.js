@@ -66,6 +66,11 @@ var EMB = { 'app-tai-chinh.html': 'app_tai_chinh', 'phan-cap-thu-rieng.html': 'p
 function embedded_(name) {
   var e = EMB[name];
   if (!e) return null;
+  /* cách 0: web nén gzip + base64 trong tệp .html (robot kieu_nhung=gz); tệp .html không bị nạp như mã mỗi lần script chạy nên các lệnh gọi máy chủ nhẹ hơn */
+  try {
+    var raw = HtmlService.createTemplateFromFile('w64_' + e).getRawContent();
+    if (raw) return Utilities.ungzip(Utilities.newBlob(Utilities.base64Decode(raw.trim()), 'application/x-gzip')).getDataAsString('UTF-8');
+  } catch (x) {}
   /* cách 1: web mã hoá base64 trong tệp .js (robot sinh web_<tên>.js, mỗi mảnh là một chuỗi) để HtmlService không đụng vào nội dung */
   try {
     var parts = (typeof WEB_PARTS !== 'undefined') ? WEB_PARTS[e] : null;
