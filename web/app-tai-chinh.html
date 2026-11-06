@@ -3908,6 +3908,19 @@ const ICONS={
   building:'<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 56h52M10 28L32 10l22 18M14 28v28M50 28v28M22 56V36M32 56V36M42 56V36"/><path d="M26 22h12"/></svg>'};
 const ICONNAME={pig:'Heo tài chính',chart:'Biểu đồ',coin:'Tiền và sổ sách',building:'Cơ quan'};
 const root=document.getElementById('app');
+/* mở app Tỷ lệ phân cấp riêng, đăng nhập sẵn bằng tài khoản đang dùng: xin mã dùng một lần (hạn 90 giây) rồi mở link app kèm ?k=mã.
+   App tài chính chạy ở link chính thì mở app phân cấp link chính, còn lại (link thử) mở app phân cấp link thử. */
+const PC_APP={main:'https://script.google.com/macros/s/AKfycbykyJgyXsiGOMc1M7uWbXoT_088vIhdULdb2YGbuu8U2WkHP93Dof9UwvMIrL1ZmcR41w/exec',
+  test:'https://script.google.com/macros/s/AKfycbxae_hjlIv3KSVanbOidHmZpFodSLbFTGv__zaNwjDbBgVpXGXMxs5_AGnSI9BEGOynzg/exec'};
+const pcUrl=()=>/AKfycbxoUmOzXZFN1EXGTfe7SsriHl2zpQfXVndLwqQeZKBmjMS28BYe2GsVS9sdklrcG6P5/.test(String(window.TC_EXEC||''))?PC_APP.main:PC_APP.test;
+async function openPc(){
+  const w=window.open('about:blank','_blank'); /* mở tab ngay lúc bấm để trình duyệt không chặn, có mã rồi mới chuyển trang */
+  if(w)try{w.opener=null;w.document.write('<p style="font:15px system-ui;padding:24px">Đang mở app Tỷ lệ phân cấp…</p>')}catch(e){}
+  let r=null;try{r=await TC.srv.call('ticket')}catch(e){}
+  if(!r||!r.ok||!r.code){if(w)w.close();return TC.toast((r&&r.msg)||'Chưa mở được app Tỷ lệ phân cấp, bạn thử lại',1)}
+  const u=pcUrl()+'?k='+encodeURIComponent(r.code);
+  if(w)w.location.href=u;else window.open(u,'_blank','noopener');
+  TC.log&&TC.log('Mở app Tỷ lệ phân cấp','')}
 function loginView(){
   const first=!TC.srv.on&&TC.auth.users().length===0;
   const icon='pig';
@@ -3954,7 +3967,7 @@ function shell(){
    <div class="adm acc"><button type="button" class="avb" id="acc-b" aria-haspopup="true" aria-expanded="false" aria-controls="acc-m" title="Tài khoản: ${esc(un)}" aria-label="Tài khoản ${esc(un)}"><span class="av">${esc(un.charAt(0).toUpperCase()||'?')}</span></button>
      <div class="menu accm" id="acc-m" role="menu" hidden><div class="whoi"><span class="av avl">${esc(un.charAt(0).toUpperCase()||'?')}</span><div><b>${esc(un)}</b><small>${roleName}</small></div></div>${TC.srv.on?'<div class="syn" id="syn"><i></i><span></span></div>':''}
      ${adm.length?`<div class="msec">Quản trị</div>${adm.map(t=>`<button role="menuitem" data-t="${t.id}" title="${esc(t.sub||'')}">${t.title}</button>`).join('')}<hr>`:''}
-     ${window.TC_EXEC&&(TC.auth.can('admin')||pcap)?'<button role="menuitem" id="pcapp-b">Tỷ lệ phân cấp</button>':''}${pcap?'':'<button role="menuitem" id="cq-b">Chuyên quản phụ trách</button>'}<button role="menuitem" id="pw-b">Đổi mật khẩu</button><button role="menuitem" id="dg-b">Chẩn đoán</button>${TC.srv.on&&TC.auth.can('admin')?'<button role="menuitem" id="upd-b">Cập nhật phiên bản mới</button><button role="menuitemcheckbox" id="aut-b"></button>':''}<button role="menuitem" id="lo">Đăng xuất</button></div></div></header>
+     ${TC.srv.on&&(TC.auth.can('admin')||pcap)?'<button role="menuitem" id="pcapp-b">Tỷ lệ phân cấp</button>':''}${pcap?'':'<button role="menuitem" id="cq-b">Chuyên quản phụ trách</button>'}<button role="menuitem" id="pw-b">Đổi mật khẩu</button><button role="menuitem" id="dg-b">Chẩn đoán</button>${TC.srv.on&&TC.auth.can('admin')?'<button role="menuitem" id="upd-b">Cập nhật phiên bản mới</button><button role="menuitemcheckbox" id="aut-b"></button>':''}<button role="menuitem" id="lo">Đăng xuất</button></div></div></header>
    <nav class="tabs${tabs.length<2?' one':''}" role="tablist">${tabs.map(t=>`<button role="tab" data-t="${t.id}">${t.title}</button>`).join('')}</nav><main id="tabbody"></main>`;
   root.querySelectorAll('nav.tabs button').forEach(b=>b.onclick=()=>TC.showTab(b.dataset.t));
   const mb=$('#acc-b'),mm=$('#acc-m');
@@ -3968,7 +3981,7 @@ function shell(){
   if(TC.bellInit)TC.bellInit();
   const cqb=$('#cq-b');if(cqb)cqb.onclick=()=>{$('#acc-m').hidden=true;TC.cqModal()};
   const dgb=$('#dg-b');if(dgb)dgb.onclick=()=>{$('#acc-m').hidden=true;TC.diag()};
-  const pab=$('#pcapp-b');if(pab)pab.onclick=()=>{$('#acc-m').hidden=true;window.open(window.TC_EXEC+'?app=phan-cap','_blank','noopener')};
+  const pab=$('#pcapp-b');if(pab)pab.onclick=()=>{$('#acc-m').hidden=true;openPc()};
   $('#pw-b').onclick=()=>{$('#acc-m').hidden=true;TC.changePass()};
   synShow();TC.srv.onState=synShow;
   const ab2=$('#aut-b');if(ab2){const paint=()=>{ab2.innerHTML='Tự động cập nhật khi có bản mới <span class="swt'+(TC.srv.auto?' on':'')+'" aria-hidden="true"><i></i></span>';ab2.setAttribute('aria-checked',String(!!TC.srv.auto))};paint();
@@ -3984,8 +3997,8 @@ function shell(){
       await TC.srv.call('logout');TC.srv.setToken('');TC.srv.onState=null;TC.user=null;return location.reload()}
     TC.forget();TC.user=null;TC.autoLogin=false;loginView()};
   if(pcap){ /* tài khoản chỉ dùng app Tỷ lệ phân cấp: không có tab thu chi, chỉ một thẻ dẫn sang app đó */
-    $('#tabbody').innerHTML='<div class="card" style="max-width:520px;margin:40px auto;text-align:center"><h2 style="margin-top:0">Tỷ lệ phân cấp</h2><p class="muted">Tài khoản này dùng app Tỷ lệ phân cấp thu. Bấm nút bên dưới để mở app.</p>'+(window.TC_EXEC?'<button type="button" class="btn pri" id="pcapp-go">Mở app Tỷ lệ phân cấp</button>':'<p class="muted">Chưa mở được app từ trang này, hãy dùng đường link riêng của app Tỷ lệ phân cấp.</p>')+'</div>';
-    const go=$('#pcapp-go');if(go)go.onclick=()=>window.open(window.TC_EXEC+'?app=phan-cap','_blank','noopener');
+    $('#tabbody').innerHTML='<div class="card" style="max-width:520px;margin:40px auto;text-align:center"><h2 style="margin-top:0">Tỷ lệ phân cấp</h2><p class="muted">Tài khoản này dùng app Tỷ lệ phân cấp thu. Bấm nút bên dưới để mở app.</p>'+(TC.srv.on?'<button type="button" class="btn pri" id="pcapp-go">Mở app Tỷ lệ phân cấp</button>':'<p class="muted">Chưa mở được app từ trang này, hãy dùng đường link riêng của app Tỷ lệ phân cấp.</p>')+'</div>';
+    const go=$('#pcapp-go');if(go)go.onclick=openPc;
     return}
   const last=TC.store.get('tab','bao-cao');
   TC.showTab(TC.tabs.find(t=>t.id===last&&!t.admin&&!TC.HIDE_TABS.includes(t.id))?last:'bao-cao');
