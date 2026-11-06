@@ -454,8 +454,34 @@ function logClear_(q) {
   return { ok: true };
 }
 
+/* ---------- đăng nhập dùng chung cho app khác (app tỷ lệ phân cấp riêng gọi sang bằng POST) ---------- */
+function ticket_(q) {
+  var c = need_(q), code = newToken_().slice(0, 24);
+  CacheService.getScriptCache().put('tk:' + code, c.u.username, 90);
+  return { ok: true, code: code };
+}
+function doPost(e) {
+  var out;
+  try {
+    var q = JSON.parse((e && e.postData && e.postData.contents) || '{}'), ss, u;
+    if (q.a === 'sso_login') {
+      var r = login_({ u: q.u, p: q.p, keep: false });
+      out = r.ok ? { ok: true, token: r.token, user: r.user } : r;
+    } else if (q.a === 'sso_who') {
+      u = authUser_(ss_(), q.t);
+      out = u ? { ok: true, user: pub_(u) } : { ok: false, err: 'auth' };
+    } else if (q.a === 'sso_redeem') {
+      var cache = CacheService.getScriptCache(), name = cache.get('tk:' + q.k);
+      if (name) cache.remove('tk:' + q.k);
+      ss = ss_(); u = name ? findUser_(ss, name) : null;
+      out = (u && u.active) ? { ok: true, token: startSession_(ss, u.username, false), user: pub_(u) } : { ok: false, err: 'auth' };
+    } else out = { ok: false, msg: 'Lệnh không hợp lệ' };
+  } catch (err) { out = { ok: false, err: 'server', msg: String(err && err.message || err) }; }
+  return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);
+}
+
 var ROUTES = {
-  login: login_, me: me_, logout: logout_,
+  login: login_, me: me_, logout: logout_, ticket: guard_(ticket_),
   users: guard_(usersList_), uAdd: guard_(userAdd_), uSet: guard_(userSet_), uDel: guard_(userDel_), uPass: guard_(userPass_), chpass: guard_(chPass_),
   stat: guard_(stat_), fList: guard_(fList_), fPut: guard_(fPut_), fGet: guard_(fGet_), fDel: guard_(fDel_),
   pull: guard_(pull_), push: guard_(push_), log: guard_(logAdd_), logClear: guard_(logClear_), bump: guard_(bump_), autoSet: guard_(autoSet_)
