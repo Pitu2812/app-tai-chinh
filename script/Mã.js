@@ -103,6 +103,17 @@ function getAppZ(name) {
   var pre = '<script>window.TC_EXEC=' + JSON.stringify(ScriptApp.getService().getUrl()) + '<\/script>';
   return { pre: autoLogin_(pre), z: raw };
 }
+/* D3 (KK01): các phần web tải sau (thư viện, ảnh nền...). Robot cất web/parts/<tên>.js thành tệp w64_part_<tên>.html (gzip + base64), không để trong .js để máy chủ khỏi nạp mỗi lần chạy */
+function partRaw_(n) {
+  n = String(n || '');
+  if (!/^[a-z0-9-]{1,30}$/.test(n)) throw new Error('Tên phần không hợp lệ');
+  var raw = '';
+  try { raw = HtmlService.createTemplateFromFile('w64_part_' + n.replace(/-/g, '_')).getRawContent().trim(); } catch (x) {}
+  if (!raw) throw new Error('Không có phần ' + n);
+  return raw;
+}
+function getPart(n) { return Utilities.ungzip(Utilities.newBlob(Utilities.base64Decode(partRaw_(n)), 'application/x-gzip')).getDataAsString('UTF-8'); }
+function getPartZ(n) { return partRaw_(n); }   // gzip + base64, trình duyệt tự giải nén (DecompressionStream) cho nhẹ đường truyền
 /* app cần đăng nhập (admin hoặc quyền Phân cấp): trang chỉ chứa mã kiểm tra, nội dung chỉ được trả sau khi máy chủ xác nhận phiên */
 function gatePage_(app) {
   var exec = ScriptApp.getService().getUrl();

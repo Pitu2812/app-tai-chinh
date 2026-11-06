@@ -63,6 +63,12 @@ jobs:
               b = base64.b64encode(gzip.compress(open(f, "rb").read(), 9)).decode()
               open("script/w64_%s.html" % key, "w").write(b)
               print(key, len(b))
+          import glob, os
+          for f in sorted(glob.glob("web/parts/*.js")):
+              n = os.path.basename(f)[:-3].replace("-", "_")
+              b = base64.b64encode(gzip.compress(open(f, "rb").read(), 9)).decode()
+              open("script/w64_part_%s.html" % n, "w").write(b)
+              print("part", n, len(b))
           PY
           else
             python3 - <<'PY'
