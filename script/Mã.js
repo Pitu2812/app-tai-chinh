@@ -94,6 +94,15 @@ function getApp(name) {
   var html = autoLogin_(readApp_(name));
   return '<script>window.TC_EXEC=' + JSON.stringify(ScriptApp.getService().getUrl()) + '<\/script>' + html;
 }
+/* D2 (H duyệt 06/11/2026): gửi web ở dạng nén (gzip + base64, đúng bản robot đã cất), trình duyệt tự giải nén; không có bản nén thì trả html thường */
+function getAppZ(name) {
+  for (var k in CFG.GATED) if (CFG.APPS[k] === name) throw new Error('Cần đăng nhập để mở ứng dụng này.');
+  var e = EMB[name], raw = '';
+  try { if (e) raw = HtmlService.createTemplateFromFile('w64_' + e).getRawContent().trim(); } catch (x) {}
+  if (!raw) return { html: getApp(name) };
+  var pre = '<script>window.TC_EXEC=' + JSON.stringify(ScriptApp.getService().getUrl()) + '<\/script>';
+  return { pre: autoLogin_(pre), z: raw };
+}
 /* app cần đăng nhập (admin hoặc quyền Phân cấp): trang chỉ chứa mã kiểm tra, nội dung chỉ được trả sau khi máy chủ xác nhận phiên */
 function gatePage_(app) {
   var exec = ScriptApp.getService().getUrl();
@@ -128,8 +137,12 @@ function getGated(app, token) {
 }
 function loaderPage_(name) {
   var t = '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><body style="font:16px system-ui;padding:24px">Đang tải ứng dụng…<script>' +
-    'google.script.run.withSuccessHandler(function(h){document.open();document.write(h);document.close()})' +
-    '.withFailureHandler(function(e){document.body.textContent="Không tải được: "+e.message}).getApp(' + JSON.stringify(name) + ')<\/script>';
+    'function W(h){document.open();document.write(h);document.close()}function F(e){document.body.textContent="Không tải được: "+e.message}' +
+    'function P(){google.script.run.withSuccessHandler(W).withFailureHandler(F).getApp(' + JSON.stringify(name) + ')}' +
+    'if(window.DecompressionStream&&window.Response&&window.Blob){google.script.run.withSuccessHandler(function(r){' +
+    'if(!r||!r.z)return W(r&&r.html||"");try{var b=atob(r.z),u=new Uint8Array(b.length);for(var i=0;i<b.length;i++)u[i]=b.charCodeAt(i);' +
+    'new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream("gzip"))).text().then(function(t){W(r.pre+t)},P)}catch(x){P()}' +
+    '}).withFailureHandler(F).getAppZ(' + JSON.stringify(name) + ')}else P()<\/script>';
   return HtmlService.createHtmlOutput(t).setTitle(CFG.TITLE).setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
