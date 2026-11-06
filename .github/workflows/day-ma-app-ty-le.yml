@@ -49,10 +49,11 @@ jobs:
         if: ${{ inputs.quay_lai_phien_ban == '' }}
         run: |
           python3 - <<'PY'
-          import base64
-          b = base64.b64encode(open("app-ty-le/web/app-ty-le-phan-cap.html", "rb").read()).decode()
-          step = 900000
-          open("app-ty-le/script/web-data.js", "w").write("var WEB_PARTS = {};\nWEB_PARTS.app_ty_le = [" + ",".join("'%s'" % b[i:i+step] for i in range(0, len(b), step)) + "];")
+          import base64, gzip
+          # D1 (H duyet 06/11/2026): web nen gzip + base64 trong tep .html, script khoi nap khoi web moi lan goi
+          b = base64.b64encode(gzip.compress(open("app-ty-le/web/app-ty-le-phan-cap.html", "rb").read(), 9)).decode()
+          open("app-ty-le/script/w64_app_ty_le.html", "w").write(b)
+          print("w64_app_ty_le", len(b))
           PY
           echo "var BUILD_TS = $(date +%s%3N);" > app-ty-le/script/build-info.js
       - name: Day ma len script

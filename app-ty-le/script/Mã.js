@@ -26,6 +26,10 @@ const CFG = {
 /* web nằm ngay trong dự án script (robot GitHub sinh web-data.js, mã hoá base64): ưu tiên dùng, không có thì đọc tệp trên Drive */
 function embedded_() {
   try {
+    const raw = HtmlService.createTemplateFromFile('w64_app_ty_le').getRawContent();
+    if (raw) return Utilities.ungzip(Utilities.newBlob(Utilities.base64Decode(raw.trim()), 'application/x-gzip')).getDataAsString('UTF-8');
+  } catch (e) {}
+  try {
     const p = (typeof WEB_PARTS !== 'undefined') ? WEB_PARTS.app_ty_le : null;
     if (p && p.length) return Utilities.newBlob(Utilities.base64Decode(p.join(''))).getDataAsString('UTF-8');
   } catch (e) {}
