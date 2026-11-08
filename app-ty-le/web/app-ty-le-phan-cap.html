@@ -417,7 +417,7 @@ var PCC=(function(){
     C.forEach(function(x,j){out.xr[x][r][5]=d.v[j];if(d.adj[j])out.adj[x].push([r,5,d.adj[j]])});
     if(C.length&&ROLL[r])ex.xa[r]=exX;
     var rt=function(pt){var o=pt.fix?null:ovk(pt.kt,'ti');return o!=null?o:dq(pt)};
-    if(tiExp){var e=parts.reduce(function(a,pt){return a+NP(pt,r,-1)*rt(pt)},0);out.ti[r][5]=rd(e);if(ROLL[r])ex.ti[r]=e}
+    if(tiExp){var e=parts.reduce(function(a,pt){return a+NP(pt,r,-1)*rt(pt)},0);out.ti[r][5]=rd(e);if(ROLL[r])ex.ti[r]=PL.rl?rd(e):e} /* PL.rl: tỷ lệ tròn để hạch toán, tổng tỉnh cộng từ số đã làm tròn từng dòng */
     else if(lock==='tong'&&nTi>0){ /* tỉnh tự bù để giữ tổng của khoản: tỷ lệ tỉnh (phần không cố định) làm tròn 6 số lẻ (%) rồi mới tính */
      var fixC=0,nR=0;parts.forEach(function(pt){var v=NP(pt,r,-1);if(pt.fix||pt.p==='tw')fixC+=v*rt(pt);else nR+=v});
      var A=(BASE.ti[r][5]||0)+baseC-xaT;
@@ -675,13 +675,18 @@ function migPlans(){PA.plans.forEach(p=>{if(p.lines){Object.keys(p.lines).forEac
  Object.keys(p.over||{}).forEach(i=>{const k=KH[+i],o=p.over[i];if(!k||!o||!k.keys)return;k.keys.forEach(key=>{const l=lnOf(k,key);if(l&&l.x){const e=p.lines[key]=p.lines[key]||{};if(o.ph!=null)e.ph=o.ph;if(o.xa!=null)e.xa=o.xa}})});
  Object.keys(p.rate||{}).forEach(i=>{const k=KH[+i];if(!k||!k.keys)return;k.keys.forEach(key=>{const l=lnOf(k,key);if(l&&l.ti){const e=p.lines[key]=p.lines[key]||{};e.ti=p.rate[i]}})});
  delete p.over;delete p.rate});seedPA3()}
-/* Phương án 3 (H duyệt 08/11): xã giữ 100% thu tại xã, tiền sử dụng đất và thuê đất xã, phường 85%, cấp quyền khai thác khoáng sản xã không hưởng; tỷ lệ NSĐP cấp tỉnh của 4 khoản GTGT, TTĐB, TNDN, TNCN tròn 2 số lẻ, các khoản khác giữ gốc; tổng NSĐP 45.574.153, 4 khoản 22.369.093 */
-const PA3T={'0.0':.8,'0.1':.7785,'0.2':.8,'0.3d':.7622,'1.t':.7208,'2.0':.4998,'2.2':.5,'2.3d':.2973,'4.0':.4487,'4.1':.3335,'4.2':.4488,'4.3d':.2061};
+/* Phương án 3 (H chốt 08/11): xã giữ 100% thu tại xã; tiền sử dụng đất, thuê đất, thuế BVMT chia đều tỷ lệ cho xã như tỉnh (đất 85%, BVMT 20%); cấp quyền khai thác khoáng sản xã không hưởng; cấp tỉnh hưởng một tỷ lệ chung tròn 2 số lẻ cho cả khoản: TNDN 78,53%, TNCN 72,08%, TTĐB 49,50%, GTGT 25,83% (NSTW GTGT 55,12%); tổng NSĐP không vượt số chốt */
+const PA3K={0:.7853,1:.7208,2:.495,4:.2583};
+const pa3Rate=L=>{Object.keys(PA3K).forEach(i=>KH[+i].lines.forEach(l=>{if(l.grp||l.fix||!lnVal(BASE,l,'ti',4))return;L[l.key]=Object.assign({},L[l.key],{ti:PA3K[i]})}))};
+/* Phương án 2 và 3: thuế BVMT xã hưởng theo tỷ lệ gốc như tỉnh (bỏ ô xã 100%) */
+const bvGoc=L=>{KH[3].lines.forEach(l=>{const o=L[l.key];if(!o)return;delete o.ph;delete o.xa;if(!Object.keys(o).length)delete L[l.key]})};
 /* khoáng sản PA3: xã không hưởng, tỉnh hưởng phần NSĐP tính trên cột tổng (tỉnh + xã): GP TW cấp tỉnh hưởng 30% của tổng, GP địa phương cấp tỉnh hưởng 100% của tổng */
 function pa3Ks(L){const l=lnOf(KH[5],'5.w');if(!l)return;const nt=lnVal(BASE,l,'ti',4),nx=lnVal(BASE,l,'xa',4);L['5.w']=Object.assign({},L['5.w'],{ph:0,xa:0});if(nt>0)L['5.w'].ti=defRate(l)*(nt+nx)/nt;
  const lt=lnOf(KH[5],'5.t'),lc=lnOf(KH[5],'5.c');if(lt&&lc){const a=lnVal(BASE,lt,'ti',4),x=lnVal(BASE,lc,'xa',4)+lnVal(BASE,lc,'ti',4);if(a>0)L['5.t']=Object.assign({},L['5.t'],{ti:(a+x)/a})}}
-function seedPA3(){const o=PA.plans.find(p=>p.sid==='pa3');if(o){if((o.sv||1)<2){pa3Ks(o.lines);o.sv=2}return}const L=preset100();[6,7].forEach(i=>KH[i].lines.forEach(l=>{if(L[l.key])L[l.key]={ph:.85,xa:.85}}));KH[5].lines.forEach(l=>{if(L[l.key])L[l.key]={ph:0,xa:0}});L['5.w']={ph:0,xa:0};
- Object.keys(PA3T).forEach(k=>{L[k]=Object.assign({},L[k],{ti:PA3T[k]})});pa3Ks(L);PA.plans.push({id:PA.nid++,sid:'pa3',sv:2,name:'Phương án 3',lines:L,lock:'tong'})}
+function seedPA3(){PA.plans.forEach(p=>{if(!p.ro&&p.sid!=='pa3'&&/^\s*Phương án 2\s*$/i.test(p.name||'')&&!p.bv){bvGoc(p.lines);p.bv=1}});
+ const o=PA.plans.find(p=>p.sid==='pa3');if(o){if((o.sv||1)<2){pa3Ks(o.lines);o.sv=2}if(o.sv<3){Object.keys(o.lines).forEach(k=>{const m=/^(\d+)\./.exec(k);if(m&&PA3K[m[1]]!=null&&o.lines[k].ti!=null){delete o.lines[k].ti;if(!Object.keys(o.lines[k]).length)delete o.lines[k]}});pa3Rate(o.lines);bvGoc(o.lines);o.sv=3}return}
+ const L=preset100();[6,7].forEach(i=>KH[i].lines.forEach(l=>{if(L[l.key])L[l.key]={ph:.85,xa:.85}}));KH[5].lines.forEach(l=>{if(L[l.key])L[l.key]={ph:0,xa:0}});L['5.w']={ph:0,xa:0};
+ pa3Rate(L);bvGoc(L);pa3Ks(L);PA.plans.push({id:PA.nid++,sid:'pa3',sv:3,name:'Phương án 3',lines:L,lock:'tong'})}
 const initKH=()=>{KH.forEach((k,i)=>{k.o=i;k.nsnn=sumv(i=>RB[i].v,k.idx,4);k.nsdp=sumv(i=>RB[i].v,k.idx,5);k.g=k.nsnn?k.nsdp/k.nsnn:0;k.fixed=/xuất nhập khẩu/.test(k.n)});PCC.buildLines(BASE,KH,KHG);migPlans()};
 const PA=(()=>{let v=null;try{v=JSON.parse(LS.get('pcr:PA')||'null')}catch(_){}
  if(!v||!Array.isArray(v.plans)||!v.plans.length)v={plans:[{id:1,name:'Phương án 1',ro:true,lines:{},lock:'tong'}],cur:1,def:1,nid:2};return v})();
@@ -694,7 +699,7 @@ const syncPL=()=>{const p=curPlan();PL.lines=p.lines;PL.lock=p.ro?'tong':(p.lock
 const ok=(a,b)=>Math.abs(a-b)>5e-5;
 const rnd=x=>Math.floor(x+.5);
 const ADJ_TOT=a=>a.reduce((n,x)=>n+Math.abs(x[2]),0);
-const asPL=p=>({lines:p.lines,lock:p.ro?'tong':(p.lock||'tong')});
+const asPL=p=>({lines:p.lines,lock:p.ro?'tong':(p.lock||'tong'),rl:p.sid==='pa3'});
 const VC={};function viewFor(p){const sig=BV+'|'+JSON.stringify([p.lines,p.ro?'tong':p.lock]);if(!VC[p.id]||VC[p.id].sig!==sig)VC[p.id]={sig,v:PCC.applyPlan(BASE,KH,asPL(p),ISPH)};return VC[p.id].v}
 function viewNow(){VIEW=viewFor(curPlan());return VIEW}
 function refreshView(){syncPL();const V=viewNow();M={xn:M0.xn,xr:V.xr,rows:V.rows};R=V.rows;buildXA()}
@@ -753,7 +758,7 @@ function lvApplied(leaves,lvl,lines,src){src=src||VIEW;const vs=[];let auto=fals
 function chkPlan(p){const V=viewFor(p),lock=p.ro?'tong':(p.lock||'tong'),out=[];
  const G4=p.sid==='pa3'?[0,1,2,4]:[];KH.forEach((k,i)=>{if(k.fixed||G4.includes(i))return;const a=sumv(j=>V.rows[j].v,k.idx,5),b=sumv(j=>BASE.rows[j].v,k.idx,5);if(lock==='tong'&&a!==b)out.push({i,n:k.n,d:a-b})});
  if(G4.length&&lock==='tong'){const a=G4.reduce((s,i)=>s+sumv(j=>V.rows[j].v,KH[i].idx,5),0),b=G4.reduce((s,i)=>s+sumv(j=>BASE.rows[j].v,KH[i].idx,5),0);if(a!==b)out.push({i:4,n:'Nhóm 4 khoản GTGT, TTĐB, TNDN, TNCN',d:a-b})}
- return {t:V.rows[0].v[5]-BASE.rows[0].v[5],out,lock}}
+ const t=V.rows[0].v[5]-BASE.rows[0].v[5];if(p.sid==='pa3'&&t<=0&&out.every(x=>x.i===4&&x.d<=0))return {t:0,out:[],lock,under:t};return {t,out,lock}}
 const P6=r=>r==null||!isFinite(r)?'':(Math.round(r*1e8)/1e6).toLocaleString('vi-VN',{minimumFractionDigits:0,maximumFractionDigits:6})+'%';
 const P4=P6;
 const pv4=v=>v==null?'':String(Math.round(v*1e8)/1e6).replace('.',',');
@@ -1084,7 +1089,7 @@ const viewSS=viewPA;
 
 /* ---------- đề xuất cách chỉnh để khớp số chốt ---------- */
 function unitLines(r){const out=[];KH.forEach(k=>(k.lines||[]).forEach(l=>{if(!l.grp&&!l.fix&&l.ti&&l.parts&&l.parts[0].r===r&&l.parts[0].p!=='tw')out.push(l)}));return out}
-function tryPlan(p,lines){const V=PCC.applyPlan(BASE,KH,{lines,lock:p.ro?'tong':(p.lock||'tong')},ISPH);return V.rows[0].v[5]-BASE.rows[0].v[5]}
+function tryPlan(p,lines){const V=PCC.applyPlan(BASE,KH,{lines,lock:p.ro?'tong':(p.lock||'tong'),rl:p.sid==='pa3'},ISPH);return V.rows[0].v[5]-BASE.rows[0].v[5]}
 function propose(p){if(p.ro)return null;const c=chkPlan(p);if(!c.t&&!c.out.length)return {ok:true,steps:[]};
  const V=viewFor(p),lines=JSON.parse(JSON.stringify(p.lines||{})),steps=[];
  const fix=(rows,need)=>{const cands=[];rows.forEach(r=>{const L=unitLines(r);if(!L.length)return;const n=L.reduce((a,l)=>a+lnSub(BASE,l,'ti',4),0);if(n>0)cands.push({r,L,n})});
