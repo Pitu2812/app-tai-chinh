@@ -84,7 +84,7 @@ async function load(force){
     if(xa.length!==NX)throw new Error('Dòng tên xã (dòng 3 sheet chi tiết) có '+xa.length+' tên, cần '+NX);
     D={src:'live',at:new Date(),err:null,chi,cap,don,xa};
   }catch(e){D.err=String(e&&e.message||e);if(D.src!=='live')D.src='snap'}
-  D.check=check(D);if(D.src==='live'&&!D.err)publishPc(false);S.busy=false;notify();draw();return D;
+  D.check=check(D);S.busy=false; /* 09/11/2026 H duyệt: tab này chỉ xem, số DT báo cáo chỉ ghi qua nút Đồng bộ DT ở tab Báo cáo */notify();draw();return D;
 }
 
 /* ---- dựng bảng ---- */
@@ -170,6 +170,6 @@ TC.phancap={
   odaDon:()=>(D.don||[]).map(r=>({xa:r[0],o:r[1],dong:r[2],cot:r[3],don:r[4]})),
   onUpdate:f=>subs.push(f)
 };
-D.check=check(D);publishPc(true);
+D.check=check(D);
 setTimeout(()=>{if(!last){last=Date.now();load()}},0);
 })();
