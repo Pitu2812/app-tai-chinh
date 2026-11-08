@@ -144,7 +144,7 @@ var GSPA = (function () {
     d.khoan.forEach(function (kk, q) { put1(8 + q, K0 + q, (q + 1) + '. ' + kk.ten); });
     var nr = 8 + d.khoan.length + 1;
     S1.set(nr, 1, 'Ghi chú: ô vàng C3 là ô chọn phương án. Tỷ lệ NSĐP hưởng là tỷ lệ thực của PA đang chọn = NSĐP do app tính / thu NSNN; TW = 1 − NSĐP tổng / NSNN tổng. Kiểm tra khớp: Tỉnh + 96 xã = Tổng.');
-    S1.merges.push('A' + nr + ':K' + (nr + 1)); S1.style('wrap', 'A' + nr);
+    S1.style('wrap', 'A' + nr); // không hợp nhất ô ghi chú: hợp nhất cắt ngang cột cố định A sẽ làm Google báo lỗi
     S1.widths = { 1: 360 }; for (c = 2; c <= 11; c++) S1.widths[c] = 100; S1.freeze = [6, 1];
 
     // ---- Sheet 2: Dự toán mẫu
@@ -228,6 +228,12 @@ var GSPA = (function () {
     }
     S4.widths = { 1: 110 }; for (c = 2; c <= 18; c++) S4.widths[c] = 110;
 
+    [S1, S2, S3, S4, SK, SP, SX].forEach(function (S) { if (!S.freeze) return; S.merges.forEach(function (m) {
+      var mm = /^([A-Z]+)(\d+):([A-Z]+)(\d+)$/.exec(m); if (!mm) return;
+      function cn(t) { var n = 0; for (var i = 0; i < t.length; i++) n = n * 26 + t.charCodeAt(i) - 64; return n; }
+      var c1 = cn(mm[1]), c2 = cn(mm[3]), r1 = +mm[2], r2 = +mm[4], fr = S.freeze[0], fc = S.freeze[1];
+      if ((c1 <= fc && c2 > fc) || (r1 <= fr && r2 > fr)) throw new Error('GSPA: ô hợp nhất ' + m + ' cắt ngang vùng cố định ở sheet ' + S.name);
+    }); });
     S1.tab = S2.tab = S3.tab = GREEN; S4.tab = '#2f5fc4'; SK.tab = SP.tab = SX.tab = '#999999';
     return [S1, S2, S3, S4, SK, SP, SX];
   }
@@ -249,6 +255,7 @@ var GSPA = (function () {
     sheets.forEach(function (S, idx) {
       var sh = ss.getSheetByName(S.name) || ss.insertSheet(S.name, idx);
       sh.getCharts().forEach(function (c) { sh.removeChart(c); });
+      sh.setFrozenRows(0); sh.setFrozenColumns(0);
       sh.clear(); sh.clearConditionalFormatRules();
       try { sh.getRange(1, 1, sh.getMaxRows(), sh.getMaxColumns()).breakApart().clearDataValidations(); } catch (e) {}
       if (sh.getMaxRows() < S.maxR) sh.insertRowsAfter(sh.getMaxRows(), S.maxR - sh.getMaxRows());
