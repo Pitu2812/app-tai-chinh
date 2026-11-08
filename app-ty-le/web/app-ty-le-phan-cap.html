@@ -677,8 +677,11 @@ function migPlans(){PA.plans.forEach(p=>{if(p.lines){Object.keys(p.lines).forEac
  delete p.over;delete p.rate});seedPA3()}
 /* Phương án 3 (H duyệt 08/11): xã giữ 100% thu tại xã, tiền sử dụng đất và thuê đất xã, phường 85%, cấp quyền khai thác khoáng sản xã không hưởng; tỷ lệ NSĐP cấp tỉnh của 4 khoản GTGT, TTĐB, TNDN, TNCN tròn 2 số lẻ, các khoản khác giữ gốc; tổng NSĐP 45.574.153, 4 khoản 22.369.093 */
 const PA3T={'0.0':.8,'0.1':.7785,'0.2':.8,'0.3d':.7622,'1.t':.7208,'2.0':.4998,'2.2':.5,'2.3d':.2973,'4.0':.4487,'4.1':.3335,'4.2':.4488,'4.3d':.2061};
-function seedPA3(){if(PA.plans.some(p=>p.sid==='pa3'))return;const L=preset100();[6,7].forEach(i=>KH[i].lines.forEach(l=>{if(L[l.key])L[l.key]={ph:.85,xa:.85}}));KH[5].lines.forEach(l=>{if(L[l.key])L[l.key]={ph:0,xa:0}});L['5.w']={ph:0,xa:0};
- Object.keys(PA3T).forEach(k=>{L[k]=Object.assign({},L[k],{ti:PA3T[k]})});PA.plans.push({id:PA.nid++,sid:'pa3',name:'Phương án 3',lines:L,lock:'tong'})}
+/* khoáng sản PA3: xã không hưởng, tỉnh hưởng phần NSĐP tính trên cột tổng (tỉnh + xã): GP TW cấp tỉnh hưởng 30% của tổng, GP địa phương cấp tỉnh hưởng 100% của tổng */
+function pa3Ks(L){const l=lnOf(KH[5],'5.w');if(!l)return;const nt=lnVal(BASE,l,'ti',4),nx=lnVal(BASE,l,'xa',4);L['5.w']=Object.assign({},L['5.w'],{ph:0,xa:0});if(nt>0)L['5.w'].ti=defRate(l)*(nt+nx)/nt;
+ const lt=lnOf(KH[5],'5.t'),lc=lnOf(KH[5],'5.c');if(lt&&lc){const a=lnVal(BASE,lt,'ti',4),x=lnVal(BASE,lc,'xa',4)+lnVal(BASE,lc,'ti',4);if(a>0)L['5.t']=Object.assign({},L['5.t'],{ti:(a+x)/a})}}
+function seedPA3(){const o=PA.plans.find(p=>p.sid==='pa3');if(o){if((o.sv||1)<2){pa3Ks(o.lines);o.sv=2}return}const L=preset100();[6,7].forEach(i=>KH[i].lines.forEach(l=>{if(L[l.key])L[l.key]={ph:.85,xa:.85}}));KH[5].lines.forEach(l=>{if(L[l.key])L[l.key]={ph:0,xa:0}});L['5.w']={ph:0,xa:0};
+ Object.keys(PA3T).forEach(k=>{L[k]=Object.assign({},L[k],{ti:PA3T[k]})});pa3Ks(L);PA.plans.push({id:PA.nid++,sid:'pa3',sv:2,name:'Phương án 3',lines:L,lock:'tong'})}
 const initKH=()=>{KH.forEach((k,i)=>{k.o=i;k.nsnn=sumv(i=>RB[i].v,k.idx,4);k.nsdp=sumv(i=>RB[i].v,k.idx,5);k.g=k.nsnn?k.nsdp/k.nsnn:0;k.fixed=/xuất nhập khẩu/.test(k.n)});PCC.buildLines(BASE,KH,KHG);migPlans()};
 const PA=(()=>{let v=null;try{v=JSON.parse(LS.get('pcr:PA')||'null')}catch(_){}
  if(!v||!Array.isArray(v.plans)||!v.plans.length)v={plans:[{id:1,name:'Phương án 1',ro:true,lines:{},lock:'tong'}],cur:1,def:1,nid:2};return v})();
