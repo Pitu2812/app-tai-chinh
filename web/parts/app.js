@@ -1,0 +1,3493 @@
+/*!
+
+JSZip v3.10.2 - A JavaScript class for generating and reading zip files
+<http://stuartk.com/jszip>
+
+(c) 2009-2016 Stuart Knightley <stuart [at] stuartk.com>
+Dual licenced under the MIT license or GPLv3. See https://raw.github.com/Stuk/jszip/main/LICENSE.markdown.
+
+JSZip uses the library pako released under the MIT license :
+https://github.com/nodeca/pako/blob/main/LICENSE
+*/
+
+!function(e){if("object"==typeof exports&&"undefined"!=typeof module)module.exports=e();else if("function"==typeof define&&define.amd)define([],e);else{("undefined"!=typeof window?window:"undefined"!=typeof global?global:"undefined"!=typeof self?self:this).JSZip=e()}}(function(){return function s(a,o,h){function u(r,e){if(!o[r]){if(!a[r]){var t="function"==typeof require&&require;if(!e&&t)return t(r,!0);if(l)return l(r,!0);var n=new Error("Cannot find module '"+r+"'");throw n.code="MODULE_NOT_FOUND",n}var i=o[r]={exports:{}};a[r][0].call(i.exports,function(e){var t=a[r][1][e];return u(t||e)},i,i.exports,s,a,o,h)}return o[r].exports}for(var l="function"==typeof require&&require,e=0;e<h.length;e++)u(h[e]);return u}({1:[function(e,t,r){"use strict";var d=e("./utils"),c=e("./support"),p="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";r.encode=function(e){for(var t,r,n,i,s,a,o,h=[],u=0,l=e.length,f=l,c="string"!==d.getTypeOf(e);u<e.length;)f=l-u,n=c?(t=e[u++],r=u<l?e[u++]:0,u<l?e[u++]:0):(t=e.charCodeAt(u++),r=u<l?e.charCodeAt(u++):0,u<l?e.charCodeAt(u++):0),i=t>>2,s=(3&t)<<4|r>>4,a=1<f?(15&r)<<2|n>>6:64,o=2<f?63&n:64,h.push(p.charAt(i)+p.charAt(s)+p.charAt(a)+p.charAt(o));return h.join("")},r.decode=function(e){var t,r,n,i,s,a,o=0,h=0,u="data:";if(e.substr(0,u.length)===u)throw new Error("Invalid base64 input, it looks like a data url.");var l,f=3*(e=e.replace(/[^A-Za-z0-9+/=]/g,"")).length/4;if(e.charAt(e.length-1)===p.charAt(64)&&f--,e.charAt(e.length-2)===p.charAt(64)&&f--,f%1!=0)throw new Error("Invalid base64 input, bad content length.");for(l=c.uint8array?new Uint8Array(0|f):new Array(0|f);o<e.length;)t=p.indexOf(e.charAt(o++))<<2|(i=p.indexOf(e.charAt(o++)))>>4,r=(15&i)<<4|(s=p.indexOf(e.charAt(o++)))>>2,n=(3&s)<<6|(a=p.indexOf(e.charAt(o++))),l[h++]=t,64!==s&&(l[h++]=r),64!==a&&(l[h++]=n);return l}},{"./support":30,"./utils":32}],2:[function(e,t,r){"use strict";var n=e("./external"),i=e("./stream/DataWorker"),s=e("./stream/Crc32Probe"),a=e("./stream/DataLengthProbe");function o(e,t,r,n,i){this.compressedSize=e,this.uncompressedSize=t,this.crc32=r,this.compression=n,this.compressedContent=i}o.prototype={getContentWorker:function(){var e=new i(n.Promise.resolve(this.compressedContent)).pipe(this.compression.uncompressWorker()).pipe(new a("data_length")),t=this;return e.on("end",function(){if(this.streamInfo.data_length!==t.uncompressedSize)throw new Error("Bug : uncompressed data size mismatch")}),e},getCompressedWorker:function(){return new i(n.Promise.resolve(this.compressedContent)).withStreamInfo("compressedSize",this.compressedSize).withStreamInfo("uncompressedSize",this.uncompressedSize).withStreamInfo("crc32",this.crc32).withStreamInfo("compression",this.compression)}},o.createWorkerFrom=function(e,t,r){return e.pipe(new s).pipe(new a("uncompressedSize")).pipe(t.compressWorker(r)).pipe(new a("compressedSize")).withStreamInfo("compression",t)},t.exports=o},{"./external":6,"./stream/Crc32Probe":25,"./stream/DataLengthProbe":26,"./stream/DataWorker":27}],3:[function(e,t,r){"use strict";var n=e("./stream/GenericWorker");r.STORE={magic:"\0\0",compressWorker:function(){return new n("STORE compression")},uncompressWorker:function(){return new n("STORE decompression")}},r.DEFLATE=e("./flate")},{"./flate":7,"./stream/GenericWorker":28}],4:[function(e,t,r){"use strict";var n=e("./utils");var o=function(){for(var e,t=[],r=0;r<256;r++){e=r;for(var n=0;n<8;n++)e=1&e?3988292384^e>>>1:e>>>1;t[r]=e}return t}();t.exports=function(e,t){return void 0!==e&&e.length?"string"!==n.getTypeOf(e)?function(e,t,r,n){var i=o,s=n+r;e^=-1;for(var a=n;a<s;a++)e=e>>>8^i[255&(e^t[a])];return-1^e}(0|t,e,e.length,0):function(e,t,r,n){var i=o,s=n+r;e^=-1;for(var a=n;a<s;a++)e=e>>>8^i[255&(e^t.charCodeAt(a))];return-1^e}(0|t,e,e.length,0):0}},{"./utils":32}],5:[function(e,t,r){"use strict";r.base64=!1,r.binary=!1,r.dir=!1,r.createFolders=!0,r.date=null,r.compression=null,r.compressionOptions=null,r.comment=null,r.unixPermissions=null,r.dosPermissions=null},{}],6:[function(e,t,r){"use strict";var n=null;n="undefined"!=typeof Promise?Promise:e("lie"),t.exports={Promise:n}},{lie:37}],7:[function(e,t,r){"use strict";var n="undefined"!=typeof Uint8Array&&"undefined"!=typeof Uint16Array&&"undefined"!=typeof Uint32Array,i=e("pako"),s=e("./utils"),a=e("./stream/GenericWorker"),o=n?"uint8array":"array";function h(e,t){a.call(this,"FlateWorker/"+e),this._pako=null,this._pakoAction=e,this._pakoOptions=t,this.meta={}}r.magic="\b\0",s.inherits(h,a),h.prototype.processChunk=function(e){this.meta=e.meta,null===this._pako&&this._createPako(),this._pako.push(s.transformTo(o,e.data),!1)},h.prototype.flush=function(){a.prototype.flush.call(this),null===this._pako&&this._createPako(),this._pako.push([],!0)},h.prototype.cleanUp=function(){a.prototype.cleanUp.call(this),this._pako=null},h.prototype._createPako=function(){this._pako=new i[this._pakoAction]({raw:!0,level:this._pakoOptions.level||-1});var t=this;this._pako.onData=function(e){t.push({data:e,meta:t.meta})}},r.compressWorker=function(e){return new h("Deflate",e)},r.uncompressWorker=function(){return new h("Inflate",{})}},{"./stream/GenericWorker":28,"./utils":32,pako:38}],8:[function(e,t,r){"use strict";function A(e,t){var r,n="";for(r=0;r<t;r++)n+=String.fromCharCode(255&e),e>>>=8;return n}function n(e,t,r,n,i,s){var a,o,h=e.file,u=e.compression,l=s!==O.utf8encode,f=I.transformTo("string",s(h.name)),c=I.transformTo("string",O.utf8encode(h.name)),d=h.comment,p=I.transformTo("string",s(d)),m=I.transformTo("string",O.utf8encode(d)),_=c.length!==h.name.length,g=m.length!==d.length,b="",v="",y="",w=h.dir,k=h.date,x={crc32:0,compressedSize:0,uncompressedSize:0};t&&!r||(x.crc32=e.crc32,x.compressedSize=e.compressedSize,x.uncompressedSize=e.uncompressedSize);var S=0;t&&(S|=8),l||!_&&!g||(S|=2048);var z=0,C=0;w&&(z|=16),"UNIX"===i?(C=798,z|=function(e,t){var r=e;return e||(r=t?16893:33204),(65535&r)<<16}(h.unixPermissions,w)):(C=20,z|=function(e){return 63&(e||0)}(h.dosPermissions)),a=k.getUTCHours(),a<<=6,a|=k.getUTCMinutes(),a<<=5,a|=k.getUTCSeconds()/2,o=k.getUTCFullYear()-1980,o<<=4,o|=k.getUTCMonth()+1,o<<=5,o|=k.getUTCDate(),_&&(v=A(1,1)+A(B(f),4)+c,b+="up"+A(v.length,2)+v),g&&(y=A(1,1)+A(B(p),4)+m,b+="uc"+A(y.length,2)+y);var E="";return E+="\n\0",E+=A(S,2),E+=u.magic,E+=A(a,2),E+=A(o,2),E+=A(x.crc32,4),E+=A(x.compressedSize,4),E+=A(x.uncompressedSize,4),E+=A(f.length,2),E+=A(b.length,2),{fileRecord:R.LOCAL_FILE_HEADER+E+f+b,dirRecord:R.CENTRAL_FILE_HEADER+A(C,2)+E+A(p.length,2)+"\0\0\0\0"+A(z,4)+A(n,4)+f+b+p}}var I=e("../utils"),i=e("../stream/GenericWorker"),O=e("../utf8"),B=e("../crc32"),R=e("../signature");function s(e,t,r,n){i.call(this,"ZipFileWorker"),this.bytesWritten=0,this.zipComment=t,this.zipPlatform=r,this.encodeFileName=n,this.streamFiles=e,this.accumulate=!1,this.contentBuffer=[],this.dirRecords=[],this.currentSourceOffset=0,this.entriesCount=0,this.currentFile=null,this._sources=[]}I.inherits(s,i),s.prototype.push=function(e){var t=e.meta.percent||0,r=this.entriesCount,n=this._sources.length;this.accumulate?this.contentBuffer.push(e):(this.bytesWritten+=e.data.length,i.prototype.push.call(this,{data:e.data,meta:{currentFile:this.currentFile,percent:r?(t+100*(r-n-1))/r:100}}))},s.prototype.openedSource=function(e){this.currentSourceOffset=this.bytesWritten,this.currentFile=e.file.name;var t=this.streamFiles&&!e.file.dir;if(t){var r=n(e,t,!1,this.currentSourceOffset,this.zipPlatform,this.encodeFileName);this.push({data:r.fileRecord,meta:{percent:0}})}else this.accumulate=!0},s.prototype.closedSource=function(e){this.accumulate=!1;var t=this.streamFiles&&!e.file.dir,r=n(e,t,!0,this.currentSourceOffset,this.zipPlatform,this.encodeFileName);if(this.dirRecords.push(r.dirRecord),t)this.push({data:function(e){return R.DATA_DESCRIPTOR+A(e.crc32,4)+A(e.compressedSize,4)+A(e.uncompressedSize,4)}(e),meta:{percent:100}});else for(this.push({data:r.fileRecord,meta:{percent:0}});this.contentBuffer.length;)this.push(this.contentBuffer.shift());this.currentFile=null},s.prototype.flush=function(){for(var e=this.bytesWritten,t=0;t<this.dirRecords.length;t++)this.push({data:this.dirRecords[t],meta:{percent:100}});var r=this.bytesWritten-e,n=function(e,t,r,n,i){var s=I.transformTo("string",i(n));return R.CENTRAL_DIRECTORY_END+"\0\0\0\0"+A(e,2)+A(e,2)+A(t,4)+A(r,4)+A(s.length,2)+s}(this.dirRecords.length,r,e,this.zipComment,this.encodeFileName);this.push({data:n,meta:{percent:100}})},s.prototype.prepareNextSource=function(){this.previous=this._sources.shift(),this.openedSource(this.previous.streamInfo),this.isPaused?this.previous.pause():this.previous.resume()},s.prototype.registerPrevious=function(e){this._sources.push(e);var t=this;return e.on("data",function(e){t.processChunk(e)}),e.on("end",function(){t.closedSource(t.previous.streamInfo),t._sources.length?t.prepareNextSource():t.end()}),e.on("error",function(e){t.error(e)}),this},s.prototype.resume=function(){return!!i.prototype.resume.call(this)&&(!this.previous&&this._sources.length?(this.prepareNextSource(),!0):this.previous||this._sources.length||this.generatedError?void 0:(this.end(),!0))},s.prototype.error=function(e){var t=this._sources;if(!i.prototype.error.call(this,e))return!1;for(var r=0;r<t.length;r++)try{t[r].error(e)}catch(e){}return!0},s.prototype.lock=function(){i.prototype.lock.call(this);for(var e=this._sources,t=0;t<e.length;t++)e[t].lock()},t.exports=s},{"../crc32":4,"../signature":23,"../stream/GenericWorker":28,"../utf8":31,"../utils":32}],9:[function(e,t,r){"use strict";var u=e("../compressions"),n=e("./ZipFileWorker");r.generateWorker=function(e,a,t){var o=new n(a.streamFiles,t,a.platform,a.encodeFileName),h=0;try{e.forEach(function(e,t){h++;var r=function(e,t){var r=e||t,n=u[r];if(!n)throw new Error(r+" is not a valid compression method !");return n}(t.options.compression,a.compression),n=t.options.compressionOptions||a.compressionOptions||{},i=t.dir,s=t.date;t._compressWorker(r,n).withStreamInfo("file",{name:e,dir:i,date:s,comment:t.comment||"",unixPermissions:t.unixPermissions,dosPermissions:t.dosPermissions}).pipe(o)}),o.entriesCount=h}catch(e){o.error(e)}return o}},{"../compressions":3,"./ZipFileWorker":8}],10:[function(e,t,r){"use strict";function n(){if(!(this instanceof n))return new n;if(arguments.length)throw new Error("The constructor with parameters has been removed in JSZip 3.0, please check the upgrade guide.");this.files=Object.create(null),this.comment=null,this.root="",this.clone=function(){var e=new n;for(var t in this)"function"!=typeof this[t]&&(e[t]=this[t]);return e}}(n.prototype=e("./object")).loadAsync=e("./load"),n.support=e("./support"),n.defaults=e("./defaults"),n.version="3.10.2",n.loadAsync=function(e,t){return(new n).loadAsync(e,t)},n.external=e("./external"),t.exports=n},{"./defaults":5,"./external":6,"./load":11,"./object":15,"./support":30}],11:[function(e,t,r){"use strict";var u=e("./utils"),i=e("./external"),n=e("./utf8"),s=e("./zipEntries"),a=e("./stream/Crc32Probe"),l=e("./nodejsUtils");function f(n){return new i.Promise(function(e,t){var r=n.decompressed.getContentWorker().pipe(new a);r.on("error",function(e){t(e)}).on("end",function(){r.streamInfo.crc32!==n.decompressed.crc32?t(new Error("Corrupted zip : CRC32 mismatch")):e()}).resume()})}t.exports=function(e,o){var h=this;return o=u.extend(o||{},{base64:!1,checkCRC32:!1,optimizedBinaryString:!1,createFolders:!1,decodeFileName:n.utf8decode}),l.isNode&&l.isStream(e)?i.Promise.reject(new Error("JSZip can't accept a stream when loading a zip file.")):u.prepareContent("the loaded zip file",e,!0,o.optimizedBinaryString,o.base64).then(function(e){var t=new s(o);return t.load(e),t}).then(function(e){var t=[i.Promise.resolve(e)],r=e.files;if(o.checkCRC32)for(var n=0;n<r.length;n++)t.push(f(r[n]));return i.Promise.all(t)}).then(function(e){for(var t=e.shift(),r=t.files,n=0;n<r.length;n++){var i=r[n],s=i.fileNameStr,a=u.resolve(i.fileNameStr);h.file(a,i.decompressed,{binary:!0,optimizedBinaryString:!0,date:i.date,dir:i.dir,comment:i.fileCommentStr.length?i.fileCommentStr:null,unixPermissions:i.unixPermissions,dosPermissions:i.dosPermissions,createFolders:o.createFolders}),i.dir||(h.file(a).unsafeOriginalName=s)}return t.zipComment.length&&(h.comment=t.zipComment),h})}},{"./external":6,"./nodejsUtils":14,"./stream/Crc32Probe":25,"./utf8":31,"./utils":32,"./zipEntries":33}],12:[function(e,t,r){"use strict";var n=e("../utils"),i=e("../stream/GenericWorker");function s(e,t){i.call(this,"Nodejs stream input adapter for "+e),this._upstreamEnded=!1,this._bindStream(t)}n.inherits(s,i),s.prototype._bindStream=function(e){var t=this;(this._stream=e).pause(),e.on("data",function(e){t.push({data:e,meta:{percent:0}})}).on("error",function(e){t.isPaused?this.generatedError=e:t.error(e)}).on("end",function(){t.isPaused?t._upstreamEnded=!0:t.end()})},s.prototype.pause=function(){return!!i.prototype.pause.call(this)&&(this._stream.pause(),!0)},s.prototype.resume=function(){return!!i.prototype.resume.call(this)&&(this._upstreamEnded?this.end():this._stream.resume(),!0)},t.exports=s},{"../stream/GenericWorker":28,"../utils":32}],13:[function(e,t,r){"use strict";var i=e("readable-stream").Readable;function n(e,t,r){i.call(this,t),this._helper=e;var n=this;e.on("data",function(e,t){n.push(e)||n._helper.pause(),r&&r(t)}).on("error",function(e){n.emit("error",e)}).on("end",function(){n.push(null)})}e("../utils").inherits(n,i),n.prototype._read=function(){this._helper.resume()},t.exports=n},{"../utils":32,"readable-stream":16}],14:[function(e,t,r){"use strict";t.exports={isNode:"undefined"!=typeof Buffer,newBufferFrom:function(e,t){if(Buffer.from&&Buffer.from!==Uint8Array.from)return Buffer.from(e,t);if("number"==typeof e)throw new Error('The "data" argument must not be a number');return new Buffer(e,t)},allocBuffer:function(e){if(Buffer.alloc)return Buffer.alloc(e);var t=new Buffer(e);return t.fill(0),t},isBuffer:function(e){return Buffer.isBuffer(e)},isStream:function(e){return e&&"function"==typeof e.on&&"function"==typeof e.pause&&"function"==typeof e.resume}}},{}],15:[function(e,t,r){"use strict";function s(e,t,r){var n,i=u.getTypeOf(t),s=u.extend(r||{},f);s.date=s.date||new Date,null!==s.compression&&(s.compression=s.compression.toUpperCase()),"string"==typeof s.unixPermissions&&(s.unixPermissions=parseInt(s.unixPermissions,8)),s.unixPermissions&&16384&s.unixPermissions&&(s.dir=!0),s.dosPermissions&&16&s.dosPermissions&&(s.dir=!0),s.dir&&(e=g(e)),s.createFolders&&(n=_(e))&&b.call(this,n,!0);var a="string"===i&&!1===s.binary&&!1===s.base64;r&&void 0!==r.binary||(s.binary=!a),(t instanceof c&&0===t.uncompressedSize||s.dir||!t||0===t.length)&&(s.base64=!1,s.binary=!0,t="",s.compression="STORE",i="string");var o=null;o=t instanceof c||t instanceof l?t:p.isNode&&p.isStream(t)?new m(e,t):u.prepareContent(e,t,s.binary,s.optimizedBinaryString,s.base64);var h=new d(e,o,s);this.files[e]=h}var i=e("./utf8"),u=e("./utils"),l=e("./stream/GenericWorker"),a=e("./stream/StreamHelper"),f=e("./defaults"),c=e("./compressedObject"),d=e("./zipObject"),o=e("./generate"),p=e("./nodejsUtils"),m=e("./nodejs/NodejsStreamInputAdapter"),_=function(e){"/"===e.slice(-1)&&(e=e.substring(0,e.length-1));var t=e.lastIndexOf("/");return 0<t?e.substring(0,t):""},g=function(e){return"/"!==e.slice(-1)&&(e+="/"),e},b=function(e,t){return t=void 0!==t?t:f.createFolders,e=g(e),this.files[e]||s.call(this,e,null,{dir:!0,createFolders:t}),this.files[e]};function h(e){return"[object RegExp]"===Object.prototype.toString.call(e)}var n={load:function(){throw new Error("This method has been removed in JSZip 3.0, please check the upgrade guide.")},forEach:function(e){var t,r,n;for(t in this.files)n=this.files[t],(r=t.slice(this.root.length,t.length))&&t.slice(0,this.root.length)===this.root&&e(r,n)},filter:function(r){var n=[];return this.forEach(function(e,t){r(e,t)&&n.push(t)}),n},file:function(e,t,r){if(1!==arguments.length)return e=this.root+e,s.call(this,e,t,r),this;if(h(e)){var n=e;return this.filter(function(e,t){return!t.dir&&n.test(e)})}var i=this.files[this.root+e];return i&&!i.dir?i:null},folder:function(r){if(!r)return this;if(h(r))return this.filter(function(e,t){return t.dir&&r.test(e)});var e=this.root+r,t=b.call(this,e),n=this.clone();return n.root=t.name,n},remove:function(r){r=this.root+r;var e=this.files[r];if(e||("/"!==r.slice(-1)&&(r+="/"),e=this.files[r]),e&&!e.dir)delete this.files[r];else for(var t=this.filter(function(e,t){return t.name.slice(0,r.length)===r}),n=0;n<t.length;n++)delete this.files[t[n].name];return this},generate:function(){throw new Error("This method has been removed in JSZip 3.0, please check the upgrade guide.")},generateInternalStream:function(e){var t,r={};try{if((r=u.extend(e||{},{streamFiles:!1,compression:"STORE",compressionOptions:null,type:"",platform:"DOS",comment:null,mimeType:"application/zip",encodeFileName:i.utf8encode})).type=r.type.toLowerCase(),r.compression=r.compression.toUpperCase(),"binarystring"===r.type&&(r.type="string"),!r.type)throw new Error("No output type specified.");u.checkSupport(r.type),"darwin"!==r.platform&&"freebsd"!==r.platform&&"linux"!==r.platform&&"sunos"!==r.platform||(r.platform="UNIX"),"win32"===r.platform&&(r.platform="DOS");var n=r.comment||this.comment||"";t=o.generateWorker(this,r,n)}catch(e){(t=new l("error")).error(e)}return new a(t,r.type||"string",r.mimeType)},generateAsync:function(e,t){return this.generateInternalStream(e).accumulate(t)},generateNodeStream:function(e,t){return(e=e||{}).type||(e.type="nodebuffer"),this.generateInternalStream(e).toNodejsStream(t)}};t.exports=n},{"./compressedObject":2,"./defaults":5,"./generate":9,"./nodejs/NodejsStreamInputAdapter":12,"./nodejsUtils":14,"./stream/GenericWorker":28,"./stream/StreamHelper":29,"./utf8":31,"./utils":32,"./zipObject":35}],16:[function(e,t,r){"use strict";t.exports=e("stream")},{stream:void 0}],17:[function(e,t,r){"use strict";var n=e("./DataReader");function i(e){n.call(this,e);for(var t=0;t<this.data.length;t++)e[t]=255&e[t]}e("../utils").inherits(i,n),i.prototype.byteAt=function(e){return this.data[this.zero+e]},i.prototype.lastIndexOfSignature=function(e){for(var t=e.charCodeAt(0),r=e.charCodeAt(1),n=e.charCodeAt(2),i=e.charCodeAt(3),s=this.length-4;0<=s;--s)if(this.data[s]===t&&this.data[s+1]===r&&this.data[s+2]===n&&this.data[s+3]===i)return s-this.zero;return-1},i.prototype.readAndCheckSignature=function(e){var t=e.charCodeAt(0),r=e.charCodeAt(1),n=e.charCodeAt(2),i=e.charCodeAt(3),s=this.readData(4);return t===s[0]&&r===s[1]&&n===s[2]&&i===s[3]},i.prototype.readData=function(e){if(this.checkOffset(e),0===e)return[];var t=this.data.slice(this.zero+this.index,this.zero+this.index+e);return this.index+=e,t},t.exports=i},{"../utils":32,"./DataReader":18}],18:[function(e,t,r){"use strict";var n=e("../utils");function i(e){this.data=e,this.length=e.length,this.index=0,this.zero=0}i.prototype={checkOffset:function(e){this.checkIndex(this.index+e)},checkIndex:function(e){if(this.length<this.zero+e||e<0)throw new Error("End of data reached (data length = "+this.length+", asked index = "+e+"). Corrupted zip ?")},setIndex:function(e){this.checkIndex(e),this.index=e},skip:function(e){this.setIndex(this.index+e)},byteAt:function(){},readInt:function(e){var t,r=0;for(this.checkOffset(e),t=this.index+e-1;t>=this.index;t--)r=(r<<8)+this.byteAt(t);return this.index+=e,r},readString:function(e){return n.transformTo("string",this.readData(e))},readData:function(){},lastIndexOfSignature:function(){},readAndCheckSignature:function(){},readDate:function(){var e=this.readInt(4);return new Date(Date.UTC(1980+(e>>25&127),(e>>21&15)-1,e>>16&31,e>>11&31,e>>5&63,(31&e)<<1))}},t.exports=i},{"../utils":32}],19:[function(e,t,r){"use strict";var n=e("./Uint8ArrayReader");function i(e){n.call(this,e)}e("../utils").inherits(i,n),i.prototype.readData=function(e){this.checkOffset(e);var t=this.data.slice(this.zero+this.index,this.zero+this.index+e);return this.index+=e,t},t.exports=i},{"../utils":32,"./Uint8ArrayReader":21}],20:[function(e,t,r){"use strict";var n=e("./DataReader");function i(e){n.call(this,e)}e("../utils").inherits(i,n),i.prototype.byteAt=function(e){return this.data.charCodeAt(this.zero+e)},i.prototype.lastIndexOfSignature=function(e){return this.data.lastIndexOf(e)-this.zero},i.prototype.readAndCheckSignature=function(e){return e===this.readData(4)},i.prototype.readData=function(e){this.checkOffset(e);var t=this.data.slice(this.zero+this.index,this.zero+this.index+e);return this.index+=e,t},t.exports=i},{"../utils":32,"./DataReader":18}],21:[function(e,t,r){"use strict";var n=e("./ArrayReader");function i(e){n.call(this,e)}e("../utils").inherits(i,n),i.prototype.readData=function(e){if(this.checkOffset(e),0===e)return new Uint8Array(0);var t=this.data.subarray(this.zero+this.index,this.zero+this.index+e);return this.index+=e,t},t.exports=i},{"../utils":32,"./ArrayReader":17}],22:[function(e,t,r){"use strict";var n=e("../utils"),i=e("../support"),s=e("./ArrayReader"),a=e("./StringReader"),o=e("./NodeBufferReader"),h=e("./Uint8ArrayReader");t.exports=function(e){var t=n.getTypeOf(e);return n.checkSupport(t),"string"!==t||i.uint8array?"nodebuffer"===t?new o(e):i.uint8array?new h(n.transformTo("uint8array",e)):new s(n.transformTo("array",e)):new a(e)}},{"../support":30,"../utils":32,"./ArrayReader":17,"./NodeBufferReader":19,"./StringReader":20,"./Uint8ArrayReader":21}],23:[function(e,t,r){"use strict";r.LOCAL_FILE_HEADER="PK",r.CENTRAL_FILE_HEADER="PK",r.CENTRAL_DIRECTORY_END="PK",r.ZIP64_CENTRAL_DIRECTORY_LOCATOR="PK",r.ZIP64_CENTRAL_DIRECTORY_END="PK",r.DATA_DESCRIPTOR="PK\b"},{}],24:[function(e,t,r){"use strict";var n=e("./GenericWorker"),i=e("../utils");function s(e){n.call(this,"ConvertWorker to "+e),this.destType=e}i.inherits(s,n),s.prototype.processChunk=function(e){this.push({data:i.transformTo(this.destType,e.data),meta:e.meta})},t.exports=s},{"../utils":32,"./GenericWorker":28}],25:[function(e,t,r){"use strict";var n=e("./GenericWorker"),i=e("../crc32");function s(){n.call(this,"Crc32Probe"),this.withStreamInfo("crc32",0)}e("../utils").inherits(s,n),s.prototype.processChunk=function(e){this.streamInfo.crc32=i(e.data,this.streamInfo.crc32||0),this.push(e)},t.exports=s},{"../crc32":4,"../utils":32,"./GenericWorker":28}],26:[function(e,t,r){"use strict";var n=e("../utils"),i=e("./GenericWorker");function s(e){i.call(this,"DataLengthProbe for "+e),this.propName=e,this.withStreamInfo(e,0)}n.inherits(s,i),s.prototype.processChunk=function(e){if(e){var t=this.streamInfo[this.propName]||0;this.streamInfo[this.propName]=t+e.data.length}i.prototype.processChunk.call(this,e)},t.exports=s},{"../utils":32,"./GenericWorker":28}],27:[function(e,t,r){"use strict";var n=e("../utils"),i=e("./GenericWorker");function s(e){i.call(this,"DataWorker");var t=this;this.dataIsReady=!1,this.index=0,this.max=0,this.data=null,this.type="",this._tickScheduled=!1,e.then(function(e){t.dataIsReady=!0,t.data=e,t.max=e&&e.length||0,t.type=n.getTypeOf(e),t.isPaused||t._tickAndRepeat()},function(e){t.error(e)})}n.inherits(s,i),s.prototype.cleanUp=function(){i.prototype.cleanUp.call(this),this.data=null},s.prototype.resume=function(){return!!i.prototype.resume.call(this)&&(!this._tickScheduled&&this.dataIsReady&&(this._tickScheduled=!0,n.delay(this._tickAndRepeat,[],this)),!0)},s.prototype._tickAndRepeat=function(){this._tickScheduled=!1,this.isPaused||this.isFinished||(this._tick(),this.isFinished||(n.delay(this._tickAndRepeat,[],this),this._tickScheduled=!0))},s.prototype._tick=function(){if(this.isPaused||this.isFinished)return!1;var e=null,t=Math.min(this.max,this.index+16384);if(this.index>=this.max)return this.end();switch(this.type){case"string":e=this.data.substring(this.index,t);break;case"uint8array":e=this.data.subarray(this.index,t);break;case"array":case"nodebuffer":e=this.data.slice(this.index,t)}return this.index=t,this.push({data:e,meta:{percent:this.max?this.index/this.max*100:0}})},t.exports=s},{"../utils":32,"./GenericWorker":28}],28:[function(e,t,r){"use strict";function n(e){this.name=e||"default",this.streamInfo={},this.generatedError=null,this.extraStreamInfo={},this.isPaused=!0,this.isFinished=!1,this.isLocked=!1,this._listeners={data:[],end:[],error:[]},this.previous=null}n.prototype={push:function(e){this.emit("data",e)},end:function(){if(this.isFinished)return!1;this.flush();try{this.emit("end"),this.cleanUp(),this.isFinished=!0}catch(e){this.emit("error",e)}return!0},error:function(e){return!this.isFinished&&(this.isPaused?this.generatedError=e:(this.isFinished=!0,this.emit("error",e),this.previous&&this.previous.error(e),this.cleanUp()),!0)},on:function(e,t){return this._listeners[e].push(t),this},cleanUp:function(){this.streamInfo=this.generatedError=this.extraStreamInfo=null,this._listeners=[]},emit:function(e,t){if(this._listeners[e])for(var r=0;r<this._listeners[e].length;r++)this._listeners[e][r].call(this,t)},pipe:function(e){return e.registerPrevious(this)},registerPrevious:function(e){if(this.isLocked)throw new Error("The stream '"+this+"' has already been used.");this.streamInfo=e.streamInfo,this.mergeStreamInfo(),this.previous=e;var t=this;return e.on("data",function(e){t.processChunk(e)}),e.on("end",function(){t.end()}),e.on("error",function(e){t.error(e)}),this},pause:function(){return!this.isPaused&&!this.isFinished&&(this.isPaused=!0,this.previous&&this.previous.pause(),!0)},resume:function(){if(!this.isPaused||this.isFinished)return!1;var e=this.isPaused=!1;return this.generatedError&&(this.error(this.generatedError),e=!0),this.previous&&this.previous.resume(),!e},flush:function(){},processChunk:function(e){this.push(e)},withStreamInfo:function(e,t){return this.extraStreamInfo[e]=t,this.mergeStreamInfo(),this},mergeStreamInfo:function(){for(var e in this.extraStreamInfo)Object.prototype.hasOwnProperty.call(this.extraStreamInfo,e)&&(this.streamInfo[e]=this.extraStreamInfo[e])},lock:function(){if(this.isLocked)throw new Error("The stream '"+this+"' has already been used.");this.isLocked=!0,this.previous&&this.previous.lock()},toString:function(){var e="Worker "+this.name;return this.previous?this.previous+" -> "+e:e}},t.exports=n},{}],29:[function(e,t,r){"use strict";var h=e("../utils"),i=e("./ConvertWorker"),s=e("./GenericWorker"),u=e("../base64"),n=e("../support"),a=e("../external"),o=null;if(n.nodestream)try{o=e("../nodejs/NodejsStreamOutputAdapter")}catch(e){}function l(e,o){return new a.Promise(function(t,r){var n=[],i=e._internalType,s=e._outputType,a=e._mimeType;e.on("data",function(e,t){n.push(e),o&&o(t)}).on("error",function(e){n=[],r(e)}).on("end",function(){try{var e=function(e,t,r){switch(e){case"blob":return h.newBlob(h.transformTo("arraybuffer",t),r);case"base64":return u.encode(t);default:return h.transformTo(e,t)}}(s,function(e,t){var r,n=0,i=null,s=0;for(r=0;r<t.length;r++)s+=t[r].length;switch(e){case"string":return t.join("");case"array":return Array.prototype.concat.apply([],t);case"uint8array":for(i=new Uint8Array(s),r=0;r<t.length;r++)i.set(t[r],n),n+=t[r].length;return i;case"nodebuffer":return Buffer.concat(t);default:throw new Error("concat : unsupported type '"+e+"'")}}(i,n),a);t(e)}catch(e){r(e)}n=[]}).resume()})}function f(e,t,r){var n=t;switch(t){case"blob":case"arraybuffer":n="uint8array";break;case"base64":n="string"}try{this._internalType=n,this._outputType=t,this._mimeType=r,h.checkSupport(n),this._worker=e.pipe(new i(n)),e.lock()}catch(e){this._worker=new s("error"),this._worker.error(e)}}f.prototype={accumulate:function(e){return l(this,e)},on:function(e,t){var r=this;return"data"===e?this._worker.on(e,function(e){t.call(r,e.data,e.meta)}):this._worker.on(e,function(){h.delay(t,arguments,r)}),this},resume:function(){return h.delay(this._worker.resume,[],this._worker),this},pause:function(){return this._worker.pause(),this},toNodejsStream:function(e){if(h.checkSupport("nodestream"),"nodebuffer"!==this._outputType)throw new Error(this._outputType+" is not supported by this method");return new o(this,{objectMode:"nodebuffer"!==this._outputType},e)}},t.exports=f},{"../base64":1,"../external":6,"../nodejs/NodejsStreamOutputAdapter":13,"../support":30,"../utils":32,"./ConvertWorker":24,"./GenericWorker":28}],30:[function(e,t,r){"use strict";if(r.base64=!0,r.array=!0,r.string=!0,r.arraybuffer="undefined"!=typeof ArrayBuffer&&"undefined"!=typeof Uint8Array,r.nodebuffer="undefined"!=typeof Buffer,r.uint8array="undefined"!=typeof Uint8Array,"undefined"==typeof ArrayBuffer)r.blob=!1;else{var n=new ArrayBuffer(0);try{r.blob=0===new Blob([n],{type:"application/zip"}).size}catch(e){try{var i=new(self.BlobBuilder||self.WebKitBlobBuilder||self.MozBlobBuilder||self.MSBlobBuilder);i.append(n),r.blob=0===i.getBlob("application/zip").size}catch(e){r.blob=!1}}}try{r.nodestream=!!e("readable-stream").Readable}catch(e){r.nodestream=!1}},{"readable-stream":16}],31:[function(e,t,s){"use strict";for(var o=e("./utils"),h=e("./support"),r=e("./nodejsUtils"),n=e("./stream/GenericWorker"),u=new Array(256),i=0;i<256;i++)u[i]=252<=i?6:248<=i?5:240<=i?4:224<=i?3:192<=i?2:1;u[254]=u[254]=1;function a(){n.call(this,"utf-8 decode"),this.leftOver=null}function l(){n.call(this,"utf-8 encode")}s.utf8encode=function(e){return h.nodebuffer?r.newBufferFrom(e,"utf-8"):function(e){var t,r,n,i,s,a=e.length,o=0;for(i=0;i<a;i++)55296==(64512&(r=e.charCodeAt(i)))&&i+1<a&&56320==(64512&(n=e.charCodeAt(i+1)))&&(r=65536+(r-55296<<10)+(n-56320),i++),o+=r<128?1:r<2048?2:r<65536?3:4;for(t=h.uint8array?new Uint8Array(o):new Array(o),i=s=0;s<o;i++)55296==(64512&(r=e.charCodeAt(i)))&&i+1<a&&56320==(64512&(n=e.charCodeAt(i+1)))&&(r=65536+(r-55296<<10)+(n-56320),i++),r<128?t[s++]=r:(r<2048?t[s++]=192|r>>>6:(r<65536?t[s++]=224|r>>>12:(t[s++]=240|r>>>18,t[s++]=128|r>>>12&63),t[s++]=128|r>>>6&63),t[s++]=128|63&r);return t}(e)},s.utf8decode=function(e){return h.nodebuffer?o.transformTo("nodebuffer",e).toString("utf-8"):function(e){var t,r,n,i,s=e.length,a=new Array(2*s);for(t=r=0;t<s;)if((n=e[t++])<128)a[r++]=n;else if(4<(i=u[n]))a[r++]=65533,t+=i-1;else{for(n&=2===i?31:3===i?15:7;1<i&&t<s;)n=n<<6|63&e[t++],i--;1<i?a[r++]=65533:n<65536?a[r++]=n:(n-=65536,a[r++]=55296|n>>10&1023,a[r++]=56320|1023&n)}return a.length!==r&&(a.subarray?a=a.subarray(0,r):a.length=r),o.applyFromCharCode(a)}(e=o.transformTo(h.uint8array?"uint8array":"array",e))},o.inherits(a,n),a.prototype.processChunk=function(e){var t=o.transformTo(h.uint8array?"uint8array":"array",e.data);if(this.leftOver&&this.leftOver.length){if(h.uint8array){var r=t;(t=new Uint8Array(r.length+this.leftOver.length)).set(this.leftOver,0),t.set(r,this.leftOver.length)}else t=this.leftOver.concat(t);this.leftOver=null}var n=function(e,t){var r;for((t=t||e.length)>e.length&&(t=e.length),r=t-1;0<=r&&128==(192&e[r]);)r--;return r<0?t:0===r?t:r+u[e[r]]>t?r:t}(t),i=t;n!==t.length&&(h.uint8array?(i=t.subarray(0,n),this.leftOver=t.subarray(n,t.length)):(i=t.slice(0,n),this.leftOver=t.slice(n,t.length))),this.push({data:s.utf8decode(i),meta:e.meta})},a.prototype.flush=function(){this.leftOver&&this.leftOver.length&&(this.push({data:s.utf8decode(this.leftOver),meta:{}}),this.leftOver=null)},s.Utf8DecodeWorker=a,o.inherits(l,n),l.prototype.processChunk=function(e){this.push({data:s.utf8encode(e.data),meta:e.meta})},s.Utf8EncodeWorker=l},{"./nodejsUtils":14,"./stream/GenericWorker":28,"./support":30,"./utils":32}],32:[function(e,t,a){"use strict";var o=e("./support"),h=e("./base64"),r=e("./nodejsUtils"),u=e("./external");function n(e){return e}function l(e,t){for(var r=0;r<e.length;++r)t[r]=255&e.charCodeAt(r);return t}e("setimmediate"),a.newBlob=function(t,r){a.checkSupport("blob");try{return new Blob([t],{type:r})}catch(e){try{var n=new(self.BlobBuilder||self.WebKitBlobBuilder||self.MozBlobBuilder||self.MSBlobBuilder);return n.append(t),n.getBlob(r)}catch(e){throw new Error("Bug : can't construct the Blob.")}}};var i={stringifyByChunk:function(e,t,r){var n=[],i=0,s=e.length;if(s<=r)return String.fromCharCode.apply(null,e);for(;i<s;)"array"===t||"nodebuffer"===t?n.push(String.fromCharCode.apply(null,e.slice(i,Math.min(i+r,s)))):n.push(String.fromCharCode.apply(null,e.subarray(i,Math.min(i+r,s)))),i+=r;return n.join("")},stringifyByChar:function(e){for(var t="",r=0;r<e.length;r++)t+=String.fromCharCode(e[r]);return t},applyCanBeUsed:{uint8array:function(){try{return o.uint8array&&1===String.fromCharCode.apply(null,new Uint8Array(1)).length}catch(e){return!1}}(),nodebuffer:function(){try{return o.nodebuffer&&1===String.fromCharCode.apply(null,r.allocBuffer(1)).length}catch(e){return!1}}()}};function s(e){var t=65536,r=a.getTypeOf(e),n=!0;if("uint8array"===r?n=i.applyCanBeUsed.uint8array:"nodebuffer"===r&&(n=i.applyCanBeUsed.nodebuffer),n)for(;1<t;)try{return i.stringifyByChunk(e,r,t)}catch(e){t=Math.floor(t/2)}return i.stringifyByChar(e)}function f(e,t){for(var r=0;r<e.length;r++)t[r]=e[r];return t}a.applyFromCharCode=s;var c={};c.string={string:n,array:function(e){return l(e,new Array(e.length))},arraybuffer:function(e){return c.string.uint8array(e).buffer},uint8array:function(e){return l(e,new Uint8Array(e.length))},nodebuffer:function(e){return l(e,r.allocBuffer(e.length))}},c.array={string:s,array:n,arraybuffer:function(e){return new Uint8Array(e).buffer},uint8array:function(e){return new Uint8Array(e)},nodebuffer:function(e){return r.newBufferFrom(e)}},c.arraybuffer={string:function(e){return s(new Uint8Array(e))},array:function(e){return f(new Uint8Array(e),new Array(e.byteLength))},arraybuffer:n,uint8array:function(e){return new Uint8Array(e)},nodebuffer:function(e){return r.newBufferFrom(new Uint8Array(e))}},c.uint8array={string:s,array:function(e){return f(e,new Array(e.length))},arraybuffer:function(e){return e.buffer},uint8array:n,nodebuffer:function(e){return r.newBufferFrom(e)}},c.nodebuffer={string:s,array:function(e){return f(e,new Array(e.length))},arraybuffer:function(e){return c.nodebuffer.uint8array(e).buffer},uint8array:function(e){return f(e,new Uint8Array(e.length))},nodebuffer:n},a.transformTo=function(e,t){if(t=t||"",!e)return t;a.checkSupport(e);var r=a.getTypeOf(t);return c[r][e](t)},a.resolve=function(e){for(var t=e.split("/"),r=[],n=0;n<t.length;n++){var i=t[n];"."===i||""===i&&0!==n&&n!==t.length-1||(".."===i?r.pop():r.push(i))}return r.join("/")},a.getTypeOf=function(e){if("string"==typeof e)return"string";var t=Object.prototype.toString.call(e);return"[object Array]"===t?"array":o.nodebuffer&&r.isBuffer(e)?"nodebuffer":o.uint8array&&"[object Uint8Array]"===t?"uint8array":o.arraybuffer&&"[object ArrayBuffer]"===t?"arraybuffer":void 0},a.checkSupport=function(e){if(!o[e.toLowerCase()])throw new Error(e+" is not supported by this platform")},a.MAX_VALUE_16BITS=65535,a.MAX_VALUE_32BITS=-1,a.pretty=function(e){var t,r,n="";for(r=0;r<(e||"").length;r++)n+="\\x"+((t=e.charCodeAt(r))<16?"0":"")+t.toString(16).toUpperCase();return n},a.delay=function(e,t,r){setImmediate(function(){e.apply(r||null,t||[])})},a.inherits=function(e,t){function r(){}r.prototype=t.prototype,e.prototype=new r},a.extend=function(){var e,t,r={};for(e=0;e<arguments.length;e++)for(t in arguments[e])Object.prototype.hasOwnProperty.call(arguments[e],t)&&void 0===r[t]&&(r[t]=arguments[e][t]);return r},a.prepareContent=function(r,e,n,i,s){return u.Promise.resolve(e).then(function(n){return o.blob&&(n instanceof Blob||-1!==["[object File]","[object Blob]"].indexOf(Object.prototype.toString.call(n)))?void 0!==Blob.prototype.arrayBuffer?n.arrayBuffer():"undefined"!=typeof FileReader?new u.Promise(function(t,r){var e=new FileReader;e.onload=function(e){t(e.target.result)},e.onerror=function(e){r(e.target.error)},e.readAsArrayBuffer(n)}):u.Promise.reject(new Error(r+" is a Blob, but we have no way of reading it.")):n}).then(function(e){var t=a.getTypeOf(e);return t?("arraybuffer"===t?e=a.transformTo("uint8array",e):"string"===t&&(s?e=h.decode(e):n&&!0!==i&&(e=function(e){return l(e,o.uint8array?new Uint8Array(e.length):new Array(e.length))}(e))),e):u.Promise.reject(new Error("Can't read the data of '"+r+"'. Is it in a supported JavaScript type (String, Blob, ArrayBuffer, etc) ?"))})}},{"./base64":1,"./external":6,"./nodejsUtils":14,"./support":30,setimmediate:54}],33:[function(e,t,r){"use strict";var n=e("./reader/readerFor"),i=e("./utils"),s=e("./signature"),a=e("./zipEntry"),o=e("./support");function h(e){this.files=[],this.loadOptions=e}h.prototype={checkSignature:function(e){if(!this.reader.readAndCheckSignature(e)){this.reader.index-=4;var t=this.reader.readString(4);throw new Error("Corrupted zip or bug: unexpected signature ("+i.pretty(t)+", expected "+i.pretty(e)+")")}},isSignature:function(e,t){var r=this.reader.index;this.reader.setIndex(e);var n=this.reader.readString(4)===t;return this.reader.setIndex(r),n},readBlockEndOfCentral:function(){this.diskNumber=this.reader.readInt(2),this.diskWithCentralDirStart=this.reader.readInt(2),this.centralDirRecordsOnThisDisk=this.reader.readInt(2),this.centralDirRecords=this.reader.readInt(2),this.centralDirSize=this.reader.readInt(4),this.centralDirOffset=this.reader.readInt(4),this.zipCommentLength=this.reader.readInt(2);var e=this.reader.readData(this.zipCommentLength),t=o.uint8array?"uint8array":"array",r=i.transformTo(t,e);this.zipComment=this.loadOptions.decodeFileName(r)},readBlockZip64EndOfCentral:function(){this.zip64EndOfCentralSize=this.reader.readInt(8),this.reader.skip(4),this.diskNumber=this.reader.readInt(4),this.diskWithCentralDirStart=this.reader.readInt(4),this.centralDirRecordsOnThisDisk=this.reader.readInt(8),this.centralDirRecords=this.reader.readInt(8),this.centralDirSize=this.reader.readInt(8),this.centralDirOffset=this.reader.readInt(8),this.zip64ExtensibleData={};for(var e,t,r,n=this.zip64EndOfCentralSize-44;0<n;)e=this.reader.readInt(2),t=this.reader.readInt(4),r=this.reader.readData(t),this.zip64ExtensibleData[e]={id:e,length:t,value:r}},readBlockZip64EndOfCentralLocator:function(){if(this.diskWithZip64CentralDirStart=this.reader.readInt(4),this.relativeOffsetEndOfZip64CentralDir=this.reader.readInt(8),this.disksCount=this.reader.readInt(4),1<this.disksCount)throw new Error("Multi-volumes zip are not supported")},readLocalFiles:function(){var e,t;for(e=0;e<this.files.length;e++)t=this.files[e],this.reader.setIndex(t.localHeaderOffset),this.checkSignature(s.LOCAL_FILE_HEADER),t.readLocalPart(this.reader),t.handleUTF8(),t.processAttributes()},readCentralDir:function(){var e;for(this.reader.setIndex(this.centralDirOffset);this.reader.readAndCheckSignature(s.CENTRAL_FILE_HEADER);)(e=new a({zip64:this.zip64},this.loadOptions)).readCentralPart(this.reader),this.files.push(e);if(this.centralDirRecords!==this.files.length&&0!==this.centralDirRecords&&0===this.files.length)throw new Error("Corrupted zip or bug: expected "+this.centralDirRecords+" records in central dir, got "+this.files.length)},readEndOfCentral:function(){var e=this.reader.lastIndexOfSignature(s.CENTRAL_DIRECTORY_END);if(e<0)throw!this.isSignature(0,s.LOCAL_FILE_HEADER)?new Error("Can't find end of central directory : is this a zip file ? If it is, see https://stuk.github.io/jszip/documentation/howto/read_zip.html"):new Error("Corrupted zip: can't find end of central directory");this.reader.setIndex(e);var t=e;if(this.checkSignature(s.CENTRAL_DIRECTORY_END),this.readBlockEndOfCentral(),this.diskNumber===i.MAX_VALUE_16BITS||this.diskWithCentralDirStart===i.MAX_VALUE_16BITS||this.centralDirRecordsOnThisDisk===i.MAX_VALUE_16BITS||this.centralDirRecords===i.MAX_VALUE_16BITS||this.centralDirSize===i.MAX_VALUE_32BITS||this.centralDirOffset===i.MAX_VALUE_32BITS){if(this.zip64=!0,(e=this.reader.lastIndexOfSignature(s.ZIP64_CENTRAL_DIRECTORY_LOCATOR))<0)throw new Error("Corrupted zip: can't find the ZIP64 end of central directory locator");if(this.reader.setIndex(e),this.checkSignature(s.ZIP64_CENTRAL_DIRECTORY_LOCATOR),this.readBlockZip64EndOfCentralLocator(),!this.isSignature(this.relativeOffsetEndOfZip64CentralDir,s.ZIP64_CENTRAL_DIRECTORY_END)&&(this.relativeOffsetEndOfZip64CentralDir=this.reader.lastIndexOfSignature(s.ZIP64_CENTRAL_DIRECTORY_END),this.relativeOffsetEndOfZip64CentralDir<0))throw new Error("Corrupted zip: can't find the ZIP64 end of central directory");this.reader.setIndex(this.relativeOffsetEndOfZip64CentralDir),this.checkSignature(s.ZIP64_CENTRAL_DIRECTORY_END),this.readBlockZip64EndOfCentral()}var r=this.centralDirOffset+this.centralDirSize;this.zip64&&(r+=20,r+=12+this.zip64EndOfCentralSize);var n=t-r;if(0<n)this.isSignature(t,s.CENTRAL_FILE_HEADER)||(this.reader.zero=n);else if(n<0)throw new Error("Corrupted zip: missing "+Math.abs(n)+" bytes.")},prepareReader:function(e){this.reader=n(e)},load:function(e){this.prepareReader(e),this.readEndOfCentral(),this.readCentralDir(),this.readLocalFiles()}},t.exports=h},{"./reader/readerFor":22,"./signature":23,"./support":30,"./utils":32,"./zipEntry":34}],34:[function(e,t,r){"use strict";var n=e("./reader/readerFor"),s=e("./utils"),i=e("./compressedObject"),a=e("./crc32"),o=e("./utf8"),h=e("./compressions"),u=e("./support");function l(e,t){this.options=e,this.loadOptions=t}l.prototype={isEncrypted:function(){return 1==(1&this.bitFlag)},useUTF8:function(){return 2048==(2048&this.bitFlag)},readLocalPart:function(e){var t,r;if(e.skip(22),this.fileNameLength=e.readInt(2),r=e.readInt(2),this.fileName=e.readData(this.fileNameLength),e.skip(r),-1===this.compressedSize||-1===this.uncompressedSize)throw new Error("Bug or corrupted zip : didn't get enough information from the central directory (compressedSize === -1 || uncompressedSize === -1)");if(null===(t=function(e){for(var t in h)if(Object.prototype.hasOwnProperty.call(h,t)&&h[t].magic===e)return h[t];return null}(this.compressionMethod)))throw new Error("Corrupted zip : compression "+s.pretty(this.compressionMethod)+" unknown (inner file : "+s.transformTo("string",this.fileName)+")");this.decompressed=new i(this.compressedSize,this.uncompressedSize,this.crc32,t,e.readData(this.compressedSize))},readCentralPart:function(e){this.versionMadeBy=e.readInt(2),e.skip(2),this.bitFlag=e.readInt(2),this.compressionMethod=e.readString(2),this.date=e.readDate(),this.crc32=e.readInt(4),this.compressedSize=e.readInt(4),this.uncompressedSize=e.readInt(4);var t=e.readInt(2);if(this.extraFieldsLength=e.readInt(2),this.fileCommentLength=e.readInt(2),this.diskNumberStart=e.readInt(2),this.internalFileAttributes=e.readInt(2),this.externalFileAttributes=e.readInt(4),this.localHeaderOffset=e.readInt(4),this.isEncrypted())throw new Error("Encrypted zip are not supported");e.skip(t),this.readExtraFields(e),this.parseZIP64ExtraField(e),this.fileComment=e.readData(this.fileCommentLength)},processAttributes:function(){this.unixPermissions=null,this.dosPermissions=null;var e=this.versionMadeBy>>8;this.dir=!!(16&this.externalFileAttributes),0==e&&(this.dosPermissions=63&this.externalFileAttributes),3==e&&(this.unixPermissions=this.externalFileAttributes>>16&65535),this.dir||"/"!==this.fileNameStr.slice(-1)||(this.dir=!0)},parseZIP64ExtraField:function(){if(this.extraFields[1]){var e=n(this.extraFields[1].value);this.uncompressedSize===s.MAX_VALUE_32BITS&&(this.uncompressedSize=e.readInt(8)),this.compressedSize===s.MAX_VALUE_32BITS&&(this.compressedSize=e.readInt(8)),this.localHeaderOffset===s.MAX_VALUE_32BITS&&(this.localHeaderOffset=e.readInt(8)),this.diskNumberStart===s.MAX_VALUE_32BITS&&(this.diskNumberStart=e.readInt(4))}},readExtraFields:function(e){var t,r,n,i=e.index+this.extraFieldsLength;for(this.extraFields||(this.extraFields={});e.index+4<i;)t=e.readInt(2),r=e.readInt(2),n=e.readData(r),this.extraFields[t]={id:t,length:r,value:n};e.setIndex(i)},handleUTF8:function(){var e=u.uint8array?"uint8array":"array";if(this.useUTF8())this.fileNameStr=o.utf8decode(this.fileName),this.fileCommentStr=o.utf8decode(this.fileComment);else{var t=this.findExtraFieldUnicodePath();if(null!==t)this.fileNameStr=t;else{var r=s.transformTo(e,this.fileName);this.fileNameStr=this.loadOptions.decodeFileName(r)}var n=this.findExtraFieldUnicodeComment();if(null!==n)this.fileCommentStr=n;else{var i=s.transformTo(e,this.fileComment);this.fileCommentStr=this.loadOptions.decodeFileName(i)}}},findExtraFieldUnicodePath:function(){var e=this.extraFields[28789];if(e){var t=n(e.value);return 1!==t.readInt(1)?null:a(this.fileName)!==t.readInt(4)?null:o.utf8decode(t.readData(e.length-5))}return null},findExtraFieldUnicodeComment:function(){var e=this.extraFields[25461];if(e){var t=n(e.value);return 1!==t.readInt(1)?null:a(this.fileComment)!==t.readInt(4)?null:o.utf8decode(t.readData(e.length-5))}return null}},t.exports=l},{"./compressedObject":2,"./compressions":3,"./crc32":4,"./reader/readerFor":22,"./support":30,"./utf8":31,"./utils":32}],35:[function(e,t,r){"use strict";function n(e,t,r){this.name=e,this.dir=r.dir,this.date=r.date,this.comment=r.comment,this.unixPermissions=r.unixPermissions,this.dosPermissions=r.dosPermissions,this._data=t,this._dataBinary=r.binary,this.options={compression:r.compression,compressionOptions:r.compressionOptions}}var s=e("./stream/StreamHelper"),i=e("./stream/DataWorker"),a=e("./utf8"),o=e("./compressedObject"),h=e("./stream/GenericWorker");n.prototype={internalStream:function(e){var t=null,r="string";try{if(!e)throw new Error("No output type specified.");var n="string"===(r=e.toLowerCase())||"text"===r;"binarystring"!==r&&"text"!==r||(r="string"),t=this._decompressWorker();var i=!this._dataBinary;i&&!n&&(t=t.pipe(new a.Utf8EncodeWorker)),!i&&n&&(t=t.pipe(new a.Utf8DecodeWorker))}catch(e){(t=new h("error")).error(e)}return new s(t,r,"")},async:function(e,t){return this.internalStream(e).accumulate(t)},nodeStream:function(e,t){return this.internalStream(e||"nodebuffer").toNodejsStream(t)},_compressWorker:function(e,t){if(this._data instanceof o&&this._data.compression.magic===e.magic)return this._data.getCompressedWorker();var r=this._decompressWorker();return this._dataBinary||(r=r.pipe(new a.Utf8EncodeWorker)),o.createWorkerFrom(r,e,t)},_decompressWorker:function(){return this._data instanceof o?this._data.getContentWorker():this._data instanceof h?this._data:new i(this._data)}};for(var u=["asText","asBinary","asNodeBuffer","asUint8Array","asArrayBuffer"],l=function(){throw new Error("This method has been removed in JSZip 3.0, please check the upgrade guide.")},f=0;f<u.length;f++)n.prototype[u[f]]=l;t.exports=n},{"./compressedObject":2,"./stream/DataWorker":27,"./stream/GenericWorker":28,"./stream/StreamHelper":29,"./utf8":31}],36:[function(e,l,t){(function(t){"use strict";var r,n,e=t.MutationObserver||t.WebKitMutationObserver;if(e){var i=0,s=new e(u),a=t.document.createTextNode("");s.observe(a,{characterData:!0}),r=function(){a.data=i=++i%2}}else if(t.setImmediate||void 0===t.MessageChannel)r="document"in t&&"onreadystatechange"in t.document.createElement("script")?function(){var e=t.document.createElement("script");e.onreadystatechange=function(){u(),e.onreadystatechange=null,e.parentNode.removeChild(e),e=null},t.document.documentElement.appendChild(e)}:function(){setTimeout(u,0)};else{var o=new t.MessageChannel;o.port1.onmessage=u,r=function(){o.port2.postMessage(0)}}var h=[];function u(){var e,t;n=!0;for(var r=h.length;r;){for(t=h,h=[],e=-1;++e<r;)t[e]();r=h.length}n=!1}l.exports=function(e){1!==h.push(e)||n||r()}}).call(this,"undefined"!=typeof global?global:"undefined"!=typeof self?self:"undefined"!=typeof window?window:{})},{}],37:[function(e,t,r){"use strict";var i=e("immediate");function u(){}var l={},s=["REJECTED"],a=["FULFILLED"],n=["PENDING"];function o(e){if("function"!=typeof e)throw new TypeError("resolver must be a function");this.state=n,this.queue=[],this.outcome=void 0,e!==u&&d(this,e)}function h(e,t,r){this.promise=e,"function"==typeof t&&(this.onFulfilled=t,this.callFulfilled=this.otherCallFulfilled),"function"==typeof r&&(this.onRejected=r,this.callRejected=this.otherCallRejected)}function f(t,r,n){i(function(){var e;try{e=r(n)}catch(e){return l.reject(t,e)}e===t?l.reject(t,new TypeError("Cannot resolve promise with itself")):l.resolve(t,e)})}function c(e){var t=e&&e.then;if(e&&("object"==typeof e||"function"==typeof e)&&"function"==typeof t)return function(){t.apply(e,arguments)}}function d(t,e){var r=!1;function n(e){r||(r=!0,l.reject(t,e))}function i(e){r||(r=!0,l.resolve(t,e))}var s=p(function(){e(i,n)});"error"===s.status&&n(s.value)}function p(e,t){var r={};try{r.value=e(t),r.status="success"}catch(e){r.status="error",r.value=e}return r}(t.exports=o).prototype.finally=function(t){if("function"!=typeof t)return this;var r=this.constructor;return this.then(function(e){return r.resolve(t()).then(function(){return e})},function(e){return r.resolve(t()).then(function(){throw e})})},o.prototype.catch=function(e){return this.then(null,e)},o.prototype.then=function(e,t){if("function"!=typeof e&&this.state===a||"function"!=typeof t&&this.state===s)return this;var r=new this.constructor(u);this.state!==n?f(r,this.state===a?e:t,this.outcome):this.queue.push(new h(r,e,t));return r},h.prototype.callFulfilled=function(e){l.resolve(this.promise,e)},h.prototype.otherCallFulfilled=function(e){f(this.promise,this.onFulfilled,e)},h.prototype.callRejected=function(e){l.reject(this.promise,e)},h.prototype.otherCallRejected=function(e){f(this.promise,this.onRejected,e)},l.resolve=function(e,t){var r=p(c,t);if("error"===r.status)return l.reject(e,r.value);var n=r.value;if(n)d(e,n);else{e.state=a,e.outcome=t;for(var i=-1,s=e.queue.length;++i<s;)e.queue[i].callFulfilled(t)}return e},l.reject=function(e,t){e.state=s,e.outcome=t;for(var r=-1,n=e.queue.length;++r<n;)e.queue[r].callRejected(t);return e},o.resolve=function(e){if(e instanceof this)return e;return l.resolve(new this(u),e)},o.reject=function(e){var t=new this(u);return l.reject(t,e)},o.all=function(e){var r=this;if("[object Array]"!==Object.prototype.toString.call(e))return this.reject(new TypeError("must be an array"));var n=e.length,i=!1;if(!n)return this.resolve([]);var s=new Array(n),a=0,t=-1,o=new this(u);for(;++t<n;)h(e[t],t);return o;function h(e,t){r.resolve(e).then(function(e){s[t]=e,++a!==n||i||(i=!0,l.resolve(o,s))},function(e){i||(i=!0,l.reject(o,e))})}},o.race=function(e){var t=this;if("[object Array]"!==Object.prototype.toString.call(e))return this.reject(new TypeError("must be an array"));var r=e.length,n=!1;if(!r)return this.resolve([]);var i=-1,s=new this(u);for(;++i<r;)a=e[i],t.resolve(a).then(function(e){n||(n=!0,l.resolve(s,e))},function(e){n||(n=!0,l.reject(s,e))});var a;return s}},{immediate:36}],38:[function(e,t,r){"use strict";var n={};(0,e("./lib/utils/common").assign)(n,e("./lib/deflate"),e("./lib/inflate"),e("./lib/zlib/constants")),t.exports=n},{"./lib/deflate":39,"./lib/inflate":40,"./lib/utils/common":41,"./lib/zlib/constants":44}],39:[function(e,t,r){"use strict";var a=e("./zlib/deflate"),o=e("./utils/common"),h=e("./utils/strings"),i=e("./zlib/messages"),s=e("./zlib/zstream"),u=Object.prototype.toString,l=0,f=-1,c=0,d=8;function p(e){if(!(this instanceof p))return new p(e);this.options=o.assign({level:f,method:d,chunkSize:16384,windowBits:15,memLevel:8,strategy:c,to:""},e||{});var t=this.options;t.raw&&0<t.windowBits?t.windowBits=-t.windowBits:t.gzip&&0<t.windowBits&&t.windowBits<16&&(t.windowBits+=16),this.err=0,this.msg="",this.ended=!1,this.chunks=[],this.strm=new s,this.strm.avail_out=0;var r=a.deflateInit2(this.strm,t.level,t.method,t.windowBits,t.memLevel,t.strategy);if(r!==l)throw new Error(i[r]);if(t.header&&a.deflateSetHeader(this.strm,t.header),t.dictionary){var n;if(n="string"==typeof t.dictionary?h.string2buf(t.dictionary):"[object ArrayBuffer]"===u.call(t.dictionary)?new Uint8Array(t.dictionary):t.dictionary,(r=a.deflateSetDictionary(this.strm,n))!==l)throw new Error(i[r]);this._dict_set=!0}}function n(e,t){var r=new p(t);if(r.push(e,!0),r.err)throw r.msg||i[r.err];return r.result}p.prototype.push=function(e,t){var r,n,i=this.strm,s=this.options.chunkSize;if(this.ended)return!1;n=t===~~t?t:!0===t?4:0,"string"==typeof e?i.input=h.string2buf(e):"[object ArrayBuffer]"===u.call(e)?i.input=new Uint8Array(e):i.input=e,i.next_in=0,i.avail_in=i.input.length;do{if(0===i.avail_out&&(i.output=new o.Buf8(s),i.next_out=0,i.avail_out=s),1!==(r=a.deflate(i,n))&&r!==l)return this.onEnd(r),!(this.ended=!0);0!==i.avail_out&&(0!==i.avail_in||4!==n&&2!==n)||("string"===this.options.to?this.onData(h.buf2binstring(o.shrinkBuf(i.output,i.next_out))):this.onData(o.shrinkBuf(i.output,i.next_out)))}while((0<i.avail_in||0===i.avail_out)&&1!==r);return 4===n?(r=a.deflateEnd(this.strm),this.onEnd(r),this.ended=!0,r===l):2!==n||(this.onEnd(l),!(i.avail_out=0))},p.prototype.onData=function(e){this.chunks.push(e)},p.prototype.onEnd=function(e){e===l&&("string"===this.options.to?this.result=this.chunks.join(""):this.result=o.flattenChunks(this.chunks)),this.chunks=[],this.err=e,this.msg=this.strm.msg},r.Deflate=p,r.deflate=n,r.deflateRaw=function(e,t){return(t=t||{}).raw=!0,n(e,t)},r.gzip=function(e,t){return(t=t||{}).gzip=!0,n(e,t)}},{"./utils/common":41,"./utils/strings":42,"./zlib/deflate":46,"./zlib/messages":51,"./zlib/zstream":53}],40:[function(e,t,r){"use strict";var c=e("./zlib/inflate"),d=e("./utils/common"),p=e("./utils/strings"),m=e("./zlib/constants"),n=e("./zlib/messages"),i=e("./zlib/zstream"),s=e("./zlib/gzheader"),_=Object.prototype.toString;function a(e){if(!(this instanceof a))return new a(e);this.options=d.assign({chunkSize:16384,windowBits:0,to:""},e||{});var t=this.options;t.raw&&0<=t.windowBits&&t.windowBits<16&&(t.windowBits=-t.windowBits,0===t.windowBits&&(t.windowBits=-15)),!(0<=t.windowBits&&t.windowBits<16)||e&&e.windowBits||(t.windowBits+=32),15<t.windowBits&&t.windowBits<48&&0==(15&t.windowBits)&&(t.windowBits|=15),this.err=0,this.msg="",this.ended=!1,this.chunks=[],this.strm=new i,this.strm.avail_out=0;var r=c.inflateInit2(this.strm,t.windowBits);if(r!==m.Z_OK)throw new Error(n[r]);this.header=new s,c.inflateGetHeader(this.strm,this.header)}function o(e,t){var r=new a(t);if(r.push(e,!0),r.err)throw r.msg||n[r.err];return r.result}a.prototype.push=function(e,t){var r,n,i,s,a,o,h=this.strm,u=this.options.chunkSize,l=this.options.dictionary,f=!1;if(this.ended)return!1;n=t===~~t?t:!0===t?m.Z_FINISH:m.Z_NO_FLUSH,"string"==typeof e?h.input=p.binstring2buf(e):"[object ArrayBuffer]"===_.call(e)?h.input=new Uint8Array(e):h.input=e,h.next_in=0,h.avail_in=h.input.length;do{if(0===h.avail_out&&(h.output=new d.Buf8(u),h.next_out=0,h.avail_out=u),(r=c.inflate(h,m.Z_NO_FLUSH))===m.Z_NEED_DICT&&l&&(o="string"==typeof l?p.string2buf(l):"[object ArrayBuffer]"===_.call(l)?new Uint8Array(l):l,r=c.inflateSetDictionary(this.strm,o)),r===m.Z_BUF_ERROR&&!0===f&&(r=m.Z_OK,f=!1),r!==m.Z_STREAM_END&&r!==m.Z_OK)return this.onEnd(r),!(this.ended=!0);h.next_out&&(0!==h.avail_out&&r!==m.Z_STREAM_END&&(0!==h.avail_in||n!==m.Z_FINISH&&n!==m.Z_SYNC_FLUSH)||("string"===this.options.to?(i=p.utf8border(h.output,h.next_out),s=h.next_out-i,a=p.buf2string(h.output,i),h.next_out=s,h.avail_out=u-s,s&&d.arraySet(h.output,h.output,i,s,0),this.onData(a)):this.onData(d.shrinkBuf(h.output,h.next_out)))),0===h.avail_in&&0===h.avail_out&&(f=!0)}while((0<h.avail_in||0===h.avail_out)&&r!==m.Z_STREAM_END);return r===m.Z_STREAM_END&&(n=m.Z_FINISH),n===m.Z_FINISH?(r=c.inflateEnd(this.strm),this.onEnd(r),this.ended=!0,r===m.Z_OK):n!==m.Z_SYNC_FLUSH||(this.onEnd(m.Z_OK),!(h.avail_out=0))},a.prototype.onData=function(e){this.chunks.push(e)},a.prototype.onEnd=function(e){e===m.Z_OK&&("string"===this.options.to?this.result=this.chunks.join(""):this.result=d.flattenChunks(this.chunks)),this.chunks=[],this.err=e,this.msg=this.strm.msg},r.Inflate=a,r.inflate=o,r.inflateRaw=function(e,t){return(t=t||{}).raw=!0,o(e,t)},r.ungzip=o},{"./utils/common":41,"./utils/strings":42,"./zlib/constants":44,"./zlib/gzheader":47,"./zlib/inflate":49,"./zlib/messages":51,"./zlib/zstream":53}],41:[function(e,t,r){"use strict";var n="undefined"!=typeof Uint8Array&&"undefined"!=typeof Uint16Array&&"undefined"!=typeof Int32Array;r.assign=function(e){for(var t=Array.prototype.slice.call(arguments,1);t.length;){var r=t.shift();if(r){if("object"!=typeof r)throw new TypeError(r+"must be non-object");for(var n in r)r.hasOwnProperty(n)&&(e[n]=r[n])}}return e},r.shrinkBuf=function(e,t){return e.length===t?e:e.subarray?e.subarray(0,t):(e.length=t,e)};var i={arraySet:function(e,t,r,n,i){if(t.subarray&&e.subarray)e.set(t.subarray(r,r+n),i);else for(var s=0;s<n;s++)e[i+s]=t[r+s]},flattenChunks:function(e){var t,r,n,i,s,a;for(t=n=0,r=e.length;t<r;t++)n+=e[t].length;for(a=new Uint8Array(n),t=i=0,r=e.length;t<r;t++)s=e[t],a.set(s,i),i+=s.length;return a}},s={arraySet:function(e,t,r,n,i){for(var s=0;s<n;s++)e[i+s]=t[r+s]},flattenChunks:function(e){return[].concat.apply([],e)}};r.setTyped=function(e){e?(r.Buf8=Uint8Array,r.Buf16=Uint16Array,r.Buf32=Int32Array,r.assign(r,i)):(r.Buf8=Array,r.Buf16=Array,r.Buf32=Array,r.assign(r,s))},r.setTyped(n)},{}],42:[function(e,t,r){"use strict";var h=e("./common"),i=!0,s=!0;try{String.fromCharCode.apply(null,[0])}catch(e){i=!1}try{String.fromCharCode.apply(null,new Uint8Array(1))}catch(e){s=!1}for(var u=new h.Buf8(256),n=0;n<256;n++)u[n]=252<=n?6:248<=n?5:240<=n?4:224<=n?3:192<=n?2:1;function l(e,t){if(t<65537&&(e.subarray&&s||!e.subarray&&i))return String.fromCharCode.apply(null,h.shrinkBuf(e,t));for(var r="",n=0;n<t;n++)r+=String.fromCharCode(e[n]);return r}u[254]=u[254]=1,r.string2buf=function(e){var t,r,n,i,s,a=e.length,o=0;for(i=0;i<a;i++)55296==(64512&(r=e.charCodeAt(i)))&&i+1<a&&56320==(64512&(n=e.charCodeAt(i+1)))&&(r=65536+(r-55296<<10)+(n-56320),i++),o+=r<128?1:r<2048?2:r<65536?3:4;for(t=new h.Buf8(o),i=s=0;s<o;i++)55296==(64512&(r=e.charCodeAt(i)))&&i+1<a&&56320==(64512&(n=e.charCodeAt(i+1)))&&(r=65536+(r-55296<<10)+(n-56320),i++),r<128?t[s++]=r:(r<2048?t[s++]=192|r>>>6:(r<65536?t[s++]=224|r>>>12:(t[s++]=240|r>>>18,t[s++]=128|r>>>12&63),t[s++]=128|r>>>6&63),t[s++]=128|63&r);return t},r.buf2binstring=function(e){return l(e,e.length)},r.binstring2buf=function(e){for(var t=new h.Buf8(e.length),r=0,n=t.length;r<n;r++)t[r]=e.charCodeAt(r);return t},r.buf2string=function(e,t){var r,n,i,s,a=t||e.length,o=new Array(2*a);for(r=n=0;r<a;)if((i=e[r++])<128)o[n++]=i;else if(4<(s=u[i]))o[n++]=65533,r+=s-1;else{for(i&=2===s?31:3===s?15:7;1<s&&r<a;)i=i<<6|63&e[r++],s--;1<s?o[n++]=65533:i<65536?o[n++]=i:(i-=65536,o[n++]=55296|i>>10&1023,o[n++]=56320|1023&i)}return l(o,n)},r.utf8border=function(e,t){var r;for((t=t||e.length)>e.length&&(t=e.length),r=t-1;0<=r&&128==(192&e[r]);)r--;return r<0?t:0===r?t:r+u[e[r]]>t?r:t}},{"./common":41}],43:[function(e,t,r){"use strict";t.exports=function(e,t,r,n){for(var i=65535&e|0,s=e>>>16&65535|0,a=0;0!==r;){for(r-=a=2e3<r?2e3:r;s=s+(i=i+t[n++]|0)|0,--a;);i%=65521,s%=65521}return i|s<<16|0}},{}],44:[function(e,t,r){"use strict";t.exports={Z_NO_FLUSH:0,Z_PARTIAL_FLUSH:1,Z_SYNC_FLUSH:2,Z_FULL_FLUSH:3,Z_FINISH:4,Z_BLOCK:5,Z_TREES:6,Z_OK:0,Z_STREAM_END:1,Z_NEED_DICT:2,Z_ERRNO:-1,Z_STREAM_ERROR:-2,Z_DATA_ERROR:-3,Z_BUF_ERROR:-5,Z_NO_COMPRESSION:0,Z_BEST_SPEED:1,Z_BEST_COMPRESSION:9,Z_DEFAULT_COMPRESSION:-1,Z_FILTERED:1,Z_HUFFMAN_ONLY:2,Z_RLE:3,Z_FIXED:4,Z_DEFAULT_STRATEGY:0,Z_BINARY:0,Z_TEXT:1,Z_UNKNOWN:2,Z_DEFLATED:8}},{}],45:[function(e,t,r){"use strict";var o=function(){for(var e,t=[],r=0;r<256;r++){e=r;for(var n=0;n<8;n++)e=1&e?3988292384^e>>>1:e>>>1;t[r]=e}return t}();t.exports=function(e,t,r,n){var i=o,s=n+r;e^=-1;for(var a=n;a<s;a++)e=e>>>8^i[255&(e^t[a])];return-1^e}},{}],46:[function(e,t,r){"use strict";var h,c=e("../utils/common"),u=e("./trees"),d=e("./adler32"),p=e("./crc32"),n=e("./messages"),l=0,f=4,m=0,_=-2,g=-1,b=4,i=2,v=8,y=9,s=286,a=30,o=19,w=2*s+1,k=15,x=3,S=258,z=S+x+1,C=42,E=113,A=1,I=2,O=3,B=4;function R(e,t){return e.msg=n[t],t}function T(e){return(e<<1)-(4<e?9:0)}function D(e){for(var t=e.length;0<=--t;)e[t]=0}function F(e){var t=e.state,r=t.pending;r>e.avail_out&&(r=e.avail_out),0!==r&&(c.arraySet(e.output,t.pending_buf,t.pending_out,r,e.next_out),e.next_out+=r,t.pending_out+=r,e.total_out+=r,e.avail_out-=r,t.pending-=r,0===t.pending&&(t.pending_out=0))}function N(e,t){u._tr_flush_block(e,0<=e.block_start?e.block_start:-1,e.strstart-e.block_start,t),e.block_start=e.strstart,F(e.strm)}function U(e,t){e.pending_buf[e.pending++]=t}function P(e,t){e.pending_buf[e.pending++]=t>>>8&255,e.pending_buf[e.pending++]=255&t}function L(e,t){var r,n,i=e.max_chain_length,s=e.strstart,a=e.prev_length,o=e.nice_match,h=e.strstart>e.w_size-z?e.strstart-(e.w_size-z):0,u=e.window,l=e.w_mask,f=e.prev,c=e.strstart+S,d=u[s+a-1],p=u[s+a];e.prev_length>=e.good_match&&(i>>=2),o>e.lookahead&&(o=e.lookahead);do{if(u[(r=t)+a]===p&&u[r+a-1]===d&&u[r]===u[s]&&u[++r]===u[s+1]){s+=2,r++;do{}while(u[++s]===u[++r]&&u[++s]===u[++r]&&u[++s]===u[++r]&&u[++s]===u[++r]&&u[++s]===u[++r]&&u[++s]===u[++r]&&u[++s]===u[++r]&&u[++s]===u[++r]&&s<c);if(n=S-(c-s),s=c-S,a<n){if(e.match_start=t,o<=(a=n))break;d=u[s+a-1],p=u[s+a]}}}while((t=f[t&l])>h&&0!=--i);return a<=e.lookahead?a:e.lookahead}function j(e){var t,r,n,i,s,a,o,h,u,l,f=e.w_size;do{if(i=e.window_size-e.lookahead-e.strstart,e.strstart>=f+(f-z)){for(c.arraySet(e.window,e.window,f,f,0),e.match_start-=f,e.strstart-=f,e.block_start-=f,t=r=e.hash_size;n=e.head[--t],e.head[t]=f<=n?n-f:0,--r;);for(t=r=f;n=e.prev[--t],e.prev[t]=f<=n?n-f:0,--r;);i+=f}if(0===e.strm.avail_in)break;if(a=e.strm,o=e.window,h=e.strstart+e.lookahead,u=i,l=void 0,l=a.avail_in,u<l&&(l=u),r=0===l?0:(a.avail_in-=l,c.arraySet(o,a.input,a.next_in,l,h),1===a.state.wrap?a.adler=d(a.adler,o,l,h):2===a.state.wrap&&(a.adler=p(a.adler,o,l,h)),a.next_in+=l,a.total_in+=l,l),e.lookahead+=r,e.lookahead+e.insert>=x)for(s=e.strstart-e.insert,e.ins_h=e.window[s],e.ins_h=(e.ins_h<<e.hash_shift^e.window[s+1])&e.hash_mask;e.insert&&(e.ins_h=(e.ins_h<<e.hash_shift^e.window[s+x-1])&e.hash_mask,e.prev[s&e.w_mask]=e.head[e.ins_h],e.head[e.ins_h]=s,s++,e.insert--,!(e.lookahead+e.insert<x)););}while(e.lookahead<z&&0!==e.strm.avail_in)}function Z(e,t){for(var r,n;;){if(e.lookahead<z){if(j(e),e.lookahead<z&&t===l)return A;if(0===e.lookahead)break}if(r=0,e.lookahead>=x&&(e.ins_h=(e.ins_h<<e.hash_shift^e.window[e.strstart+x-1])&e.hash_mask,r=e.prev[e.strstart&e.w_mask]=e.head[e.ins_h],e.head[e.ins_h]=e.strstart),0!==r&&e.strstart-r<=e.w_size-z&&(e.match_length=L(e,r)),e.match_length>=x)if(n=u._tr_tally(e,e.strstart-e.match_start,e.match_length-x),e.lookahead-=e.match_length,e.match_length<=e.max_lazy_match&&e.lookahead>=x){for(e.match_length--;e.strstart++,e.ins_h=(e.ins_h<<e.hash_shift^e.window[e.strstart+x-1])&e.hash_mask,r=e.prev[e.strstart&e.w_mask]=e.head[e.ins_h],e.head[e.ins_h]=e.strstart,0!=--e.match_length;);e.strstart++}else e.strstart+=e.match_length,e.match_length=0,e.ins_h=e.window[e.strstart],e.ins_h=(e.ins_h<<e.hash_shift^e.window[e.strstart+1])&e.hash_mask;else n=u._tr_tally(e,0,e.window[e.strstart]),e.lookahead--,e.strstart++;if(n&&(N(e,!1),0===e.strm.avail_out))return A}return e.insert=e.strstart<x-1?e.strstart:x-1,t===f?(N(e,!0),0===e.strm.avail_out?O:B):e.last_lit&&(N(e,!1),0===e.strm.avail_out)?A:I}function W(e,t){for(var r,n,i;;){if(e.lookahead<z){if(j(e),e.lookahead<z&&t===l)return A;if(0===e.lookahead)break}if(r=0,e.lookahead>=x&&(e.ins_h=(e.ins_h<<e.hash_shift^e.window[e.strstart+x-1])&e.hash_mask,r=e.prev[e.strstart&e.w_mask]=e.head[e.ins_h],e.head[e.ins_h]=e.strstart),e.prev_length=e.match_length,e.prev_match=e.match_start,e.match_length=x-1,0!==r&&e.prev_length<e.max_lazy_match&&e.strstart-r<=e.w_size-z&&(e.match_length=L(e,r),e.match_length<=5&&(1===e.strategy||e.match_length===x&&4096<e.strstart-e.match_start)&&(e.match_length=x-1)),e.prev_length>=x&&e.match_length<=e.prev_length){for(i=e.strstart+e.lookahead-x,n=u._tr_tally(e,e.strstart-1-e.prev_match,e.prev_length-x),e.lookahead-=e.prev_length-1,e.prev_length-=2;++e.strstart<=i&&(e.ins_h=(e.ins_h<<e.hash_shift^e.window[e.strstart+x-1])&e.hash_mask,r=e.prev[e.strstart&e.w_mask]=e.head[e.ins_h],e.head[e.ins_h]=e.strstart),0!=--e.prev_length;);if(e.match_available=0,e.match_length=x-1,e.strstart++,n&&(N(e,!1),0===e.strm.avail_out))return A}else if(e.match_available){if((n=u._tr_tally(e,0,e.window[e.strstart-1]))&&N(e,!1),e.strstart++,e.lookahead--,0===e.strm.avail_out)return A}else e.match_available=1,e.strstart++,e.lookahead--}return e.match_available&&(n=u._tr_tally(e,0,e.window[e.strstart-1]),e.match_available=0),e.insert=e.strstart<x-1?e.strstart:x-1,t===f?(N(e,!0),0===e.strm.avail_out?O:B):e.last_lit&&(N(e,!1),0===e.strm.avail_out)?A:I}function M(e,t,r,n,i){this.good_length=e,this.max_lazy=t,this.nice_length=r,this.max_chain=n,this.func=i}function H(){this.strm=null,this.status=0,this.pending_buf=null,this.pending_buf_size=0,this.pending_out=0,this.pending=0,this.wrap=0,this.gzhead=null,this.gzindex=0,this.method=v,this.last_flush=-1,this.w_size=0,this.w_bits=0,this.w_mask=0,this.window=null,this.window_size=0,this.prev=null,this.head=null,this.ins_h=0,this.hash_size=0,this.hash_bits=0,this.hash_mask=0,this.hash_shift=0,this.block_start=0,this.match_length=0,this.prev_match=0,this.match_available=0,this.strstart=0,this.match_start=0,this.lookahead=0,this.prev_length=0,this.max_chain_length=0,this.max_lazy_match=0,this.level=0,this.strategy=0,this.good_match=0,this.nice_match=0,this.dyn_ltree=new c.Buf16(2*w),this.dyn_dtree=new c.Buf16(2*(2*a+1)),this.bl_tree=new c.Buf16(2*(2*o+1)),D(this.dyn_ltree),D(this.dyn_dtree),D(this.bl_tree),this.l_desc=null,this.d_desc=null,this.bl_desc=null,this.bl_count=new c.Buf16(k+1),this.heap=new c.Buf16(2*s+1),D(this.heap),this.heap_len=0,this.heap_max=0,this.depth=new c.Buf16(2*s+1),D(this.depth),this.l_buf=0,this.lit_bufsize=0,this.last_lit=0,this.d_buf=0,this.opt_len=0,this.static_len=0,this.matches=0,this.insert=0,this.bi_buf=0,this.bi_valid=0}function G(e){var t;return e&&e.state?(e.total_in=e.total_out=0,e.data_type=i,(t=e.state).pending=0,t.pending_out=0,t.wrap<0&&(t.wrap=-t.wrap),t.status=t.wrap?C:E,e.adler=2===t.wrap?0:1,t.last_flush=l,u._tr_init(t),m):R(e,_)}function K(e){var t=G(e);return t===m&&function(e){e.window_size=2*e.w_size,D(e.head),e.max_lazy_match=h[e.level].max_lazy,e.good_match=h[e.level].good_length,e.nice_match=h[e.level].nice_length,e.max_chain_length=h[e.level].max_chain,e.strstart=0,e.block_start=0,e.lookahead=0,e.insert=0,e.match_length=e.prev_length=x-1,e.match_available=0,e.ins_h=0}(e.state),t}function Y(e,t,r,n,i,s){if(!e)return _;var a=1;if(t===g&&(t=6),n<0?(a=0,n=-n):15<n&&(a=2,n-=16),i<1||y<i||r!==v||n<8||15<n||t<0||9<t||s<0||b<s)return R(e,_);8===n&&(n=9);var o=new H;return(e.state=o).strm=e,o.wrap=a,o.gzhead=null,o.w_bits=n,o.w_size=1<<o.w_bits,o.w_mask=o.w_size-1,o.hash_bits=i+7,o.hash_size=1<<o.hash_bits,o.hash_mask=o.hash_size-1,o.hash_shift=~~((o.hash_bits+x-1)/x),o.window=new c.Buf8(2*o.w_size),o.head=new c.Buf16(o.hash_size),o.prev=new c.Buf16(o.w_size),o.lit_bufsize=1<<i+6,o.pending_buf_size=4*o.lit_bufsize,o.pending_buf=new c.Buf8(o.pending_buf_size),o.d_buf=1*o.lit_bufsize,o.l_buf=3*o.lit_bufsize,o.level=t,o.strategy=s,o.method=r,K(e)}h=[new M(0,0,0,0,function(e,t){var r=65535;for(r>e.pending_buf_size-5&&(r=e.pending_buf_size-5);;){if(e.lookahead<=1){if(j(e),0===e.lookahead&&t===l)return A;if(0===e.lookahead)break}e.strstart+=e.lookahead,e.lookahead=0;var n=e.block_start+r;if((0===e.strstart||e.strstart>=n)&&(e.lookahead=e.strstart-n,e.strstart=n,N(e,!1),0===e.strm.avail_out))return A;if(e.strstart-e.block_start>=e.w_size-z&&(N(e,!1),0===e.strm.avail_out))return A}return e.insert=0,t===f?(N(e,!0),0===e.strm.avail_out?O:B):(e.strstart>e.block_start&&(N(e,!1),e.strm.avail_out),A)}),new M(4,4,8,4,Z),new M(4,5,16,8,Z),new M(4,6,32,32,Z),new M(4,4,16,16,W),new M(8,16,32,32,W),new M(8,16,128,128,W),new M(8,32,128,256,W),new M(32,128,258,1024,W),new M(32,258,258,4096,W)],r.deflateInit=function(e,t){return Y(e,t,v,15,8,0)},r.deflateInit2=Y,r.deflateReset=K,r.deflateResetKeep=G,r.deflateSetHeader=function(e,t){return e&&e.state?2!==e.state.wrap?_:(e.state.gzhead=t,m):_},r.deflate=function(e,t){var r,n,i,s;if(!e||!e.state||5<t||t<0)return e?R(e,_):_;if(n=e.state,!e.output||!e.input&&0!==e.avail_in||666===n.status&&t!==f)return R(e,0===e.avail_out?-5:_);if(n.strm=e,r=n.last_flush,n.last_flush=t,n.status===C)if(2===n.wrap)e.adler=0,U(n,31),U(n,139),U(n,8),n.gzhead?(U(n,(n.gzhead.text?1:0)+(n.gzhead.hcrc?2:0)+(n.gzhead.extra?4:0)+(n.gzhead.name?8:0)+(n.gzhead.comment?16:0)),U(n,255&n.gzhead.time),U(n,n.gzhead.time>>8&255),U(n,n.gzhead.time>>16&255),U(n,n.gzhead.time>>24&255),U(n,9===n.level?2:2<=n.strategy||n.level<2?4:0),U(n,255&n.gzhead.os),n.gzhead.extra&&n.gzhead.extra.length&&(U(n,255&n.gzhead.extra.length),U(n,n.gzhead.extra.length>>8&255)),n.gzhead.hcrc&&(e.adler=p(e.adler,n.pending_buf,n.pending,0)),n.gzindex=0,n.status=69):(U(n,0),U(n,0),U(n,0),U(n,0),U(n,0),U(n,9===n.level?2:2<=n.strategy||n.level<2?4:0),U(n,3),n.status=E);else{var a=v+(n.w_bits-8<<4)<<8;a|=(2<=n.strategy||n.level<2?0:n.level<6?1:6===n.level?2:3)<<6,0!==n.strstart&&(a|=32),a+=31-a%31,n.status=E,P(n,a),0!==n.strstart&&(P(n,e.adler>>>16),P(n,65535&e.adler)),e.adler=1}if(69===n.status)if(n.gzhead.extra){for(i=n.pending;n.gzindex<(65535&n.gzhead.extra.length)&&(n.pending!==n.pending_buf_size||(n.gzhead.hcrc&&n.pending>i&&(e.adler=p(e.adler,n.pending_buf,n.pending-i,i)),F(e),i=n.pending,n.pending!==n.pending_buf_size));)U(n,255&n.gzhead.extra[n.gzindex]),n.gzindex++;n.gzhead.hcrc&&n.pending>i&&(e.adler=p(e.adler,n.pending_buf,n.pending-i,i)),n.gzindex===n.gzhead.extra.length&&(n.gzindex=0,n.status=73)}else n.status=73;if(73===n.status)if(n.gzhead.name){i=n.pending;do{if(n.pending===n.pending_buf_size&&(n.gzhead.hcrc&&n.pending>i&&(e.adler=p(e.adler,n.pending_buf,n.pending-i,i)),F(e),i=n.pending,n.pending===n.pending_buf_size)){s=1;break}s=n.gzindex<n.gzhead.name.length?255&n.gzhead.name.charCodeAt(n.gzindex++):0,U(n,s)}while(0!==s);n.gzhead.hcrc&&n.pending>i&&(e.adler=p(e.adler,n.pending_buf,n.pending-i,i)),0===s&&(n.gzindex=0,n.status=91)}else n.status=91;if(91===n.status)if(n.gzhead.comment){i=n.pending;do{if(n.pending===n.pending_buf_size&&(n.gzhead.hcrc&&n.pending>i&&(e.adler=p(e.adler,n.pending_buf,n.pending-i,i)),F(e),i=n.pending,n.pending===n.pending_buf_size)){s=1;break}s=n.gzindex<n.gzhead.comment.length?255&n.gzhead.comment.charCodeAt(n.gzindex++):0,U(n,s)}while(0!==s);n.gzhead.hcrc&&n.pending>i&&(e.adler=p(e.adler,n.pending_buf,n.pending-i,i)),0===s&&(n.status=103)}else n.status=103;if(103===n.status&&(n.gzhead.hcrc?(n.pending+2>n.pending_buf_size&&F(e),n.pending+2<=n.pending_buf_size&&(U(n,255&e.adler),U(n,e.adler>>8&255),e.adler=0,n.status=E)):n.status=E),0!==n.pending){if(F(e),0===e.avail_out)return n.last_flush=-1,m}else if(0===e.avail_in&&T(t)<=T(r)&&t!==f)return R(e,-5);if(666===n.status&&0!==e.avail_in)return R(e,-5);if(0!==e.avail_in||0!==n.lookahead||t!==l&&666!==n.status){var o=2===n.strategy?function(e,t){for(var r;;){if(0===e.lookahead&&(j(e),0===e.lookahead)){if(t===l)return A;break}if(e.match_length=0,r=u._tr_tally(e,0,e.window[e.strstart]),e.lookahead--,e.strstart++,r&&(N(e,!1),0===e.strm.avail_out))return A}return e.insert=0,t===f?(N(e,!0),0===e.strm.avail_out?O:B):e.last_lit&&(N(e,!1),0===e.strm.avail_out)?A:I}(n,t):3===n.strategy?function(e,t){for(var r,n,i,s,a=e.window;;){if(e.lookahead<=S){if(j(e),e.lookahead<=S&&t===l)return A;if(0===e.lookahead)break}if(e.match_length=0,e.lookahead>=x&&0<e.strstart&&(n=a[i=e.strstart-1])===a[++i]&&n===a[++i]&&n===a[++i]){s=e.strstart+S;do{}while(n===a[++i]&&n===a[++i]&&n===a[++i]&&n===a[++i]&&n===a[++i]&&n===a[++i]&&n===a[++i]&&n===a[++i]&&i<s);e.match_length=S-(s-i),e.match_length>e.lookahead&&(e.match_length=e.lookahead)}if(e.match_length>=x?(r=u._tr_tally(e,1,e.match_length-x),e.lookahead-=e.match_length,e.strstart+=e.match_length,e.match_length=0):(r=u._tr_tally(e,0,e.window[e.strstart]),e.lookahead--,e.strstart++),r&&(N(e,!1),0===e.strm.avail_out))return A}return e.insert=0,t===f?(N(e,!0),0===e.strm.avail_out?O:B):e.last_lit&&(N(e,!1),0===e.strm.avail_out)?A:I}(n,t):h[n.level].func(n,t);if(o!==O&&o!==B||(n.status=666),o===A||o===O)return 0===e.avail_out&&(n.last_flush=-1),m;if(o===I&&(1===t?u._tr_align(n):5!==t&&(u._tr_stored_block(n,0,0,!1),3===t&&(D(n.head),0===n.lookahead&&(n.strstart=0,n.block_start=0,n.insert=0))),F(e),0===e.avail_out))return n.last_flush=-1,m}return t!==f?m:n.wrap<=0?1:(2===n.wrap?(U(n,255&e.adler),U(n,e.adler>>8&255),U(n,e.adler>>16&255),U(n,e.adler>>24&255),U(n,255&e.total_in),U(n,e.total_in>>8&255),U(n,e.total_in>>16&255),U(n,e.total_in>>24&255)):(P(n,e.adler>>>16),P(n,65535&e.adler)),F(e),0<n.wrap&&(n.wrap=-n.wrap),0!==n.pending?m:1)},r.deflateEnd=function(e){var t;return e&&e.state?(t=e.state.status)!==C&&69!==t&&73!==t&&91!==t&&103!==t&&t!==E&&666!==t?R(e,_):(e.state=null,t===E?R(e,-3):m):_},r.deflateSetDictionary=function(e,t){var r,n,i,s,a,o,h,u,l=t.length;if(!e||!e.state)return _;if(2===(s=(r=e.state).wrap)||1===s&&r.status!==C||r.lookahead)return _;for(1===s&&(e.adler=d(e.adler,t,l,0)),r.wrap=0,l>=r.w_size&&(0===s&&(D(r.head),r.strstart=0,r.block_start=0,r.insert=0),u=new c.Buf8(r.w_size),c.arraySet(u,t,l-r.w_size,r.w_size,0),t=u,l=r.w_size),a=e.avail_in,o=e.next_in,h=e.input,e.avail_in=l,e.next_in=0,e.input=t,j(r);r.lookahead>=x;){for(n=r.strstart,i=r.lookahead-(x-1);r.ins_h=(r.ins_h<<r.hash_shift^r.window[n+x-1])&r.hash_mask,r.prev[n&r.w_mask]=r.head[r.ins_h],r.head[r.ins_h]=n,n++,--i;);r.strstart=n,r.lookahead=x-1,j(r)}return r.strstart+=r.lookahead,r.block_start=r.strstart,r.insert=r.lookahead,r.lookahead=0,r.match_length=r.prev_length=x-1,r.match_available=0,e.next_in=o,e.input=h,e.avail_in=a,r.wrap=s,m},r.deflateInfo="pako deflate (from Nodeca project)"},{"../utils/common":41,"./adler32":43,"./crc32":45,"./messages":51,"./trees":52}],47:[function(e,t,r){"use strict";t.exports=function(){this.text=0,this.time=0,this.xflags=0,this.os=0,this.extra=null,this.extra_len=0,this.name="",this.comment="",this.hcrc=0,this.done=!1}},{}],48:[function(e,t,r){"use strict";t.exports=function(e,t){var r,n,i,s,a,o,h,u,l,f,c,d,p,m,_,g,b,v,y,w,k,x,S,z,C;r=e.state,n=e.next_in,z=e.input,i=n+(e.avail_in-5),s=e.next_out,C=e.output,a=s-(t-e.avail_out),o=s+(e.avail_out-257),h=r.dmax,u=r.wsize,l=r.whave,f=r.wnext,c=r.window,d=r.hold,p=r.bits,m=r.lencode,_=r.distcode,g=(1<<r.lenbits)-1,b=(1<<r.distbits)-1;e:do{p<15&&(d+=z[n++]<<p,p+=8,d+=z[n++]<<p,p+=8),v=m[d&g];t:for(;;){if(d>>>=y=v>>>24,p-=y,0===(y=v>>>16&255))C[s++]=65535&v;else{if(!(16&y)){if(0==(64&y)){v=m[(65535&v)+(d&(1<<y)-1)];continue t}if(32&y){r.mode=12;break e}e.msg="invalid literal/length code",r.mode=30;break e}w=65535&v,(y&=15)&&(p<y&&(d+=z[n++]<<p,p+=8),w+=d&(1<<y)-1,d>>>=y,p-=y),p<15&&(d+=z[n++]<<p,p+=8,d+=z[n++]<<p,p+=8),v=_[d&b];r:for(;;){if(d>>>=y=v>>>24,p-=y,!(16&(y=v>>>16&255))){if(0==(64&y)){v=_[(65535&v)+(d&(1<<y)-1)];continue r}e.msg="invalid distance code",r.mode=30;break e}if(k=65535&v,p<(y&=15)&&(d+=z[n++]<<p,(p+=8)<y&&(d+=z[n++]<<p,p+=8)),h<(k+=d&(1<<y)-1)){e.msg="invalid distance too far back",r.mode=30;break e}if(d>>>=y,p-=y,(y=s-a)<k){if(l<(y=k-y)&&r.sane){e.msg="invalid distance too far back",r.mode=30;break e}if(S=c,(x=0)===f){if(x+=u-y,y<w){for(w-=y;C[s++]=c[x++],--y;);x=s-k,S=C}}else if(f<y){if(x+=u+f-y,(y-=f)<w){for(w-=y;C[s++]=c[x++],--y;);if(x=0,f<w){for(w-=y=f;C[s++]=c[x++],--y;);x=s-k,S=C}}}else if(x+=f-y,y<w){for(w-=y;C[s++]=c[x++],--y;);x=s-k,S=C}for(;2<w;)C[s++]=S[x++],C[s++]=S[x++],C[s++]=S[x++],w-=3;w&&(C[s++]=S[x++],1<w&&(C[s++]=S[x++]))}else{for(x=s-k;C[s++]=C[x++],C[s++]=C[x++],C[s++]=C[x++],2<(w-=3););w&&(C[s++]=C[x++],1<w&&(C[s++]=C[x++]))}break}}break}}while(n<i&&s<o);n-=w=p>>3,d&=(1<<(p-=w<<3))-1,e.next_in=n,e.next_out=s,e.avail_in=n<i?i-n+5:5-(n-i),e.avail_out=s<o?o-s+257:257-(s-o),r.hold=d,r.bits=p}},{}],49:[function(e,t,r){"use strict";var I=e("../utils/common"),O=e("./adler32"),B=e("./crc32"),R=e("./inffast"),T=e("./inftrees"),D=1,F=2,N=0,U=-2,P=1,n=852,i=592;function L(e){return(e>>>24&255)+(e>>>8&65280)+((65280&e)<<8)+((255&e)<<24)}function s(){this.mode=0,this.last=!1,this.wrap=0,this.havedict=!1,this.flags=0,this.dmax=0,this.check=0,this.total=0,this.head=null,this.wbits=0,this.wsize=0,this.whave=0,this.wnext=0,this.window=null,this.hold=0,this.bits=0,this.length=0,this.offset=0,this.extra=0,this.lencode=null,this.distcode=null,this.lenbits=0,this.distbits=0,this.ncode=0,this.nlen=0,this.ndist=0,this.have=0,this.next=null,this.lens=new I.Buf16(320),this.work=new I.Buf16(288),this.lendyn=null,this.distdyn=null,this.sane=0,this.back=0,this.was=0}function a(e){var t;return e&&e.state?(t=e.state,e.total_in=e.total_out=t.total=0,e.msg="",t.wrap&&(e.adler=1&t.wrap),t.mode=P,t.last=0,t.havedict=0,t.dmax=32768,t.head=null,t.hold=0,t.bits=0,t.lencode=t.lendyn=new I.Buf32(n),t.distcode=t.distdyn=new I.Buf32(i),t.sane=1,t.back=-1,N):U}function o(e){var t;return e&&e.state?((t=e.state).wsize=0,t.whave=0,t.wnext=0,a(e)):U}function h(e,t){var r,n;return e&&e.state?(n=e.state,t<0?(r=0,t=-t):(r=1+(t>>4),t<48&&(t&=15)),t&&(t<8||15<t)?U:(null!==n.window&&n.wbits!==t&&(n.window=null),n.wrap=r,n.wbits=t,o(e))):U}function u(e,t){var r,n;return e?(n=new s,(e.state=n).window=null,(r=h(e,t))!==N&&(e.state=null),r):U}var l,f,c=!0;function j(e){if(c){var t;for(l=new I.Buf32(512),f=new I.Buf32(32),t=0;t<144;)e.lens[t++]=8;for(;t<256;)e.lens[t++]=9;for(;t<280;)e.lens[t++]=7;for(;t<288;)e.lens[t++]=8;for(T(D,e.lens,0,288,l,0,e.work,{bits:9}),t=0;t<32;)e.lens[t++]=5;T(F,e.lens,0,32,f,0,e.work,{bits:5}),c=!1}e.lencode=l,e.lenbits=9,e.distcode=f,e.distbits=5}function Z(e,t,r,n){var i,s=e.state;return null===s.window&&(s.wsize=1<<s.wbits,s.wnext=0,s.whave=0,s.window=new I.Buf8(s.wsize)),n>=s.wsize?(I.arraySet(s.window,t,r-s.wsize,s.wsize,0),s.wnext=0,s.whave=s.wsize):(n<(i=s.wsize-s.wnext)&&(i=n),I.arraySet(s.window,t,r-n,i,s.wnext),(n-=i)?(I.arraySet(s.window,t,r-n,n,0),s.wnext=n,s.whave=s.wsize):(s.wnext+=i,s.wnext===s.wsize&&(s.wnext=0),s.whave<s.wsize&&(s.whave+=i))),0}r.inflateReset=o,r.inflateReset2=h,r.inflateResetKeep=a,r.inflateInit=function(e){return u(e,15)},r.inflateInit2=u,r.inflate=function(e,t){var r,n,i,s,a,o,h,u,l,f,c,d,p,m,_,g,b,v,y,w,k,x,S,z,C=0,E=new I.Buf8(4),A=[16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15];if(!e||!e.state||!e.output||!e.input&&0!==e.avail_in)return U;12===(r=e.state).mode&&(r.mode=13),a=e.next_out,i=e.output,h=e.avail_out,s=e.next_in,n=e.input,o=e.avail_in,u=r.hold,l=r.bits,f=o,c=h,x=N;e:for(;;)switch(r.mode){case P:if(0===r.wrap){r.mode=13;break}for(;l<16;){if(0===o)break e;o--,u+=n[s++]<<l,l+=8}if(2&r.wrap&&35615===u){E[r.check=0]=255&u,E[1]=u>>>8&255,r.check=B(r.check,E,2,0),l=u=0,r.mode=2;break}if(r.flags=0,r.head&&(r.head.done=!1),!(1&r.wrap)||(((255&u)<<8)+(u>>8))%31){e.msg="incorrect header check",r.mode=30;break}if(8!=(15&u)){e.msg="unknown compression method",r.mode=30;break}if(l-=4,k=8+(15&(u>>>=4)),0===r.wbits)r.wbits=k;else if(k>r.wbits){e.msg="invalid window size",r.mode=30;break}r.dmax=1<<k,e.adler=r.check=1,r.mode=512&u?10:12,l=u=0;break;case 2:for(;l<16;){if(0===o)break e;o--,u+=n[s++]<<l,l+=8}if(r.flags=u,8!=(255&r.flags)){e.msg="unknown compression method",r.mode=30;break}if(57344&r.flags){e.msg="unknown header flags set",r.mode=30;break}r.head&&(r.head.text=u>>8&1),512&r.flags&&(E[0]=255&u,E[1]=u>>>8&255,r.check=B(r.check,E,2,0)),l=u=0,r.mode=3;case 3:for(;l<32;){if(0===o)break e;o--,u+=n[s++]<<l,l+=8}r.head&&(r.head.time=u),512&r.flags&&(E[0]=255&u,E[1]=u>>>8&255,E[2]=u>>>16&255,E[3]=u>>>24&255,r.check=B(r.check,E,4,0)),l=u=0,r.mode=4;case 4:for(;l<16;){if(0===o)break e;o--,u+=n[s++]<<l,l+=8}r.head&&(r.head.xflags=255&u,r.head.os=u>>8),512&r.flags&&(E[0]=255&u,E[1]=u>>>8&255,r.check=B(r.check,E,2,0)),l=u=0,r.mode=5;case 5:if(1024&r.flags){for(;l<16;){if(0===o)break e;o--,u+=n[s++]<<l,l+=8}r.length=u,r.head&&(r.head.extra_len=u),512&r.flags&&(E[0]=255&u,E[1]=u>>>8&255,r.check=B(r.check,E,2,0)),l=u=0}else r.head&&(r.head.extra=null);r.mode=6;case 6:if(1024&r.flags&&(o<(d=r.length)&&(d=o),d&&(r.head&&(k=r.head.extra_len-r.length,r.head.extra||(r.head.extra=new Array(r.head.extra_len)),I.arraySet(r.head.extra,n,s,d,k)),512&r.flags&&(r.check=B(r.check,n,d,s)),o-=d,s+=d,r.length-=d),r.length))break e;r.length=0,r.mode=7;case 7:if(2048&r.flags){if(0===o)break e;for(d=0;k=n[s+d++],r.head&&k&&r.length<65536&&(r.head.name+=String.fromCharCode(k)),k&&d<o;);if(512&r.flags&&(r.check=B(r.check,n,d,s)),o-=d,s+=d,k)break e}else r.head&&(r.head.name=null);r.length=0,r.mode=8;case 8:if(4096&r.flags){if(0===o)break e;for(d=0;k=n[s+d++],r.head&&k&&r.length<65536&&(r.head.comment+=String.fromCharCode(k)),k&&d<o;);if(512&r.flags&&(r.check=B(r.check,n,d,s)),o-=d,s+=d,k)break e}else r.head&&(r.head.comment=null);r.mode=9;case 9:if(512&r.flags){for(;l<16;){if(0===o)break e;o--,u+=n[s++]<<l,l+=8}if(u!==(65535&r.check)){e.msg="header crc mismatch",r.mode=30;break}l=u=0}r.head&&(r.head.hcrc=r.flags>>9&1,r.head.done=!0),e.adler=r.check=0,r.mode=12;break;case 10:for(;l<32;){if(0===o)break e;o--,u+=n[s++]<<l,l+=8}e.adler=r.check=L(u),l=u=0,r.mode=11;case 11:if(0===r.havedict)return e.next_out=a,e.avail_out=h,e.next_in=s,e.avail_in=o,r.hold=u,r.bits=l,2;e.adler=r.check=1,r.mode=12;case 12:if(5===t||6===t)break e;case 13:if(r.last){u>>>=7&l,l-=7&l,r.mode=27;break}for(;l<3;){if(0===o)break e;o--,u+=n[s++]<<l,l+=8}switch(r.last=1&u,l-=1,3&(u>>>=1)){case 0:r.mode=14;break;case 1:if(j(r),r.mode=20,6!==t)break;u>>>=2,l-=2;break e;case 2:r.mode=17;break;case 3:e.msg="invalid block type",r.mode=30}u>>>=2,l-=2;break;case 14:for(u>>>=7&l,l-=7&l;l<32;){if(0===o)break e;o--,u+=n[s++]<<l,l+=8}if((65535&u)!=(u>>>16^65535)){e.msg="invalid stored block lengths",r.mode=30;break}if(r.length=65535&u,l=u=0,r.mode=15,6===t)break e;case 15:r.mode=16;case 16:if(d=r.length){if(o<d&&(d=o),h<d&&(d=h),0===d)break e;I.arraySet(i,n,s,d,a),o-=d,s+=d,h-=d,a+=d,r.length-=d;break}r.mode=12;break;case 17:for(;l<14;){if(0===o)break e;o--,u+=n[s++]<<l,l+=8}if(r.nlen=257+(31&u),u>>>=5,l-=5,r.ndist=1+(31&u),u>>>=5,l-=5,r.ncode=4+(15&u),u>>>=4,l-=4,286<r.nlen||30<r.ndist){e.msg="too many length or distance symbols",r.mode=30;break}r.have=0,r.mode=18;case 18:for(;r.have<r.ncode;){for(;l<3;){if(0===o)break e;o--,u+=n[s++]<<l,l+=8}r.lens[A[r.have++]]=7&u,u>>>=3,l-=3}for(;r.have<19;)r.lens[A[r.have++]]=0;if(r.lencode=r.lendyn,r.lenbits=7,S={bits:r.lenbits},x=T(0,r.lens,0,19,r.lencode,0,r.work,S),r.lenbits=S.bits,x){e.msg="invalid code lengths set",r.mode=30;break}r.have=0,r.mode=19;case 19:for(;r.have<r.nlen+r.ndist;){for(;g=(C=r.lencode[u&(1<<r.lenbits)-1])>>>16&255,b=65535&C,!((_=C>>>24)<=l);){if(0===o)break e;o--,u+=n[s++]<<l,l+=8}if(b<16)u>>>=_,l-=_,r.lens[r.have++]=b;else{if(16===b){for(z=_+2;l<z;){if(0===o)break e;o--,u+=n[s++]<<l,l+=8}if(u>>>=_,l-=_,0===r.have){e.msg="invalid bit length repeat",r.mode=30;break}k=r.lens[r.have-1],d=3+(3&u),u>>>=2,l-=2}else if(17===b){for(z=_+3;l<z;){if(0===o)break e;o--,u+=n[s++]<<l,l+=8}l-=_,k=0,d=3+(7&(u>>>=_)),u>>>=3,l-=3}else{for(z=_+7;l<z;){if(0===o)break e;o--,u+=n[s++]<<l,l+=8}l-=_,k=0,d=11+(127&(u>>>=_)),u>>>=7,l-=7}if(r.have+d>r.nlen+r.ndist){e.msg="invalid bit length repeat",r.mode=30;break}for(;d--;)r.lens[r.have++]=k}}if(30===r.mode)break;if(0===r.lens[256]){e.msg="invalid code -- missing end-of-block",r.mode=30;break}if(r.lenbits=9,S={bits:r.lenbits},x=T(D,r.lens,0,r.nlen,r.lencode,0,r.work,S),r.lenbits=S.bits,x){e.msg="invalid literal/lengths set",r.mode=30;break}if(r.distbits=6,r.distcode=r.distdyn,S={bits:r.distbits},x=T(F,r.lens,r.nlen,r.ndist,r.distcode,0,r.work,S),r.distbits=S.bits,x){e.msg="invalid distances set",r.mode=30;break}if(r.mode=20,6===t)break e;case 20:r.mode=21;case 21:if(6<=o&&258<=h){e.next_out=a,e.avail_out=h,e.next_in=s,e.avail_in=o,r.hold=u,r.bits=l,R(e,c),a=e.next_out,i=e.output,h=e.avail_out,s=e.next_in,n=e.input,o=e.avail_in,u=r.hold,l=r.bits,12===r.mode&&(r.back=-1);break}for(r.back=0;g=(C=r.lencode[u&(1<<r.lenbits)-1])>>>16&255,b=65535&C,!((_=C>>>24)<=l);){if(0===o)break e;o--,u+=n[s++]<<l,l+=8}if(g&&0==(240&g)){for(v=_,y=g,w=b;g=(C=r.lencode[w+((u&(1<<v+y)-1)>>v)])>>>16&255,b=65535&C,!(v+(_=C>>>24)<=l);){if(0===o)break e;o--,u+=n[s++]<<l,l+=8}u>>>=v,l-=v,r.back+=v}if(u>>>=_,l-=_,r.back+=_,r.length=b,0===g){r.mode=26;break}if(32&g){r.back=-1,r.mode=12;break}if(64&g){e.msg="invalid literal/length code",r.mode=30;break}r.extra=15&g,r.mode=22;case 22:if(r.extra){for(z=r.extra;l<z;){if(0===o)break e;o--,u+=n[s++]<<l,l+=8}r.length+=u&(1<<r.extra)-1,u>>>=r.extra,l-=r.extra,r.back+=r.extra}r.was=r.length,r.mode=23;case 23:for(;g=(C=r.distcode[u&(1<<r.distbits)-1])>>>16&255,b=65535&C,!((_=C>>>24)<=l);){if(0===o)break e;o--,u+=n[s++]<<l,l+=8}if(0==(240&g)){for(v=_,y=g,w=b;g=(C=r.distcode[w+((u&(1<<v+y)-1)>>v)])>>>16&255,b=65535&C,!(v+(_=C>>>24)<=l);){if(0===o)break e;o--,u+=n[s++]<<l,l+=8}u>>>=v,l-=v,r.back+=v}if(u>>>=_,l-=_,r.back+=_,64&g){e.msg="invalid distance code",r.mode=30;break}r.offset=b,r.extra=15&g,r.mode=24;case 24:if(r.extra){for(z=r.extra;l<z;){if(0===o)break e;o--,u+=n[s++]<<l,l+=8}r.offset+=u&(1<<r.extra)-1,u>>>=r.extra,l-=r.extra,r.back+=r.extra}if(r.offset>r.dmax){e.msg="invalid distance too far back",r.mode=30;break}r.mode=25;case 25:if(0===h)break e;if(d=c-h,r.offset>d){if((d=r.offset-d)>r.whave&&r.sane){e.msg="invalid distance too far back",r.mode=30;break}p=d>r.wnext?(d-=r.wnext,r.wsize-d):r.wnext-d,d>r.length&&(d=r.length),m=r.window}else m=i,p=a-r.offset,d=r.length;for(h<d&&(d=h),h-=d,r.length-=d;i[a++]=m[p++],--d;);0===r.length&&(r.mode=21);break;case 26:if(0===h)break e;i[a++]=r.length,h--,r.mode=21;break;case 27:if(r.wrap){for(;l<32;){if(0===o)break e;o--,u|=n[s++]<<l,l+=8}if(c-=h,e.total_out+=c,r.total+=c,c&&(e.adler=r.check=r.flags?B(r.check,i,c,a-c):O(r.check,i,c,a-c)),c=h,(r.flags?u:L(u))!==r.check){e.msg="incorrect data check",r.mode=30;break}l=u=0}r.mode=28;case 28:if(r.wrap&&r.flags){for(;l<32;){if(0===o)break e;o--,u+=n[s++]<<l,l+=8}if(u!==(4294967295&r.total)){e.msg="incorrect length check",r.mode=30;break}l=u=0}r.mode=29;case 29:x=1;break e;case 30:x=-3;break e;case 31:return-4;case 32:default:return U}return e.next_out=a,e.avail_out=h,e.next_in=s,e.avail_in=o,r.hold=u,r.bits=l,(r.wsize||c!==e.avail_out&&r.mode<30&&(r.mode<27||4!==t))&&Z(e,e.output,e.next_out,c-e.avail_out)?(r.mode=31,-4):(f-=e.avail_in,c-=e.avail_out,e.total_in+=f,e.total_out+=c,r.total+=c,r.wrap&&c&&(e.adler=r.check=r.flags?B(r.check,i,c,e.next_out-c):O(r.check,i,c,e.next_out-c)),e.data_type=r.bits+(r.last?64:0)+(12===r.mode?128:0)+(20===r.mode||15===r.mode?256:0),(0==f&&0===c||4===t)&&x===N&&(x=-5),x)},r.inflateEnd=function(e){if(!e||!e.state)return U;var t=e.state;return t.window&&(t.window=null),e.state=null,N},r.inflateGetHeader=function(e,t){var r;return e&&e.state?0==(2&(r=e.state).wrap)?U:((r.head=t).done=!1,N):U},r.inflateSetDictionary=function(e,t){var r,n=t.length;return e&&e.state?0!==(r=e.state).wrap&&11!==r.mode?U:11===r.mode&&O(1,t,n,0)!==r.check?-3:Z(e,t,n,n)?(r.mode=31,-4):(r.havedict=1,N):U},r.inflateInfo="pako inflate (from Nodeca project)"},{"../utils/common":41,"./adler32":43,"./crc32":45,"./inffast":48,"./inftrees":50}],50:[function(e,t,r){"use strict";var D=e("../utils/common"),F=[3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,31,35,43,51,59,67,83,99,115,131,163,195,227,258,0,0],N=[16,16,16,16,16,16,16,16,17,17,17,17,18,18,18,18,19,19,19,19,20,20,20,20,21,21,21,21,16,72,78],U=[1,2,3,4,5,7,9,13,17,25,33,49,65,97,129,193,257,385,513,769,1025,1537,2049,3073,4097,6145,8193,12289,16385,24577,0,0],P=[16,16,16,16,17,17,18,18,19,19,20,20,21,21,22,22,23,23,24,24,25,25,26,26,27,27,28,28,29,29,64,64];t.exports=function(e,t,r,n,i,s,a,o){var h,u,l,f,c,d,p,m,_,g=o.bits,b=0,v=0,y=0,w=0,k=0,x=0,S=0,z=0,C=0,E=0,A=null,I=0,O=new D.Buf16(16),B=new D.Buf16(16),R=null,T=0;for(b=0;b<=15;b++)O[b]=0;for(v=0;v<n;v++)O[t[r+v]]++;for(k=g,w=15;1<=w&&0===O[w];w--);if(w<k&&(k=w),0===w)return i[s++]=20971520,i[s++]=20971520,o.bits=1,0;for(y=1;y<w&&0===O[y];y++);for(k<y&&(k=y),b=z=1;b<=15;b++)if(z<<=1,(z-=O[b])<0)return-1;if(0<z&&(0===e||1!==w))return-1;for(B[1]=0,b=1;b<15;b++)B[b+1]=B[b]+O[b];for(v=0;v<n;v++)0!==t[r+v]&&(a[B[t[r+v]]++]=v);if(d=0===e?(A=R=a,19):1===e?(A=F,I-=257,R=N,T-=257,256):(A=U,R=P,-1),b=y,c=s,S=v=E=0,l=-1,f=(C=1<<(x=k))-1,1===e&&852<C||2===e&&592<C)return 1;for(;;){for(p=b-S,_=a[v]<d?(m=0,a[v]):a[v]>d?(m=R[T+a[v]],A[I+a[v]]):(m=96,0),h=1<<b-S,y=u=1<<x;i[c+(E>>S)+(u-=h)]=p<<24|m<<16|_|0,0!==u;);for(h=1<<b-1;E&h;)h>>=1;if(0!==h?(E&=h-1,E+=h):E=0,v++,0==--O[b]){if(b===w)break;b=t[r+a[v]]}if(k<b&&(E&f)!==l){for(0===S&&(S=k),c+=y,z=1<<(x=b-S);x+S<w&&!((z-=O[x+S])<=0);)x++,z<<=1;if(C+=1<<x,1===e&&852<C||2===e&&592<C)return 1;i[l=E&f]=k<<24|x<<16|c-s|0}}return 0!==E&&(i[c+E]=b-S<<24|64<<16|0),o.bits=k,0}},{"../utils/common":41}],51:[function(e,t,r){"use strict";t.exports={2:"need dictionary",1:"stream end",0:"","-1":"file error","-2":"stream error","-3":"data error","-4":"insufficient memory","-5":"buffer error","-6":"incompatible version"}},{}],52:[function(e,t,r){"use strict";var i=e("../utils/common"),o=0,h=1;function n(e){for(var t=e.length;0<=--t;)e[t]=0}var s=0,a=29,u=256,l=u+1+a,f=30,c=19,_=2*l+1,g=15,d=16,p=7,m=256,b=16,v=17,y=18,w=[0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,0],k=[0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13],x=[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,3,7],S=[16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15],z=new Array(2*(l+2));n(z);var C=new Array(2*f);n(C);var E=new Array(512);n(E);var A=new Array(256);n(A);var I=new Array(a);n(I);var O,B,R,T=new Array(f);function D(e,t,r,n,i){this.static_tree=e,this.extra_bits=t,this.extra_base=r,this.elems=n,this.max_length=i,this.has_stree=e&&e.length}function F(e,t){this.dyn_tree=e,this.max_code=0,this.stat_desc=t}function N(e){return e<256?E[e]:E[256+(e>>>7)]}function U(e,t){e.pending_buf[e.pending++]=255&t,e.pending_buf[e.pending++]=t>>>8&255}function P(e,t,r){e.bi_valid>d-r?(e.bi_buf|=t<<e.bi_valid&65535,U(e,e.bi_buf),e.bi_buf=t>>d-e.bi_valid,e.bi_valid+=r-d):(e.bi_buf|=t<<e.bi_valid&65535,e.bi_valid+=r)}function L(e,t,r){P(e,r[2*t],r[2*t+1])}function j(e,t){for(var r=0;r|=1&e,e>>>=1,r<<=1,0<--t;);return r>>>1}function Z(e,t,r){var n,i,s=new Array(g+1),a=0;for(n=1;n<=g;n++)s[n]=a=a+r[n-1]<<1;for(i=0;i<=t;i++){var o=e[2*i+1];0!==o&&(e[2*i]=j(s[o]++,o))}}function W(e){var t;for(t=0;t<l;t++)e.dyn_ltree[2*t]=0;for(t=0;t<f;t++)e.dyn_dtree[2*t]=0;for(t=0;t<c;t++)e.bl_tree[2*t]=0;e.dyn_ltree[2*m]=1,e.opt_len=e.static_len=0,e.last_lit=e.matches=0}function M(e){8<e.bi_valid?U(e,e.bi_buf):0<e.bi_valid&&(e.pending_buf[e.pending++]=e.bi_buf),e.bi_buf=0,e.bi_valid=0}function H(e,t,r,n){var i=2*t,s=2*r;return e[i]<e[s]||e[i]===e[s]&&n[t]<=n[r]}function G(e,t,r){for(var n=e.heap[r],i=r<<1;i<=e.heap_len&&(i<e.heap_len&&H(t,e.heap[i+1],e.heap[i],e.depth)&&i++,!H(t,n,e.heap[i],e.depth));)e.heap[r]=e.heap[i],r=i,i<<=1;e.heap[r]=n}function K(e,t,r){var n,i,s,a,o=0;if(0!==e.last_lit)for(;n=e.pending_buf[e.d_buf+2*o]<<8|e.pending_buf[e.d_buf+2*o+1],i=e.pending_buf[e.l_buf+o],o++,0===n?L(e,i,t):(L(e,(s=A[i])+u+1,t),0!==(a=w[s])&&P(e,i-=I[s],a),L(e,s=N(--n),r),0!==(a=k[s])&&P(e,n-=T[s],a)),o<e.last_lit;);L(e,m,t)}function Y(e,t){var r,n,i,s=t.dyn_tree,a=t.stat_desc.static_tree,o=t.stat_desc.has_stree,h=t.stat_desc.elems,u=-1;for(e.heap_len=0,e.heap_max=_,r=0;r<h;r++)0!==s[2*r]?(e.heap[++e.heap_len]=u=r,e.depth[r]=0):s[2*r+1]=0;for(;e.heap_len<2;)s[2*(i=e.heap[++e.heap_len]=u<2?++u:0)]=1,e.depth[i]=0,e.opt_len--,o&&(e.static_len-=a[2*i+1]);for(t.max_code=u,r=e.heap_len>>1;1<=r;r--)G(e,s,r);for(i=h;r=e.heap[1],e.heap[1]=e.heap[e.heap_len--],G(e,s,1),n=e.heap[1],e.heap[--e.heap_max]=r,e.heap[--e.heap_max]=n,s[2*i]=s[2*r]+s[2*n],e.depth[i]=(e.depth[r]>=e.depth[n]?e.depth[r]:e.depth[n])+1,s[2*r+1]=s[2*n+1]=i,e.heap[1]=i++,G(e,s,1),2<=e.heap_len;);e.heap[--e.heap_max]=e.heap[1],function(e,t){var r,n,i,s,a,o,h=t.dyn_tree,u=t.max_code,l=t.stat_desc.static_tree,f=t.stat_desc.has_stree,c=t.stat_desc.extra_bits,d=t.stat_desc.extra_base,p=t.stat_desc.max_length,m=0;for(s=0;s<=g;s++)e.bl_count[s]=0;for(h[2*e.heap[e.heap_max]+1]=0,r=e.heap_max+1;r<_;r++)p<(s=h[2*h[2*(n=e.heap[r])+1]+1]+1)&&(s=p,m++),h[2*n+1]=s,u<n||(e.bl_count[s]++,a=0,d<=n&&(a=c[n-d]),o=h[2*n],e.opt_len+=o*(s+a),f&&(e.static_len+=o*(l[2*n+1]+a)));if(0!==m){do{for(s=p-1;0===e.bl_count[s];)s--;e.bl_count[s]--,e.bl_count[s+1]+=2,e.bl_count[p]--,m-=2}while(0<m);for(s=p;0!==s;s--)for(n=e.bl_count[s];0!==n;)u<(i=e.heap[--r])||(h[2*i+1]!==s&&(e.opt_len+=(s-h[2*i+1])*h[2*i],h[2*i+1]=s),n--)}}(e,t),Z(s,u,e.bl_count)}function X(e,t,r){var n,i,s=-1,a=t[1],o=0,h=7,u=4;for(0===a&&(h=138,u=3),t[2*(r+1)+1]=65535,n=0;n<=r;n++)i=a,a=t[2*(n+1)+1],++o<h&&i===a||(o<u?e.bl_tree[2*i]+=o:0!==i?(i!==s&&e.bl_tree[2*i]++,e.bl_tree[2*b]++):o<=10?e.bl_tree[2*v]++:e.bl_tree[2*y]++,s=i,u=(o=0)===a?(h=138,3):i===a?(h=6,3):(h=7,4))}function V(e,t,r){var n,i,s=-1,a=t[1],o=0,h=7,u=4;for(0===a&&(h=138,u=3),n=0;n<=r;n++)if(i=a,a=t[2*(n+1)+1],!(++o<h&&i===a)){if(o<u)for(;L(e,i,e.bl_tree),0!=--o;);else 0!==i?(i!==s&&(L(e,i,e.bl_tree),o--),L(e,b,e.bl_tree),P(e,o-3,2)):o<=10?(L(e,v,e.bl_tree),P(e,o-3,3)):(L(e,y,e.bl_tree),P(e,o-11,7));s=i,u=(o=0)===a?(h=138,3):i===a?(h=6,3):(h=7,4)}}n(T);var q=!1;function J(e,t,r,n){P(e,(s<<1)+(n?1:0),3),function(e,t,r,n){M(e),n&&(U(e,r),U(e,~r)),i.arraySet(e.pending_buf,e.window,t,r,e.pending),e.pending+=r}(e,t,r,!0)}r._tr_init=function(e){q||(function(){var e,t,r,n,i,s=new Array(g+1);for(n=r=0;n<a-1;n++)for(I[n]=r,e=0;e<1<<w[n];e++)A[r++]=n;for(A[r-1]=n,n=i=0;n<16;n++)for(T[n]=i,e=0;e<1<<k[n];e++)E[i++]=n;for(i>>=7;n<f;n++)for(T[n]=i<<7,e=0;e<1<<k[n]-7;e++)E[256+i++]=n;for(t=0;t<=g;t++)s[t]=0;for(e=0;e<=143;)z[2*e+1]=8,e++,s[8]++;for(;e<=255;)z[2*e+1]=9,e++,s[9]++;for(;e<=279;)z[2*e+1]=7,e++,s[7]++;for(;e<=287;)z[2*e+1]=8,e++,s[8]++;for(Z(z,l+1,s),e=0;e<f;e++)C[2*e+1]=5,C[2*e]=j(e,5);O=new D(z,w,u+1,l,g),B=new D(C,k,0,f,g),R=new D(new Array(0),x,0,c,p)}(),q=!0),e.l_desc=new F(e.dyn_ltree,O),e.d_desc=new F(e.dyn_dtree,B),e.bl_desc=new F(e.bl_tree,R),e.bi_buf=0,e.bi_valid=0,W(e)},r._tr_stored_block=J,r._tr_flush_block=function(e,t,r,n){var i,s,a=0;0<e.level?(2===e.strm.data_type&&(e.strm.data_type=function(e){var t,r=4093624447;for(t=0;t<=31;t++,r>>>=1)if(1&r&&0!==e.dyn_ltree[2*t])return o;if(0!==e.dyn_ltree[18]||0!==e.dyn_ltree[20]||0!==e.dyn_ltree[26])return h;for(t=32;t<u;t++)if(0!==e.dyn_ltree[2*t])return h;return o}(e)),Y(e,e.l_desc),Y(e,e.d_desc),a=function(e){var t;for(X(e,e.dyn_ltree,e.l_desc.max_code),X(e,e.dyn_dtree,e.d_desc.max_code),Y(e,e.bl_desc),t=c-1;3<=t&&0===e.bl_tree[2*S[t]+1];t--);return e.opt_len+=3*(t+1)+5+5+4,t}(e),i=e.opt_len+3+7>>>3,(s=e.static_len+3+7>>>3)<=i&&(i=s)):i=s=r+5,r+4<=i&&-1!==t?J(e,t,r,n):4===e.strategy||s===i?(P(e,2+(n?1:0),3),K(e,z,C)):(P(e,4+(n?1:0),3),function(e,t,r,n){var i;for(P(e,t-257,5),P(e,r-1,5),P(e,n-4,4),i=0;i<n;i++)P(e,e.bl_tree[2*S[i]+1],3);V(e,e.dyn_ltree,t-1),V(e,e.dyn_dtree,r-1)}(e,e.l_desc.max_code+1,e.d_desc.max_code+1,a+1),K(e,e.dyn_ltree,e.dyn_dtree)),W(e),n&&M(e)},r._tr_tally=function(e,t,r){return e.pending_buf[e.d_buf+2*e.last_lit]=t>>>8&255,e.pending_buf[e.d_buf+2*e.last_lit+1]=255&t,e.pending_buf[e.l_buf+e.last_lit]=255&r,e.last_lit++,0===t?e.dyn_ltree[2*r]++:(e.matches++,t--,e.dyn_ltree[2*(A[r]+u+1)]++,e.dyn_dtree[2*N(t)]++),e.last_lit===e.lit_bufsize-1},r._tr_align=function(e){P(e,2,3),L(e,m,z),function(e){16===e.bi_valid?(U(e,e.bi_buf),e.bi_buf=0,e.bi_valid=0):8<=e.bi_valid&&(e.pending_buf[e.pending++]=255&e.bi_buf,e.bi_buf>>=8,e.bi_valid-=8)}(e)}},{"../utils/common":41}],53:[function(e,t,r){"use strict";t.exports=function(){this.input=null,this.next_in=0,this.avail_in=0,this.total_in=0,this.output=null,this.next_out=0,this.avail_out=0,this.total_out=0,this.msg="",this.state=null,this.data_type=2,this.adler=0}},{}],54:[function(e,t,r){(function(e){!function(r,n){"use strict";if(!r.setImmediate){var i,s,t,a,o=1,h={},u=!1,l=r.document,e=Object.getPrototypeOf&&Object.getPrototypeOf(r);e=e&&e.setTimeout?e:r,i="[object process]"==={}.toString.call(r.process)?function(e){process.nextTick(function(){c(e)})}:function(){if(r.postMessage&&!r.importScripts){var e=!0,t=r.onmessage;return r.onmessage=function(){e=!1},r.postMessage("","*"),r.onmessage=t,e}}()?(a="setImmediate$"+Math.random()+"$",r.addEventListener?r.addEventListener("message",d,!1):r.attachEvent("onmessage",d),function(e){r.postMessage(a+e,"*")}):r.MessageChannel?((t=new MessageChannel).port1.onmessage=function(e){c(e.data)},function(e){t.port2.postMessage(e)}):l&&"onreadystatechange"in l.createElement("script")?(s=l.documentElement,function(e){var t=l.createElement("script");t.onreadystatechange=function(){c(e),t.onreadystatechange=null,s.removeChild(t),t=null},s.appendChild(t)}):function(e){setTimeout(c,0,e)},e.setImmediate=function(e){"function"!=typeof e&&(e=new Function(""+e));for(var t=new Array(arguments.length-1),r=0;r<t.length;r++)t[r]=arguments[r+1];var n={callback:e,args:t};return h[o]=n,i(o),o++},e.clearImmediate=f}function f(e){delete h[e]}function c(e){if(u)setTimeout(c,0,e);else{var t=h[e];if(t){u=!0;try{!function(e){var t=e.callback,r=e.args;switch(r.length){case 0:t();break;case 1:t(r[0]);break;case 2:t(r[0],r[1]);break;case 3:t(r[0],r[1],r[2]);break;default:t.apply(n,r)}}(t)}finally{f(e),u=!1}}}}function d(e){e.source===r&&"string"==typeof e.data&&0===e.data.indexOf(a)&&c(+e.data.slice(a.length))}}("undefined"==typeof self?void 0===e?this:e:self)}).call(this,"undefined"!=typeof global?global:"undefined"!=typeof self?self:"undefined"!=typeof window?window:{})},{}]},{},[10])(10)});
+/*@@TC_PART@@*/
+/* Lõi dùng chung: tiện ích, lưu trữ, đăng nhập, khung tab. Mọi tab chỉ gọi TC.registerTab. */
+(function(){
+const TC=window.TC={tabs:[],user:null};
+const mem={};
+/* các khóa chỉ ở máy này, không đồng bộ: phiên đăng nhập, tab đang mở, ghim, bản nháp, mốc đã xem, đồng bộ, người dùng và nhật ký (do máy chủ giữ) */
+const LOCAL=/^(session|tab|rpin|draft:|seen:|users$|log$|sync|tok)/;
+TC.store={
+  get(k,d){try{const v=localStorage.getItem('tc_'+k);return v?JSON.parse(v):d}catch(e){return k in mem?mem[k]:d}},
+  set(k,v){try{localStorage.setItem('tc_'+k,JSON.stringify(v))}catch(e){mem[k]=v}if(TC.srv&&TC.srv.on&&!LOCAL.test(k))TC.srv.dirty(k)},
+  del(k){try{localStorage.removeItem('tc_'+k)}catch(e){delete mem[k]}if(TC.srv&&TC.srv.on&&!LOCAL.test(k))TC.srv.dirty(k)},
+  local:k=>LOCAL.test(k)
+};
+/* Chế độ máy chủ (Google Apps Script): dữ liệu lưu ở máy này như cũ rồi tự đẩy lên Google Sheet dùng chung, định kỳ kéo về. Ngoài script (mở tệp riêng) thì TC.srv.on=false và mọi thứ chạy như trước. */
+(function(){
+const gsr=()=>{try{return window.google&&google.script&&google.script.run}catch(e){return null}};
+const ls={get:k=>{try{return localStorage.getItem(k)}catch(e){return null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}},del:k=>{try{localStorage.removeItem(k)}catch(e){}}};
+const S=TC.srv={on:!!gsr(),state:'off',at:null,msg:''};
+const dirty=new Set();try{JSON.parse(ls.get('tc_sync_dirty')||'[]').forEach(k=>dirty.add(k))}catch(e){}
+const saveDirty=()=>ls.set('tc_sync_dirty',JSON.stringify([...dirty]));
+const setState=(st,msg)=>{S.state=st;S.msg=msg||'';if(st==='ok')S.at=new Date();if(S.onState)S.onState()};
+S.token=()=>ls.get('tc_tok')||(function(){try{return sessionStorage.getItem('tc_tok')}catch(e){return null}})()||'';
+S.setToken=(t,keep)=>{ls.del('tc_tok');try{sessionStorage.removeItem('tc_tok')}catch(e){}if(!t)return;if(keep)ls.set('tc_tok',t);else try{sessionStorage.setItem('tc_tok',t)}catch(e){ls.set('tc_tok',t)}};
+S.call=(a,p)=>new Promise(res0=>{const r=gsr();if(!r)return res0({ok:false,err:'net',msg:'Không kết nối được máy chủ.'});
+  /* máy chủ không trả lời quá 90 giây thì báo lỗi, không để nút treo mãi */
+  let done=false;const res=o=>{if(done)return;done=true;clearTimeout(to);res0(o)};const to=setTimeout(()=>res({ok:false,err:'net',msg:'Máy chủ không phản hồi sau 90 giây, thử lại sau.'}),90000);
+  const tk=S.token();let q;try{q=JSON.stringify(Object.assign({a,t:tk},p||{}))}catch(e){return res({ok:false,msg:'Dữ liệu không gửi được.'})}
+  r.withSuccessHandler(x=>{let o;try{o=JSON.parse(x)}catch(e){o={ok:false,err:'server',msg:'Máy chủ trả về dữ liệu lỗi.'}}
+    /* chỉ coi là hết phiên khi lệnh gửi đi bằng đúng phiên đang dùng; lệnh gửi lúc chưa đăng nhập (máy chủ chậm) trả về muộn thì bỏ qua */
+    if(o&&o.err==='auth'&&a!=='login'&&a!=='me'&&tk&&tk===S.token()&&S.onAuth)S.onAuth(o.msg);res(o)})
+   .withFailureHandler(e=>res({ok:false,err:'net',msg:'Không kết nối được máy chủ, kiểm tra mạng rồi thử lại.'})).api(q)});
+let timer=null,busy=false;
+S.dirty=k=>{if(TC.user&&(TC.user.role==='viewer'||TC.user.role==='pc'))return; /* quyền chỉ xem, Phân cấp: máy chủ không nhận ghi, khỏi xếp hàng */
+  dirty.add(k);saveDirty();setState('busy');clearTimeout(timer);timer=setTimeout(S.flush,1500)};
+S.pending=()=>dirty.size;
+/* đẩy các khóa đã sửa lên máy chủ, gom từng gói khoảng 1 triệu ký tự */
+S.flush=async()=>{if(busy||!dirty.size)return true;if(!S.token()){clearTimeout(timer);timer=setTimeout(S.flush,3000);return true} /* chưa đăng nhập thì chờ, không gửi phiên rỗng */
+  busy=true;let ok=true;
+  try{while(dirty.size){const keys=[...dirty],pack=[],vals={};let n=0;
+    for(const k of keys){const v=ls.get('tc_'+k);vals[k]=v;if(pack.length&&n+(v?v.length:0)>1000000)break;pack.push({k,v});n+=v?v.length:10}
+    const r=await S.call('push',{items:pack});
+    if(!r.ok){ok=false;if(r.err==='perm'){pack.forEach(x=>dirty.delete(x.k));saveDirty();TC.toast(r.msg||'Tài khoản này chỉ được xem',1);setState('ok');continue}
+      setState('err',r.msg);break}
+    pack.forEach(x=>{if(ls.get('tc_'+x.k)===vals[x.k])dirty.delete(x.k)});saveDirty()}
+  }finally{busy=false}
+  if(ok)setState('ok');else{clearTimeout(timer);timer=setTimeout(S.flush,12000)}
+  return ok};
+let pn=0;
+S.pull=async(first,quiet)=>{
+  const keys=[];let since=+(ls.get('tc_sync_since')||0),r;
+  for(let i=0;i<40;i++){r=await S.call('pull',{since,nolog:!first&&(++pn%4!==0)});
+    if(!r.ok){setState('err',r.msg);return false}
+    (r.items||[]).forEach(it=>{if(dirty.has(it.k))return;const cur=ls.get('tc_'+it.k);
+      if(it.v===null||it.v===undefined){if(cur!==null){ls.del('tc_'+it.k);keys.push(it.k)}}else if(cur!==it.v){ls.set('tc_'+it.k,it.v);keys.push(it.k)}});
+    if(r.log)ls.set('tc_log',JSON.stringify(r.log));
+    S.checkVer(r.ver);if(r.auto!==undefined)S.auto=r.auto;
+    since=r.since||since;ls.set('tc_sync_since',String(since));if(!r.more)break}
+  if(!dirty.size)setState('ok');
+  if(keys.length&&!first&&!quiet&&S.onChange)S.onChange(keys);
+  if(TC.bellUpdate)TC.bellUpdate();
+  return true};
+/* số phiên bản web do máy chủ giữ: lần đầu ghi nhận, về sau khác đi nghĩa là Quản trị đã cập nhật nên tự tải lại */
+S.ver=null;
+S.checkVer=v=>{if(v===undefined||v===null)return;if(S.ver===null){S.ver=v;return}if(v!==S.ver&&!S.reloading){S.reloading=true;if(S.onNewVer)S.onNewVer();else location.reload()}};
+S.start=async()=>{
+  if(TC.user&&(TC.user.role==='viewer'||TC.user.role==='pc')){dirty.clear();saveDirty()} /* khóa tab nạp sẵn lúc mở trang không phải của người này */
+  /* quyền Phân cấp không dùng dữ liệu báo cáo: chỉ hỏi số phiên bản web để tự tải lại khi có bản mới */
+  if(TC.user&&TC.user.role==='pc'){const chk=async()=>{const r=await S.call('me');if(r&&r.ok)S.checkVer(r.ver)};await chk();setState('ok');
+    clearInterval(S.iv);S.iv=setInterval(()=>{if(document.visibilityState==='visible'&&TC.user)chk()},30000);return}
+await S.pull(true);S.flush();
+  clearInterval(S.iv);S.iv=setInterval(()=>{if(document.visibilityState==='visible'&&TC.user){S.flush().then(()=>S.pull())}},30000);
+  if(!S.vb){S.vb=1;document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&TC.user)S.flush().then(()=>S.pull())})}};
+/* đăng xuất: đẩy nốt dữ liệu chưa gửi rồi xóa bản lưu tạm trên máy để máy dùng chung không lộ dữ liệu */
+S.stop=async()=>{clearInterval(S.iv);const ok=await S.flush();
+  if(ok){const del=[];try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('tc_')&&!k.startsWith('tc_draft:')&&!k.startsWith('tc_rpin')&&k!=='tc_tok_user')del.push(k)}}catch(e){}
+    del.forEach(k=>ls.del(k));dirty.clear();state_reset()}
+  return ok};
+const state_reset=()=>{S.at=null;setState('off')};
+})();
+TC.fmt=n=>{if(n==null||isNaN(n))return '';const s=String(Math.abs(Math.round(n))).replace(/\B(?=(\d{3})+(?!\d))/g,'.');return (n<0&&Math.round(n)!==0?'-':'')+s};
+TC.pct=r=>{if(r==null||!isFinite(r))return '';const v=Math.round(r*10000)/100;return (Number.isInteger(v)?String(v):v.toFixed(2)).replace('.',',')};
+TC.R=x=>Math.floor(x+0.5);
+TC.parseVN=v=>{if(typeof v==='number')return v;if(v==null)return 0;let s=String(v).replace(/ /g,' ').trim();if(!s||s==='-')return 0;const neg=/^\(.*\)$/.test(s)||s[0]==='-';s=s.replace(/[()\-\s]/g,'');s=s.replace(/\./g,'').replace(',','.');const n=parseFloat(s);return isNaN(n)?0:(neg?-n:n)};
+TC.esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+/* sắp xếp tên xã, phường theo A B C của tên riêng (bỏ chữ Xã, Phường ở đầu) */
+/* khóa so sánh tên xã (bỏ khác biệt đặt dấu hòa/hoà, giữ dấu thanh); đặt ở lõi để mọi tab dùng được ngay cả khi tệp excel.js chưa nạp xong */
+TC.normXa=s=>String(s||'').toLowerCase().normalize('NFD').split(/\s+/).filter(Boolean).map(w=>{const t=(w.match(/[\u0300\u0301\u0303\u0309\u0323]/g)||[]).join('');return w.replace(/[\u0300\u0301\u0303\u0309\u0323]/g,'')+t}).join(' ');
+TC.xaKey=n=>String(n||'').replace(/^(xã|phường|đặc khu|thị trấn)\s+/i,'').trim();
+/* thứ tự xã, phường: theo thứ tự làm dự toán (1 Phường Long An ... 96 Xã Truông Mít, danh sách TC_XA96); tên lạ thì xếp sau, theo A B C */
+let xaOrd=null;
+TC.xaNo=n=>{if(!xaOrd){xaOrd={};(window.TC_XA96||[]).forEach((x,i)=>{xaOrd[TC.normXa(x)]=i+1})}return xaOrd[TC.normXa(n)]||0};
+TC.xaCmp=(a,b)=>{const x=TC.xaNo(a)||999,y=TC.xaNo(b)||999;return x-y||TC.xaKey(a).localeCompare(TC.xaKey(b),'vi')||String(a).localeCompare(String(b),'vi')};
+TC.$=(s,r)=>(r||document).querySelector(s);
+TC.toast=(m,bad)=>{const t=document.createElement('div');t.className='toast'+(bad?' bad':'');t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),3800)};
+TC.download=async(blob,name,opt)=>{
+  try{const c=window.claude&&window.claude.use&&await window.claude.use('downloads');
+    if(c){try{await c.save({filename:name,data:blob});TC.toast('Đã lưu '+name);return true}catch(e){if(e&&e.code==='declined')return false;if(e&&e.code==='rejected_extension'){TC.toast('Định dạng file không được phép lưu ở đây',1);return 'rejected'}}}}catch(e){}
+  /* chạy trong khung của Google (iframe hạn chế tải tệp): khi người dùng vừa bấm nút thì mở cửa sổ mới để tải, cửa sổ đó không bị chặn tải */
+  const inFrame=(()=>{try{return window.top!==window}catch(e){return true}})();
+  if(inFrame&&opt&&opt.gesture){const url=URL.createObjectURL(blob),w=window.open('','_blank');
+    if(w){try{const n=String(name).replace(/[<>&"]/g,'');w.document.write('<!doctype html><meta charset="utf-8"><title>'+n+'</title><body style="font:16px system-ui;padding:24px"><p>Đang tải <b>'+n+'</b>. Tải xong có thể đóng cửa sổ này.</p><p><a id="a" href="'+url+'" download="'+n+'">Bấm vào đây nếu tệp chưa tải về</a></p><script>document.getElementById("a").click()<\/script>');w.document.close();setTimeout(()=>URL.revokeObjectURL(url),120000);return true}catch(e){try{w.close()}catch(x){}}}}
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},60000);
+  if(inFrame&&!(opt&&opt.gesture))TC.toast('Nếu chưa thấy tệp tải về, bấm nút Tải ở khung báo bên dưới (mở cửa sổ mới để tải).');
+  return true};
+/* nhật ký hoạt động: act = việc làm, d = chi tiết (tên xã, tệp...); đăng nhập thì ghi luôn lần đăng nhập gần nhất vào tài khoản; chuông thông báo ở khung trên tự cập nhật */
+TC.log=(act,d)=>{const now=new Date().toISOString(),l=TC.store.get('log',[]);l.unshift({t:now,u:TC.user?TC.user.username:'-',a:act,d:d||''});TC.store.set('log',l.slice(0,300));
+  if(TC.srv.on){if(TC.user)TC.srv.call('log',{e:{t:now,a:act,d:d||''}})}
+  else if(act==='Đăng nhập'&&TC.user){const us=TC.auth.users(),x=us.find(y=>y.username===TC.user.username);if(x){x.last=now;TC.auth.save(us)}}
+  if(TC.bellUpdate)TC.bellUpdate()};
+/* cửa sổ nổi có dấu X góc trên bên phải; trả về {el,close}; bấm nền mờ hoặc Esc cũng đóng */
+TC.modal=(title,html,opt)=>{opt=opt||{};
+  const o=document.createElement('div');o.className='ovl mdl';
+  o.innerHTML=`<div class="dlg card mbox${opt.wide?' wide':''}" role="dialog" aria-modal="true" aria-label="${TC.esc(title)}"><div class="mh"><h2>${TC.esc(title)}</h2><button type="button" class="mx" aria-label="Đóng">✕</button></div><div class="mb">${html}</div></div>`;
+  document.body.appendChild(o);
+  const close=()=>{o.remove();document.removeEventListener('keydown',k);if(opt.onClose)opt.onClose()};
+  const k=e=>{if(e.key==='Escape')close()};document.addEventListener('keydown',k);
+  o.querySelector('.mx').onclick=close;o.addEventListener('mousedown',e=>{if(e.target===o)close()});
+  return {el:o.querySelector('.mb'),close}};
+TC.registerTab=t=>{TC.tabs.push(t);TC.tabs.sort((a,b)=>(a.ord||5)-(b.ord||5))};
+
+/* ---------- phần tải sau (tăng tốc mở app): thư viện Excel, PDF, ảnh nền, mẫu Word, tab ít dùng ----------
+   Bản đầy đủ (chạy ngoại tuyến) đã có sẵn nên TC.need trả ngay. Bản nhẹ (trên máy chủ script) có window.TC_PARTS = {ten:{v,len}}:
+   lần đầu lấy từ máy chủ (google.script.run.getPart), cất vào IndexedDB theo mã phiên bản, lần sau đọc ngay trên máy. */
+const PT={xlsx:()=>window.XLSX,pdf:()=>window.pdfjsLib,docx:()=>window.TC_TEMPLATE_B64,bg:()=>window.TC_IMG&&window.TC_IMG.bg,phancap:()=>TC.phancap};
+const pLoad={},SEP='\n/*@@TC_PART@@*/\n';
+const idb=()=>new Promise((ok,no)=>{try{const r=indexedDB.open('tc_parts',1);r.onupgradeneeded=()=>r.result.createObjectStore('p');r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)}catch(e){no(e)}});
+const idbGet=async k=>{try{const d=await idb();return await new Promise(ok=>{const q=d.transaction('p').objectStore('p').get(k);q.onsuccess=()=>ok(q.result==null?null:q.result);q.onerror=()=>ok(null)})}catch(e){return null}};
+const idbPut=async(n,k,v)=>{try{const d=await idb(),st=d.transaction('p','readwrite').objectStore('p');
+  const c=st.openCursor();c.onsuccess=()=>{const x=c.result;if(!x)return;if(String(x.key).startsWith('part:'+n+':')&&x.key!==k)x.delete();x.continue()};st.put(v,k)}catch(e){}};
+const gRun=(fn,n)=>new Promise((ok,no)=>{const g=window.google&&google.script&&google.script.run;if(!g||!g[fn])return no(new Error('Bản này không tải thêm được phần '+n));
+  g.withSuccessHandler(ok).withFailureHandler(e=>no(e instanceof Error?e:new Error(String(e&&e.message||e))))[fn](n)});
+/* ưu tiên bản nén gzip (nhẹ đường truyền), trình duyệt không giải nén được thì lấy bản thường */
+const fetchPart=async n=>{const g=window.google&&google.script&&google.script.run;
+  if(g&&g.getPartZ&&window.DecompressionStream){try{const b=await gRun('getPartZ',n),u=Uint8Array.from(atob(b),c=>c.charCodeAt(0));
+    return await new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream('gzip'))).text()}catch(e){}}
+  return gRun('getPart',n)};
+const runPart=code=>code.split(SEP).forEach(src=>{const s=document.createElement('script');s.textContent=src;document.head.appendChild(s)});
+async function loadPart(n){
+  const info=(window.TC_PARTS||{})[n];if(!info)throw new Error('Bản này thiếu phần '+n);
+  const key='part:'+n+':'+info.v;let code=await idbGet(key);
+  if(typeof code!=='string'||(info.len&&code.length!==info.len)){
+    let e1;for(let i=0;i<2;i++){try{code=await fetchPart(n);break}catch(e){e1=e;code=null}}
+    if(code==null)throw new Error('Chưa tải được phần '+n+' ('+(e1&&e1.message||'lỗi mạng')+'). Bạn thử lại.');
+    if(info.len&&code.length!==info.len)throw new Error('Phần '+n+' tải về chưa đủ, bạn thử lại.');
+    idbPut(n,key,code)}
+  runPart(code);if(PT[n]&&!PT[n]())throw new Error('Phần '+n+' chưa chạy được.')}
+TC.need=(...ns)=>Promise.all(ns.map(n=>PT[n]&&PT[n]()?null:(pLoad[n]||(pLoad[n]=loadPart(n).catch(e=>{delete pLoad[n];throw e})))));
+TC.partsReady=n=>!!(PT[n]&&PT[n]());
+/* đăng nhập: mật khẩu băm SHA-256 kèm muối, người dùng lưu trên máy này */
+async function sha(s){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,'0')).join('')}
+TC.auth={
+  users:()=>TC.store.get('users',[]),
+  save:u=>TC.store.set('users',u),
+  async make(username,name,role,pass){const salt=Math.random().toString(36).slice(2);return{username:username.trim().toLowerCase(),name,role,salt,hash:await sha(salt+pass),active:true}},
+  async login(username,pass){const u=TC.auth.users().find(x=>x.username===username.trim().toLowerCase());if(!u||!u.active)return null;return (await sha(u.salt+pass))===u.hash?u:null},
+  async setPass(username,pass){const us=TC.auth.users();const u=us.find(x=>x.username===username);u.salt=Math.random().toString(36).slice(2);u.hash=await sha(u.salt+pass);TC.auth.save(us)},
+  can:(need)=>{const r=TC.user&&TC.user.role;return need==='admin'?r==='admin':need==='edit'?(r==='admin'||r==='editor'):!!r}
+};
+})();
+/* ô nhập số kiểu Việt: tự chèn dấu chấm hàng nghìn khi gõ (đơn vị triệu đồng, không thập phân) */
+TC.bindNum=root=>root.addEventListener('input',e=>{const t=e.target;if(!t.classList||!t.classList.contains('ni'))return;
+  const neg=/^\s*-/.test(t.value),d=t.value.replace(/\D/g,'');t.value=(neg?'-':'')+d.replace(/\B(?=(\d{3})+(?!\d))/g,'.')});
+TC.numVal=v=>{const n=TC.parseVN(v);return isFinite(n)?n:0};
+/* hộp thoại nhập liệu (prompt/confirm của trình duyệt bị chặn trong khung claude.ai): trả về {tên: giá trị} hoặc null nếu hủy */
+TC.dialog=(title,inner,okLabel)=>new Promise(res=>{
+  const o=document.createElement('div');o.className='ovl';
+  o.innerHTML=`<div class="dlg card" role="dialog" aria-modal="true"><h2>${TC.esc(title)}</h2><form>${inner}<div class="row" style="margin-top:14px;justify-content:flex-end"><button type="button" class="btn" data-x="0">Hủy</button><button type="submit" class="btn pri">${TC.esc(okLabel||'Đồng ý')}</button></div></form></div>`;
+  document.body.appendChild(o);
+  const end=v=>{o.remove();document.removeEventListener('keydown',esc);res(v)};
+  const esc=e=>{if(e.key==='Escape')end(null)};document.addEventListener('keydown',esc);
+  o.querySelector('[data-x="0"]').onclick=()=>end(null);
+  o.querySelector('form').onsubmit=e=>{e.preventDefault();const v={};o.querySelectorAll('[name]').forEach(x=>{v[x.name]=x.value});end(v)};
+  const f=o.querySelector('[name]');if(f)f.focus();else o.querySelector('button[type=submit]').focus();
+});
+
+/* ghi chú gọn: chữ i nhỏ trong vòng tròn, bấm mới mở thanh thông báo; bấm ra ngoài hoặc Esc thì đóng. html là nội dung đã an toàn (tự bọc b, i nếu cần) */
+TC.tip=html=>`<span class="tip"><button type="button" class="tip-i" aria-expanded="false" aria-label="Xem ghi chú">i</button><span class="tip-b" role="note" hidden><span class="tip-ic" aria-hidden="true">i</span><span>${html}</span></span></span>`;
+
+/* ghi lỗi chạy để chẩn đoán: lỗi bắt được và lỗi không bắt được (không ghi nội dung dữ liệu) */
+TC.errs=(()=>{const a=[];const f=(w,e)=>{try{a.push({t:new Date().toISOString().slice(11,19),w:String(w).slice(0,80),m:String(e&&e.message||e).slice(0,300),s:String(e&&e.stack||'').split('\n').slice(0,4).join(' | ').slice(0,500)});if(a.length>20)a.shift()}catch(x){}};
+  window.addEventListener('error',ev=>f('error',ev.error||ev.message));window.addEventListener('unhandledrejection',ev=>f('promise',ev.reason));
+  f.list=a;return {push:f,list:a}})();
+TC.diag=()=>{let st={};try{st=TC.store.stats?TC.store.stats():{}}catch(e){}
+  const o={app:'APP TÀI CHÍNH',bytes:document.documentElement.outerHTML.length,time:new Date().toISOString(),ua:navigator.userAgent,
+    iframe:window.top!==window,exec:!!window.TC_EXEC,srv:!!(TC.srv&&TC.srv.on),state:TC.srv&&TC.srv.state,ver:TC.srv&&TC.srv.ver,
+    user:TC.user?{u:TC.user.username,role:TC.user.role}:null,bodyLen:(document.body.innerText||'').length,
+    tabbody:(document.getElementById('tabbody')||{}).childElementCount,scripts:[...document.scripts].map(x=>{const t=x.textContent||'';return [t.length,t.slice(0,40),t.slice(-40)]}),mods:(()=>{const f={normXa:TC.normXa,buildXlsx:TC.buildXlsx,parsePhanCap:TC.parsePhanCap,modelThu:TC.modelThu,tdLoadVis:TC.tdLoadVis,engine:TC.engine,docx:TC.buildDocx||TC.docx,XLSX:window.XLSX,JSZip:window.JSZip,pdfjs:window.pdfjsLib,XA96:window.TC_XA96};const o={};Object.keys(f).forEach(k=>o[k]=!!f[k]);return o})(),keys:(()=>{try{return Object.keys(localStorage).filter(k=>/^tc_/.test(k)).length}catch(e){return 'khong doc duoc'}})(),errors:TC.errs.list};
+  const txt=JSON.stringify(o,null,1);
+  const d=document.createElement('div');d.className='modal-bg';d.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
+  d.innerHTML='<div class="card" style="max-width:640px;width:100%;max-height:90vh;overflow:auto"><h2 style="margin:0 0 8px">Chẩn đoán</h2><textarea readonly style="width:100%;height:280px;font:12px/1.4 monospace"></textarea><div class="row" style="margin-top:8px"><button class="btn pri" data-c>Sao chép</button><button class="btn" data-x>Đóng</button></div></div>';
+  d.querySelector('textarea').value=txt;d.querySelector('[data-x]').onclick=()=>d.remove();
+  d.querySelector('[data-c]').onclick=()=>{const ta=d.querySelector('textarea');ta.select();try{document.execCommand('copy');TC.toast('Đã sao chép')}catch(e){}};document.body.appendChild(d)};
+(function(){
+/* khung ghi chú nổi theo cửa sổ (position fixed), luôn nằm trọn trong màn hình: không bị bảng có thanh cuộn cắt mất, sát mép phải thì dịch sang trái, sát đáy thì mở lên trên */
+const place=b=>{const p=b.nextElementSibling;if(!p||p.hidden)return;const M=8,vw=document.documentElement.clientWidth||innerWidth,vh=innerHeight;
+  p.style.position='fixed';p.style.maxWidth=Math.min(560,vw-2*M)+'px';p.style.left='0px';p.style.top='0px';
+  const r=b.getBoundingClientRect(),o=p.getBoundingClientRect(),w=o.width,h=o.height;
+  let x=r.left-4;if(x+w>vw-M)x=vw-M-w;if(x<M)x=M;
+  let y=r.bottom+8;if(y+h>vh-M&&r.top-8-h>=M)y=r.top-8-h;
+  p.style.left=(x-o.left)+'px';p.style.top=(y-o.top)+'px'}; /* trừ o.left/o.top: đúng cả khi khung cha có transform */
+const replace=()=>document.querySelectorAll('.tip-i[aria-expanded=true]').forEach(place);
+addEventListener('resize',replace);addEventListener('scroll',replace,true);
+const closeAll=ex=>document.querySelectorAll('.tip-i[aria-expanded=true]').forEach(b=>{if(b!==ex){b.setAttribute('aria-expanded','false');b.nextElementSibling.hidden=true}});
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('.tip-i');
+  if(b){const on=b.getAttribute('aria-expanded')!=='true';closeAll(b);b.setAttribute('aria-expanded',on);b.nextElementSibling.hidden=!on;if(on)place(b);return}
+  if(!(e.target.closest&&e.target.closest('.tip-b')))closeAll()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeAll()})})();
+
+/*@@TC_PART@@*/
+/* Bộ đọc file TABMIS / phụ lục dự toán / biểu 96 xã, tính toán, viết nhận xét. Không đụng giao diện. */
+(function(){
+const {R,parseVN,fmt,pct}=TC;
+const E=TC.engine={};
+const norm=s=>String(s==null?'':s).replace(/ /g,' ').replace(/\s+/g,' ').trim();
+
+/* ---- đọc file thành bảng chuỗi ---- */
+/* đọc chữ từ tệp html: ưu tiên utf-8, nếu tệp khai báo bảng mã khác (Excel cũ hay dùng windows-125x) thì giải mã theo đó */
+const decodeHtml=buf=>{const u=new Uint8Array(buf);let t=new TextDecoder('utf-8').decode(u);
+  const m=/charset=["']?([\w-]+)/i.exec(t.slice(0,3000));
+  if(m&&!/^utf-?8$/i.test(m[1])){try{t=new TextDecoder(m[1]).decode(u)}catch(e){}}
+  return t};
+const htmlRows=doc=>{
+  const tabs=[...doc.querySelectorAll('table')].sort((a,b)=>b.rows.length-a.rows.length);
+  if(!tabs.length)return null;
+  const rowOf=tr=>{const o=[];[...tr.cells].forEach(c=>{const t=norm(c.textContent);o.push(t);for(let i=1;i<(c.colSpan||1);i++)o.push('')});return o};
+  const rows=[...tabs[0].rows].map(rowOf);
+  /* tệp TABMIS xuất dạng html để phần đầu (địa bàn, ngày) trong bảng nhỏ riêng, tách khỏi bảng số liệu */
+  const head=tabs.slice(1).flatMap(t=>t.querySelector('table')?[]:[...t.rows].map(rowOf)).slice(0,40);
+  return {rows,head,sheets:null}};
+const relPath=f=>String(f._rp||f.webkitRelativePath||'').replace(/\\/g,'/');
+/* Excel "Workbook Frameset": tệp .xls chỉ là vỏ, số liệu ở <tên>_files/sheet001.htm. Lấy đường dẫn và tên sheet từ vỏ */
+E.shellInfo=text=>{
+  if(!/Excel Workbook Frameset/i.test(text)||!/<link\s+id=["']?shLink["']?\s+href=/i.test(text))return null;
+  const links=[...text.matchAll(/<link\s+id=["']?shLink["']?\s+href=["']?([^"'\s>]+)/gi)].map(m=>{let h=m[1];try{h=decodeURIComponent(h)}catch(e){}return h.replace(/\\/g,'/')});
+  const names={};[...text.matchAll(/c_rgszSh\[(\d+)\]\s*=\s*"([^"]*)"/g)].forEach(m=>names[+m[1]]=m[2]);
+  return links.map((href,i)=>({href,name:names[i]||''}))};
+/* tìm tệp sheet trong nhóm tệp đã chọn: ưu tiên khớp đường dẫn thư mục, không có đường dẫn thì khớp theo tên tệp (chỉ khi không nhập nhằng) */
+E.findSheet=(href,pool,shell)=>{
+  const h=href.toLowerCase(),base=h.split('/').pop(),others=(pool||[]).filter(f=>f!==shell);
+  const byPath=others.find(f=>{const r=relPath(f).toLowerCase();return r&&(r===h||r.endsWith('/'+h))});
+  if(byPath)return byPath;
+  const c=others.filter(f=>String(f.name).toLowerCase()===base);
+  if(c.length===1)return c[0];
+  if(c.length>1){const dir=h.split('/').slice(0,-1).join('/');const d=c.filter(f=>relPath(f).toLowerCase().includes(dir));return d.length===1?d[0]:null}
+  return null};
+E.readTable=async function(file,sheetPick,pool){
+  const buf=await file.arrayBuffer();
+  if(String.fromCharCode(...new Uint8Array(buf.slice(0,4)))!=='%PDF')await TC.need('xlsx'); /* thư viện Excel tải sau (bản nhẹ); cả tệp .xls dạng html cũng cần để đọc ngày kiểu số */
+  const head=new TextDecoder().decode(new Uint8Array(buf.slice(0,300))).trimStart().toLowerCase();
+  if(head.startsWith('<')){
+    const text=decodeHtml(buf),doc=new DOMParser().parseFromString(text,'text/html');
+    const got=htmlRows(doc);
+    if(got)return got;
+    if(doc.querySelector('frameset,frame')||/Excel Workbook Frameset/i.test(text)){
+      const nm=String(file.name||'').replace(/\.[^.]+$/,''),info=E.shellInfo(text);
+      const miss=()=>new Error(`Tệp này chỉ là "vỏ" của Excel dạng trang web, số liệu nằm ở thư mục "${nm}_files" đi kèm mà web chưa thấy. Cách đơn giản: bấm "Chọn cả thư mục" (hoặc kéo thả cả thư mục) chứa tệp và thư mục "${nm}_files", web tự ghép. Hoặc chọn cùng lúc tệp này và tệp sheet001.htm trong thư mục đó.`);
+      if(!info)throw miss();
+      const tabs=[];
+      for(const l of info){const f=E.findSheet(l.href,pool,file);if(!f)throw miss();
+        const r=htmlRows(new DOMParser().parseFromString(decodeHtml(await f.arrayBuffer()),'text/html'));if(r)tabs.push({name:l.name,r})}
+      if(!tabs.length)throw new Error('Thư mục dữ liệu đi kèm không có bảng số liệu');
+      const t=(sheetPick&&tabs.find(x=>sheetPick.test(x.name)))||tabs[0];
+      return Object.assign({},t.r,{fromShell:true});
+    }
+    throw new Error('Không thấy bảng dữ liệu trong file (file .xls dạng html thiếu thư mục đi kèm?)');
+  }
+  if(String.fromCharCode(...new Uint8Array(buf.slice(0,4)))==='%PDF')return {rows:await pdfRows(buf),sheets:null,pdf:true};
+  await TC.need('xlsx');const wb=XLSX.read(buf,{type:'array'});
+  return {wb,sheets:wb.SheetNames,rows:sheetRows(wb,(sheetPick&&wb.SheetNames.find(n=>sheetPick.test(n)))||wb.SheetNames[0])};
+};
+function sheetRows(wb,name){const ws=wb.Sheets[name];return XLSX.utils.sheet_to_json(ws,{header:1,raw:true,defval:''})}
+E.sheetRows=sheetRows;
+
+function meta(rows){
+  const txt=rows.slice(0,25).map(r=>r.map(norm).filter(Boolean).join(' ')).join('\n');
+  const m={};
+  let x=txt.match(/Địa bàn\s*:[ \t]*(\d*)[ \t]*-?[ \t]*([^\n]*)/i);if(x){m.ma=x[1];let nm=norm(x[2]).replace(/\s*(Đơn vị|Đến ngày|Từ ngày).*$/i,'');m.xa=/^(xã|phường|thị trấn|đặc khu)\s/i.test(nm)?nm:''}
+  /* ngày số liệu: B2-01 ghi "Đến ngày hiệu lực: 31/12/2025"; B3-01 ghi "Từ ngày hiệu lực 01-01-25 đến ngày 31-12-25" rồi mới tới "Đến ngày kết sổ 05-11-26" (ngày in báo cáo, KHÔNG phải ngày số liệu) */
+  x=txt.match(/Đến ngày hiệu lực\s*:?\s*(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/i)||txt.match(/Từ ngày hiệu lực\s*:?\s*\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}\s*đến ngày\s*:?\s*(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/i);
+  if(x){let y=+x[3];if(y<100)y+=2000;m.ngay=+x[1];m.thang=+x[2];m.nam=y}
+  else{
+    /* tệp nhiều địa bàn ghi "đến ngày kết sổ: 08/19/2026" (tháng trước, ngày sau) và "đến tháng hiệu lực: 08/2026" */
+    const k=txt.match(/đến ngày kết sổ\s*:?\s*(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/i),h=txt.match(/đến tháng hiệu lực\s*:?\s*(\d{1,2})[\/\-](\d{4})/i);
+    if(k){const two=k[3].length<=2;let y=+k[3];if(y<100)y+=2000;let a=+k[1],b=+k[2],mm=a,dd=b;
+      if(two)[mm,dd]=[b,a];else if(b>12)[mm,dd]=[a,b];else if(a>12)[mm,dd]=[b,a];else if(h&&+h[1]===b&&+h[1]!==a)[mm,dd]=[b,a];
+      m.ngay=dd;m.thang=mm;m.nam=y}
+    else if(h){m.thang=+h[1];m.nam=+h[2]}
+  }
+  /* niên độ in trên báo cáo là năm ngân sách: ngày đọc được rơi ngoài niên độ (ví dụ chỉ thấy ngày kết sổ năm sau) thì lấy hết niên độ, 31/12 */
+  x=txt.match(/NIÊN ĐỘ\s*:?\s*(\d{4})/i);
+  if(x){const nd=+x[1];m.nienDo=nd;if(!m.nam||m.nam>nd){m.ngay=31;m.thang=12;m.nam=nd}}
+  m.cap=/NGÂN SÁCH TRUNG ƯƠNG/i.test(txt)?'tw':'dp';
+  x=txt.match(/Đơn vị(?: tính)?\s*:\s*([^\n]*)/i);m.div=x&&/triệu/i.test(x[1])?1:1e6;
+  m.kind=/B2-01|THU VÀ VAY/i.test(txt)?'thu':/B3-01|CHI VÀ TRẢ NỢ/i.test(txt)?'chi':'';
+  return m;
+}
+E.meta=meta;
+/* tệp TABMIS nhiều địa bàn (mỗi cột một xã): tách thành từng đơn vị với bảng cùng dạng tệp một xã (cột 13 = số xã; cột 9 = số NSTW nếu có tệp NSTW kèm) */
+const UNITRE=/^(xã|phường|thị trấn|đặc khu)\s/i;
+E.splitMulti=function(rows,kind,tw){
+  const grid=(r,c,v)=>{const o=Array(14).fill('');o[0]=r[0];o[1]=r[1];o[13]=v;return o};
+  let h=-1,cols=[];
+  if(kind==='thu'){
+    h=rows.findIndex(r=>norm(r[0])==='STT'&&/Tên chỉ tiêu/i.test(norm(r[1]))&&r.slice(2).some(x=>UNITRE.test(norm(x))));
+    if(h<0)return null;
+    rows[h].forEach((x,c)=>{if(c>=2&&UNITRE.test(norm(x)))cols.push({c,xa:norm(x),ma:''})});
+  }else{
+    h=rows.findIndex(r=>!norm(r[0])&&!norm(r[1])&&r.slice(2).some(x=>/^\d+\s*-\s*\S/.test(norm(x))));
+    if(h<0)return null;
+    rows[h].forEach((x,c)=>{const m=c>=2&&norm(x).match(/^(\d+)\s*-\s*(.+)$/);if(m)cols.push({c,xa:norm(m[2]),ma:m[1]})});
+  }
+  const data=rows.slice(h+(kind==='thu'?1:2));
+  const twMap=new Map(),twCols=new Map();
+  if(tw){
+    const th=tw.findIndex(r=>norm(r[0])==='STT'&&r.slice(2).some(x=>UNITRE.test(norm(x))));
+    if(th>=0){tw[th].forEach((x,c)=>{if(c>=2&&UNITRE.test(norm(x)))twCols.set(norm(x).toLowerCase(),c)});tw.slice(th+1).forEach(r=>twMap.set(norm(r[0])+'|'+norm(r[1]),r))}
+  }
+  return cols.map(u=>{
+    const tc=twCols.get(u.xa.toLowerCase());
+    const out=data.map(r=>{const o=grid(r,u.c,r[u.c]);if(tc!=null){const t=twMap.get(norm(r[0])+'|'+norm(r[1]));if(t)o[9]=t[tc]}return o});
+    return {xa:u.xa,ma:u.ma,rows:out,hasTw:tc!=null};
+  });
+};
+const isNum=s=>/^\d+(\.\d+)*$/.test(norm(s));
+
+/* ---- đọc PDF (TABMIS, phụ lục): gom chữ theo dòng và theo cột số căn phải, trả về cùng dạng bảng như file xls ---- */
+const NUMRE=/^-?\d{1,3}(?:\.\d{3})+$|^-?\d+(?:,\d+)?$/;
+const STTRE=/^(?:[A-Z](?:\.\d+)?|[IVX]+(?:\.\d+)?|\d+(?:\.\d+)*|\*{1,2}|[a-z](?:\.\d+)?)$/;
+async function pdfRows(buf){
+  try{await TC.need('pdf')}catch(e){throw new Error('Thiếu thư viện đọc PDF: '+e.message)}
+  if(!window.pdfjsLib)throw new Error('Thiếu thư viện đọc PDF trong bản này.');
+  let doc;try{doc=await pdfjsLib.getDocument({data:new Uint8Array(buf),isEvalSupported:false,useSystemFonts:false}).promise}catch(e){throw new Error('Không mở được file PDF: '+(e&&e.message||e))}
+  const lines=[];
+  for(let p=1;p<=doc.numPages;p++){
+    const tc=await(await doc.getPage(p)).getTextContent();
+    const its=tc.items.filter(i=>i.str&&i.str.trim()).map(i=>({s:i.str.trim(),x:i.transform[4],y:i.transform[5],r:i.transform[4]+i.width}));
+    const ls=[];its.sort((a,b)=>b.y-a.y).forEach(it=>{const l=ls.find(l=>Math.abs(l.y-it.y)<=3);l?l.its.push(it):ls.push({y:it.y,its:[it]})});
+    ls.sort((a,b)=>b.y-a.y).forEach(l=>{l.its.sort((a,b)=>a.x-b.x);lines.push(l.its)});
+  }
+  const info=lines.map(its=>{
+    if(its[0].s==='STT'&&its.length>1)return {head:true,cells:its.map(i=>i.s),stt:'',name:'STT',nums:[]};
+    let stt='';if(its.length>1&&STTRE.test(its[0].s)&&its[1].x-its[0].r>=6)stt=its.shift().s;
+    const nums=[];while(its.length&&NUMRE.test(its[its.length-1].s))nums.unshift(its.pop());
+    return {stt,name:its.map(i=>i.s).join(' '),nums};
+  });
+  const idxRow=l=>l.nums.length>0&&l.nums.every(n=>/^\d{1,2}$/.test(n.s))&&((l.stt==='A'&&l.name==='B')||l.nums.length>1&&((l.name===''||l.name==='B')&&l.nums.every((n,i)=>i===0||+n.s===+l.nums[i-1].s+1))||/^B\s[\s\d=+]+$/.test(l.name));
+  /* cột số: gom theo vị trí mép phải, riêng cho từng bảng (mỗi phụ lục có cột đặt khác nhau) */
+  let seg=0;info.forEach(l=>{if(/^PHỤ LỤC\s+(?:[IVX]+\b|DỰ TOÁN|CÂN ĐỐI)/i.test(l.name))seg++;l.seg=seg});
+  const cls={};
+  [...new Set(info.map(l=>l.seg))].forEach(g=>{
+    const rs=[...new Set(info.filter(l=>l.seg===g&&!idxRow(l)).flatMap(l=>l.nums.map(n=>Math.round(n.r))))].sort((a,b)=>a-b);
+    const cl=[];rs.forEach(v=>{const c=cl[cl.length-1];if(c&&v-c.max<=8)c.max=v;else cl.push({min:v,max:v})});cls[g]=cl;
+  });
+  const rows=[];
+  info.forEach(l=>{
+    if(idxRow(l))return;
+    const cl=cls[l.seg];
+    const prev=rows[rows.length-1];
+    if(l.head){rows.push(l.cells);return}
+    const v=Array(cl.length).fill('');
+    l.nums.forEach(n=>{const i=cl.findIndex(c=>n.r>=c.min-8&&n.r<=c.max+8);if(i>=0)v[i]=n.s});
+    /* ô số cột 1 và STT đôi khi nằm ở dòng giữa của ô nhiều dòng: gộp vào dòng tên phía trên nếu không trùng cột */
+    if(!l.name&&l.nums.length&&prev&&prev[1]&&prev.slice(2).some(x=>x!=='')&&v.every((x,i)=>x===''||prev[2+i]==='')&&(!l.stt||prev[0]==='')){
+      if(l.stt)prev[0]=l.stt;v.forEach((x,i)=>{if(x!=='')prev[2+i]=x});return;
+    }
+    if(!l.nums.length&&!l.stt){
+      if(prev&&/^[a-zà-ỹ]/.test(l.name))prev[1]=(prev[1]+' '+l.name).trim();
+      else rows.push(['',l.name,...v]);
+      return;
+    }
+    let name=l.name;
+    if(!name&&prev&&prev[0]===''&&prev.slice(2).every(x=>x==='')&&/^[A-ZÀ-Ỹ]/.test(prev[1])){name=prev[1];rows.pop()}
+    rows.push([l.stt,name,...v]);
+  });
+  return rows;
+}
+E.pdfRows=pdfRows;
+
+/* ---- bảng phụ lục dự toán (V thu, VI chi, VII cân đối) giữ nguyên hàng/cột để hiện giống bản gốc ---- */
+const serial=v=>{if(typeof v!=='number'||v<30000||!window.XLSX)return null;const d=XLSX.SSF.parse_date_code(v);return d?`${d.d}.${d.m}`:null};
+const isBold=(kind,stt,name)=>{
+  const letters=name.replace(/[^A-Za-zÀ-ỹ]/g,'');
+  if(letters.length>=3&&letters===letters.toUpperCase())return true;
+  if(/^(?:[A-Z]|[IVX]+|[A-Z]\.\d|[IVX]+\.\d|\*{1,2})$/.test(stt)&&kind!=='thu')return true;
+  if(kind==='thu'&&/^(?:\d+|[IVX]+|[A-Z])$/.test(stt))return true;
+  return false;
+};
+const isItalic=(kind,stt,name)=>/^(?:Trong đó|Bao gồm)/i.test(name)||(kind==='thu'&&/^\d+\.\d+$/.test(stt));
+function kindOf(rows){
+  const t=rows.map(r=>norm(r[1])).join('\n');
+  if(/^TỔNG THU NSNN/m.test(t))return 'thu';
+  if(/^TỔNG NGUỒN THU NSĐP/m.test(t))return 'cd';
+  if(/^TỔNG CHI NSĐP/m.test(t))return 'chi';
+  return '';
+}
+E.captureTables=function(rows){
+  const blocks=[];let cur=null;
+  rows.forEach(r=>{
+    const first=norm(r.find(c=>norm(c))||'');
+    if(/^PHỤ LỤC\s+(?:[IVX]+\b|DỰ TOÁN|CÂN ĐỐI)/i.test(first)){cur=[];blocks.push(cur)}
+    if(!cur){cur=[];blocks.push(cur)}
+    cur.push(r);
+  });
+  const out={};
+  blocks.forEach(b=>{
+    const kind=kindOf(b);if(!kind||out[kind])return;
+    const hi=b.findIndex(r=>/^STT$/i.test(norm(r[0])));
+    if(hi<0)return;
+    const title=b.slice(0,hi).map(r=>r.map(norm).filter(Boolean).join(' ')).filter(Boolean);
+    const heads=[];for(let i=2;i<b[hi].length;i++){const h=norm(b[hi][i]);if(!h)break;heads.push(h)}
+    const nv=Math.max(1,heads.length);
+    let start=hi+1;if(b[start]&&/^A$/i.test(norm(b[start][0]))&&/^B$/i.test(norm(b[start][1])))start++;
+    const body=[];
+    b.slice(start).forEach(r=>{
+      if(r.every(c=>norm(c)===''))return;
+      let stt=serial(r[0]);if(stt==null)stt=typeof r[0]==='number'?String(r[0]):norm(r[0]);
+      let name=norm(r[1]);
+      const v=[];for(let i=0;i<nv;i++){const c=r[2+i];v.push(c===''||c==null?null:(typeof c==='number'?c:(NUMRE.test(norm(c))?parseVN(c):null)))}
+      if(!name&&stt&&!/^(?:[A-Z]|[IVX]+|\d+(?:\.\d+)*|\*{1,2}|[a-z]|[A-Z]\.\d+|[IVX]+\.\d+)$/.test(stt)){name=stt;stt=''}
+      if(!stt&&!name)return;
+      const note=/^\(\d+\)/.test(name);
+      body.push({stt,name,v,b:!note&&isBold(kind,stt,name),i:isItalic(kind,stt,name),inp:!note&&!/^(?:Trong đó|Bao gồm)\s*:?$/i.test(name)&&(v.some(x=>x!=null)||/^[-–+]/.test(name)||!!stt)});
+    });
+    out[kind]={kind,title,heads,rows:body};
+  });
+  return out;
+};
+const rowsOf=t=>[...t.title.map(x=>[x]),...t.rows.map(r=>[r.stt,r.name,...r.v.map(x=>x==null?'':x)])];
+E.rowsOf=rowsOf;
+
+/* ---- THU (B2-01) ----
+   Cách của bảng tay: mỗi khoản (lá) lấy cột lũy kế NS cấp xã, làm tròn về triệu rồi cộng; NSNN trên địa bàn = phần cấp xã + phần NSTW
+   của 4 khoản (phí trung ương 7.1, thuê đất 8.3, tiền sử dụng đất 8.4, thu khác 11). Nếu tổng các số đã tròn lệch số tổng của TABMIS
+   (làm tròn) thì cộng bù 1 triệu vào khoản có phần lẻ bị cắt nhiều nhất. */
+/* ---- bộ quy tắc tính theo năm: mặc định + phần quản trị sửa (lưu ở kho "rules", mỗi năm một bộ; năm chưa có bộ dùng bộ năm gần nhất trước đó) ---- */
+E.RULE_DEFAULT={
+  twadd:['5','7.1','8.3','8.4','11'], /* các khoản thu NSNN = NSĐP + phần NSTW (khớp theo mã khoản lá, gồm cả mã con) */
+  norec:['11'],                       /* khoản lấy ở cấp cha, không xuống khoản lá */
+  tol:3,                              /* lệch tổng ≤ ngưỡng này (triệu đồng) thì cộng bù ±1, lớn hơn thì chỉ cảnh báo */
+  thu:{},chi:{}                       /* mã TABMIS của từng dòng báo cáo, khóa theo vị trí dòng; trống = dùng mã mặc định trong bảng */
+};
+E.ruleStore=()=>TC.store.get('rules',{});
+E.ruleYear=nam=>{const ys=Object.keys(E.ruleStore()).map(Number).filter(y=>y<=nam).sort((a,b)=>b-a);return ys.length?ys[0]:null};
+E.ruleFor=nam=>{const y=E.ruleYear(+nam||9999),o=y!=null?E.ruleStore()[y]:null;
+  return Object.assign(JSON.parse(JSON.stringify(E.RULE_DEFAULT)),o?{twadd:o.twadd,norec:o.norec,tol:o.tol,thu:o.thu||{},chi:o.chi||{}}:{})};
+E.codeIn=(list,stt)=>list.some(c=>stt===c||stt.startsWith(c+'.'));
+/* tìm trong tệp các dòng có số nhưng KHÔNG nằm trong công thức cộng (ví dụ tạm thu, tạm chi, khoản ghi thu ghi chi) có số khớp phần lệch:
+   một dòng, hoặc hai dòng cộng lại, lệch tối đa 1 triệu so với số chênh. Dùng để báo cho người dùng biết lệch do dòng nào */
+E.findExtra=function(rows,col,div,skip,diff){
+  const cand=[];
+  rows.forEach((r,i)=>{
+    if(r.length<=col||skip(r,i))return;
+    const v=R(parseVN(r[col])/div);if(!v||!isFinite(v))return;
+    const name=norm(r[1])||norm(r[0]);if(!name)return;
+    cand.push({stt:norm(r[0]),name,val:v,tam:/tạm\s*(thu|chi|ứng)|ghi\s*(thu|chi)/i.test(name)});
+  });
+  const hits=[],ok=x=>Math.abs(x-diff)<=1;
+  cand.forEach(c=>{if(ok(c.val))hits.push([c])});
+  if(!hits.length){const pool=cand.slice(0,80);for(let i=0;i<pool.length;i++)for(let j=i+1;j<pool.length;j++)if(ok(pool[i].val+pool[j].val))hits.push([pool[i],pool[j]])}
+  hits.sort((a,b)=>Math.abs(a.reduce((x,c)=>x+c.val,0)-diff)-Math.abs(b.reduce((x,c)=>x+c.val,0)-diff));
+  return {hits:hits.slice(0,3),tam:cand.filter(c=>c.tam).slice(0,5)};
+};
+E.computeThu=function(rows,div,nam){
+  const rule=E.ruleFor(nam);
+  const cell=(r,i)=>parseVN(r[i])/div;
+  let s=rows.findIndex(r=>norm(r[0])==='I'&&/^Thu nội địa/i.test(norm(r[1])));
+  if(s<0)throw new Error('Không tìm thấy dòng "I. Thu nội địa" - có phải mẫu B2-01 không?');
+  let e=rows.findIndex((r,i)=>i>s&&/^(II|III|IV|V|[B-D])$/.test(norm(r[0])));if(e<0)e=rows.length;
+  const sec=rows.slice(s+1,e).filter(r=>isNum(r[0])&&r.length>=14).map(r=>({stt:norm(r[0]),name:norm(r[1]),tw:cell(r,9),xa:cell(r,13)}));
+  const kids=p=>sec.filter(r=>r.stt.startsWith(p+'.')&&r.stt.split('.').length===p.split('.').length+1);
+  const NOREC=new Set(rule.norec);
+  function leaves(n){
+    let ks=NOREC.has(n.stt)?[]:kids(n.stt);
+    if(!ks.length)return [n];
+    ks=ks.slice();
+    for(let i=0;i<ks.length;i++){const o=ks.filter((_,j)=>j!==i).reduce((a,k)=>a+k.xa,0);if(ks.length>1&&ks[i].xa!==0&&Math.abs(ks[i].xa-o)<1e-9*Math.max(1,Math.abs(o))){ks.splice(i,1);i--}}
+    return ks.flatMap(leaves);
+  }
+  const top=sec.filter(r=>!r.stt.includes('.'));
+  const all=[];
+  top.forEach(n=>leaves(n).forEach(l=>{l.top=n.stt;l.rx=R(l.xa);l.rt=E.codeIn(rule.twadd,l.stt)?R(Math.max(0,l.tw)):0; /* cột NSTW âm (hoàn thuế, điều chỉnh) thì không tính */all.push(l)}));
+  const tr=rows.find(r=>/^A$/.test(norm(r[0]))&&/^THU NGÂN SÁCH NHÀ NƯỚC/i.test(norm(r[1])));
+  let adj=0,chk=null;
+  const hv=rows.find(r=>/^V$/.test(norm(r[0]))&&/huy động/i.test(norm(r[1])));
+  const hdv=hv?R(cell(hv,13)):0,hd={nsnn:hdv,nsdp:hdv}; /* dòng V huy động đóng góp: nằm ngoài "I. Thu nội địa", mã quy tắc "V" */
+  if(tr){
+    const target=R(cell(tr,13)-(hv?cell(hv,13):0));let diff=target-all.reduce((a,l)=>a+l.rx,0);chk={target,sum:all.reduce((a,l)=>a+l.rx,0)};
+    if(Math.abs(diff)>rule.tol){
+      const used=new Set(all.map(l=>l.stt)),isPar=s=>[...used].some(u=>u.startsWith(s+'.'));
+      chk.extra=E.findExtra(rows,13,div,(r,i)=>{const t=norm(r[0]);return r===tr||r===hv||/^([A-Z]|[IVX]+)$/.test(t)||used.has(t)||(isNum(t)&&isPar(t))||(t.includes('.')&&used.has(t.split('.').slice(0,-1).join('.')))},diff)}
+    if(Math.abs(diff)<=rule.tol)for(;diff!==0;){const sg=diff>0?1:-1;const l=all.slice().sort((a,b)=>sg*((b.xa-b.rx)-(a.xa-a.rx)))[0];l.rx+=sg;diff-=sg;adj+=sg}
+  }
+  const items={};
+  top.forEach(n=>{items[n.stt]={name:n.name,nsdp:0,nsnn:0}});
+  all.forEach(l=>{items[l.top].nsdp+=l.rx;items[l.top].nsnn+=l.rx+l.rt});
+  const sub=k=>{const l=all.find(x=>x.stt===k);return l?{nsnn:l.rx+l.rt,nsdp:l.rx}:{nsnn:0,nsdp:0}};
+  const tot={nsnn:0,nsdp:0};top.forEach(n=>{tot.nsnn+=items[n.stt].nsnn;tot.nsdp+=items[n.stt].nsdp});
+  const tsdd=sub('8.4'),xskt=items['9']||{nsnn:0,nsdp:0};
+  return {items,leaves:all,hd,chk,total:tot,tsdd,xskt,adj,ex:{nsnn:tot.nsnn-tsdd.nsnn-xskt.nsnn,nsdp:tot.nsdp-tsdd.nsdp-xskt.nsdp},sdd_pnn:sub('8.2')};
+};
+
+/* ---- CHI (B3-01): cột lũy kế NS cấp xã (13) ----
+   Tổng chi = làm tròn dòng "A. Chi ngân sách nhà nước". Chi đầu tư và từng lĩnh vực thường xuyên làm tròn riêng; nếu cộng lại lệch tổng
+   thì bù ±1 triệu vào khoản có phần lẻ bị làm tròn nhiều nhất (cách này ra đúng số của bảng tay Bình Thành: 61.918 + 85.106 = 147.024). */
+E.computeChi=function(rows,div,nam){
+  const rule=E.ruleFor(nam);
+  const cell=(r,i)=>parseVN(r[i])/div;
+  const I=rows.findIndex(r=>norm(r[0])==='I'&&/^Chi đầu tư phát triển/i.test(norm(r[1])));
+  const III=rows.findIndex(r=>norm(r[0])==='III'&&/^Chi thường xuyên/i.test(norm(r[1])));
+  if(I<0||III<0)throw new Error('Không tìm thấy dòng chi đầu tư phát triển / chi thường xuyên - có phải mẫu B3-01 không?');
+  let e=rows.findIndex((r,i)=>i>III&&/^(IV|V|[B-D])$/.test(norm(r[0])));if(e<0)e=rows.length;
+  const leaves=[{k:'dtpt',x:cell(rows[I],13)},...rows.slice(III+1,e).filter(r=>/^\d+$/.test(norm(r[0]))).map(r=>({k:'a',stt:norm(r[0]),name:norm(r[1]),x:cell(r,13)}))];
+  leaves.forEach(l=>{l.v=R(l.x)});
+  const A=rows.find(r=>norm(r[0])==='A'&&/^CHI NGÂN SÁCH NHÀ NƯỚC/i.test(norm(r[1])));
+  let adj=0,chk=null;
+  if(A){let diff=R(cell(A,13))-leaves.reduce((a,l)=>a+l.v,0);chk={target:R(cell(A,13)),sum:leaves.reduce((a,l)=>a+l.v,0)};
+    if(Math.abs(diff)>rule.tol){
+      const used=new Set(leaves.filter(l=>l.stt).map(l=>l.stt)),next=rows.findIndex((r,i)=>i>I&&/^(II|III|IV|V|[B-D])$/.test(norm(r[0])));
+      chk.extra=E.findExtra(rows,13,div,(r,i)=>{const t=norm(r[0]);return r===A||i===I||(i>I&&i<next)||i===III||/^[A-D]$/.test(t)||used.has(t)||(t.includes('.')&&used.has(t.split('.')[0]))},diff)}
+    if(Math.abs(diff)<=rule.tol)for(;diff!==0;){const sg=diff>0?1:-1;const l=leaves.slice().sort((a,b)=>sg*((b.x-b.v)-(a.x-a.v)))[0];l.v+=sg;diff-=sg;adj+=sg}}
+  const dtpt=leaves[0].v,areas=leaves.slice(1).map(l=>({stt:l.stt,name:l.name,val:l.v}));
+  const tx=areas.reduce((a,x)=>a+x.val,0);
+  return {dtpt,tx,total:dtpt+tx,areas,adj,chk};
+};
+
+/* ---- đối chiếu hai nguồn (excel và pdf) của cùng một báo cáo: trả danh sách chỗ lệch ---- */
+E.diffThu=(a,b)=>{
+  const d=[],f=(n,x,y)=>{if(x!==y)d.push(`${n}: ${fmt(x)} so với ${fmt(y)}`)};
+  f('Tổng thu NSNN',a.total.nsnn,b.total.nsnn);f('Tổng thu NSĐP',a.total.nsdp,b.total.nsdp);f('Thu tiền sử dụng đất',a.tsdd.nsnn,b.tsdd.nsnn);
+  new Set([...Object.keys(a.items),...Object.keys(b.items)]).forEach(k=>{const x=a.items[k]||{nsnn:0,nsdp:0},y=b.items[k]||{nsnn:0,nsdp:0};const n=(x.name||y.name||k);f(`${k}. ${n.slice(0,40)} (NSNN)`,x.nsnn,y.nsnn);f(`${k}. ${n.slice(0,40)} (NSĐP)`,x.nsdp,y.nsdp)});
+  return d;
+};
+E.diffChi=(a,b)=>{
+  const d=[],f=(n,x,y)=>{if(x!==y)d.push(`${n}: ${fmt(x)} so với ${fmt(y)}`)};
+  f('Tổng chi',a.total,b.total);f('Chi đầu tư phát triển',a.dtpt,b.dtpt);f('Chi thường xuyên',a.tx,b.tx);
+  const m=new Map(b.areas.map(x=>[x.stt,x]));a.areas.forEach(x=>{const y=m.get(x.stt);f(`${x.stt}. ${x.name.slice(0,40)}`,x.val,y?y.val:0)});
+  return d;
+};
+
+/* ---- DỰ TOÁN từ phụ lục V, VI, VII (xlsx hoặc pdf) ---- */
+E.parseDuToan=async function(file){
+  const buf=await file.arrayBuffer();
+  let sheets;
+  if(String.fromCharCode(...new Uint8Array(buf.slice(0,4)))==='%PDF')sheets=[await pdfRows(buf)];
+  else{await TC.need('xlsx');const wb=XLSX.read(buf,{type:'array'});sheets=wb.SheetNames.map(n=>sheetRows(wb,n))}
+  const tables={};
+  /* tệp nhiều sheet (có cả sheet tổng hợp của Thuế tỉnh): bảng nào có tiêu đề "PHỤ LỤC ..." thì ưu tiên, không lấy nhầm bảng đầu tiên */
+  const isPl=t=>(t.title||[]).some(l=>/^PHỤ LỤC/i.test(String(l).trim()));
+  sheets.forEach(rows=>{const t=E.captureTables(rows);Object.keys(t).forEach(k=>{if(!tables[k]||(!isPl(tables[k])&&isPl(t[k])))tables[k]=t[k]})});
+  if(!tables.thu&&!tables.chi&&!tables.cd)throw new Error('Không nhận ra phụ lục dự toán (cần Phụ lục V thu, VI chi, VII cân đối).');
+  return tables;
+};
+/* Lấy các con số dùng viết báo cáo từ ba bảng phụ lục (đọc lại mỗi lần chạy nên sửa số trong bảng là có tác dụng). */
+E.deriveDt=function(tables){
+  const out={thu:{},chi:{}};
+  const find=(rows,re,col,opt)=>{const r=rows.find(r=>re.test(norm(r[1]))&&(!opt||opt(r)));return r?parseVN(r[col]):null};
+  ['thu','chi','cd'].forEach(k=>{
+    const t=tables&&tables[k];if(!t)return;
+    const rows=rowsOf(t);
+    const T=find(rows,/^TỔNG THU NSNN/i,2);
+    if(T!=null){
+      const g=(re,c)=>find(rows,re,c);
+      const keys={tong:/^TỔNG THU NSNN/i,dnnn:/^Thu từ khu vực doanh nghiệp nhà nước/i,nqd:/^Thu từ khu vực kinh tế ngoài quốc doanh/i,tncn:/^Thuế thu nhập cá nhân/i,lpb:/^Lệ phí trước bạ/i,phi:/^Phí\s*-?\s*lệ phí/i,sdd_pnn:/^Thuế sử dụng đất phi nông nghiệp/i,tsdd:/^Thu tiền sử dụng đất/i,khac:/^Thu khác ngân sách/i};
+      Object.entries(keys).forEach(([kk,re])=>{out.thu[kk]={nsnn:g(re,2)||0,nsdp:g(re,3)||0}});
+      const xs=rows.find(r=>/^(?:xã|phường|đặc khu|thị trấn)\s+(?!hội\b)\S/i.test(norm(r[0]))&&!/^PHỤ LỤC|^DỰ TOÁN/i.test(norm(r[0]))&&!/^[\sXÃxãPHƯỜNGphường.…\d]+$/.test(norm(r[0])));if(xs)out.xa=norm(xs[0]);
+      const ny=rows.map(r=>norm(r[0])).join(' ').match(/NĂM\s+(\d{4})/i);if(ny)out.nam=+ny[1];
+    }
+    const C=rows.find(r=>/^TỔNG CHI NSĐP/i.test(norm(r[1])));
+    if(C){
+      const first=(re,stt,from)=>{const r=rows.slice(from||0).find(r=>re.test(norm(r[1]))&&(!stt||norm(r[0])===stt));return r?parseVN(r[2]):0};
+      const b1dt=first(/^Chi (đầu tư phát triển|ĐTPT)/i),b1tx=first(/^Chi thường xuyên/i);
+      const nt=rows.findIndex(r=>/^NGUỒN NS TỈNH/i.test(norm(r[1])));
+      let b2dt=first(/^Chi ĐTPT$/i,'*'),b2sn=first(/^Chi (SN|thường xuyên)$/i,'**');
+      if(!b2dt&&nt>=0)b2dt=first(/^Chi ĐTPT$/i,null,nt);
+      const cur={tong:parseVN(C[2]),dtpt:b1dt+b2dt,tx:b1tx+b2sn,parts:{b1dt,b2dt,b1tx,b2sn}};
+      if(!out.chi.tong||b2dt)out.chi=cur;
+    }
+  });
+  return out;
+};
+/* tìm một dòng trong bảng dự toán theo tên (có thể trong một nhóm cha) để đưa vào excel; trả {nsnn,nsdp} */
+E.dtFind=function(table,re,parent){
+  if(!table)return null;
+  const rows=table.rows;let i0=0,end=rows.length;
+  if(parent){const p=rows.findIndex(r=>parent.test(norm(r.name)));if(p<0)return null;i0=p+1;
+    end=rows.findIndex((r,i)=>i>=i0&&r.stt);if(end<0)end=rows.length}
+  const r=rows.slice(i0,end).find(r=>re.test(norm(r.name)));
+  return r?{nsnn:r.v[0]||0,nsdp:r.v[1]!=null?r.v[1]:null}:null;
+};
+
+/* ---- Biểu 96 xã, phường ---- */
+E.parseBieu=async function(file){
+  const buf=await file.arrayBuffer();await TC.need('xlsx');const wb=XLSX.read(buf,{type:'array'});
+  const nm=re=>wb.SheetNames.find(n=>re.test(n));
+  const b1=nm(/B01/i),b2=nm(/B02/i),b3=nm(/B03/i);
+  if(!b2||!b3)throw new Error('Không thấy sheet B02 (thu xã) và B03 (chi xã).');
+  const xaRe=/^(Xã|Phường)\s/i;
+  const thu=sheetRows(wb,b2).filter(r=>xaRe.test(norm(r[1]))&&typeof r[14]==='number').map(r=>({name:norm(r[1]),dtNsnn:+r[2]||0,dtNsdp:+r[6]||0,nsnn:+r[14]||0,nsdp:+r[18]||0}));
+  const chi=sheetRows(wb,b3).filter(r=>xaRe.test(norm(r[1]))&&typeof r[5]==='number').map(r=>({name:norm(r[1]),dt:+r[2]||0,th:+r[5]||0}));
+  let tinhNsnn=null,ngay='';
+  if(b1){const rows=sheetRows(wb,b1);const r=rows.find(r=>norm(r[0])==='I'&&/^Thu nội địa$/i.test(norm(r[1])));if(r)tinhNsnn=+r[5]||null;const t=rows.slice(0,8).map(r=>r.join(' ')).join(' ').match(/đến ngày\s*(\d{1,2}\/\d{1,2}\/\d{4})/i);if(t)ngay=t[1]}
+  return {thu,chi,tinhNsnn,ngay,n:thu.length};
+};
+E.compare=function(bieu,xaName,tinh){
+  const key=s=>norm(s).toLowerCase();
+  const t=bieu.thu.find(x=>key(x.name)===key(xaName)),c=bieu.chi.find(x=>key(x.name)===key(xaName));
+  if(!t||!c)return null;
+  const rank=(arr,f,me)=>{const s=arr.slice().sort((a,b)=>f(b)-f(a));return s.findIndex(x=>x===me)+1};
+  const tdThu=x=>x.dtNsnn?x.nsnn/x.dtNsnn:0,tdDp=x=>x.dtNsdp?x.nsdp/x.dtNsdp:0,tdChi=x=>x.dt?x.th/x.dt:0;
+  return {t,c,n:bieu.thu.length,
+    r:{thu:rank(bieu.thu,x=>x.nsnn,t),tdThu:rank(bieu.thu,tdThu,t),dp:rank(bieu.thu,x=>x.nsdp,t),tdDp:rank(bieu.thu,tdDp,t),chi:rank(bieu.chi,x=>x.th,c),tdChi:rank(bieu.chi,tdChi,c)},
+    td:{thu:tdThu(t),dp:tdDp(t),chi:tdChi(c)}};
+};
+
+/* ---- viết nhận xét theo văn phong báo cáo Vĩnh Châu ---- */
+const NAMES={phi:'thu phí, lệ phí',lpb:'lệ phí trước bạ',tncn:'thuế thu nhập cá nhân',nqd:'thu từ khu vực kinh tế ngoài quốc doanh',dnnn:'thu từ khu vực doanh nghiệp nhà nước',sdd_pnn:'thuế sử dụng đất phi nông nghiệp',khac:'thu khác ngân sách',tsdd:'thu tiền sử dụng đất'};
+E.NAMES=NAMES;
+E.itemMap=(thu)=>({phi:thu.items['7'],lpb:thu.items['6'],tncn:thu.items['4'],nqd:thu.items['3'],dnnn:thu.items['1'],sdd_pnn:thu.sdd_pnn,khac:thu.items['11'],tsdd:thu.tsdd});
+E.rate=(a,b)=>b?a/b:null;
+const pct3=r=>(Math.round(r*100000)/1000).toString().replace('.',',');
+/* các khoản thu chưa đạt tiến độ bình quân (tháng 12 thì là chưa đạt dự toán), sắp xếp tăng dần theo tỷ lệ; có cả tiền sử dụng đất nếu thấp */
+E.lowItems=function(thu,dt,tb){
+  const m=E.itemMap(thu);
+  const low=Object.keys(NAMES).filter(k=>k!=='tsdd'&&dt.thu[k]&&dt.thu[k].nsnn>0&&m[k]).map(k=>({k,r:m[k].nsnn/dt.thu[k].nsnn,th:m[k],dt:dt.thu[k]})).filter(x=>x.r<tb-1e-9).sort((a,b)=>a.r-b.r);
+  const ts=dt.thu.tsdd;if(ts&&ts.nsnn>0&&thu.tsdd.nsnn/ts.nsnn<tb-1e-9)low.unshift({k:'tsdd',r:thu.tsdd.nsnn/ts.nsnn,th:thu.tsdd,dt:ts});
+  return low;
+};
+E.gen=function(c){
+  const {thu,chi,dt,thang,nam,xaName,ngayStr,cmp}=c;
+  const tb=thang/12,tbp=Math.round(tb*100);
+  const p=(a,b)=>pct(b?a/b:null);
+  const out=[];
+  const dtTong=dt.thu.tong,dtTs=dt.thu.tsdd;
+  out.push({h:true,text:`* Tình hình thu, chi ngân sách ${xaName} (Số liệu đến ngày ${ngayStr}) như sau:`});
+  const exDt=dtTong.nsnn-dtTs.nsnn,exDtP=dtTong.nsdp-dtTs.nsdp;
+  out.push({text:`(1) Về thu: Tổng thu ngân sách nhà nước ${thang} tháng trên địa bàn là ${fmt(thu.total.nsnn)} triệu đồng, đạt ${p(thu.total.nsnn,dtTong.nsnn)}% so với dự toán giao (${fmt(thu.total.nsnn)}/${fmt(dtTong.nsnn)} triệu đồng). Nếu loại trừ tiền sử dụng đất thì tổng thu ngân sách nhà nước là ${fmt(thu.ex.nsnn)} triệu đồng đạt ${p(thu.ex.nsnn,exDt)}% so với dự toán (${fmt(thu.ex.nsnn)}/${fmt(exDt)} triệu đồng).`});
+  const rTs=dtTs.nsnn?thu.tsdd.nsnn/dtTs.nsnn:null;
+  const tsOk=rTs!=null&&rTs>=tb;
+  out.push({text:`+ Trong đó thu tiền sử dụng đất là ${fmt(thu.tsdd.nsnn)} triệu đồng, đạt ${p(thu.tsdd.nsnn,dtTs.nsnn)}% so với dự toán giao (${fmt(thu.tsdd.nsnn)}/${fmt(dtTs.nsnn)} triệu đồng). Tiến độ thu tiền sử dụng đất ${tsOk?'cao, đạt':'còn thấp, chưa đạt'} ${thang>=12?'dự toán':'tiến độ bình quân'}.`});
+  out.push({text:`- Tổng thu ngân sách địa phương được hưởng là ${fmt(thu.total.nsdp)} triệu đồng, đạt ${p(thu.total.nsdp,dtTong.nsdp)}% so với dự toán giao (${fmt(thu.total.nsdp)}/${fmt(dtTong.nsdp)} triệu đồng). Nếu loại trừ tiền sử dụng đất thì tổng thu cân đối ngân sách địa phương ${fmt(thu.ex.nsdp)} triệu đồng đạt ${p(thu.ex.nsdp,exDtP)}% so với dự toán (${fmt(thu.ex.nsdp)}/${fmt(exDtP)} triệu đồng).`});
+  const okN=dtTong.nsnn&&thu.total.nsnn/dtTong.nsnn>=tb,okD=dtTong.nsdp&&thu.total.nsdp/dtTong.nsdp>=tb;
+  const low=E.lowItems(thu,dt,tb);
+  const m12=thang>=12,bq=m12?'dự toán':`tiến độ bình quân (${tbp}%)`;
+  const who=okN&&okD?'tiến độ thu NSNN và tiến độ thu NSĐP đảm bảo':okN?'tiến độ thu NSNN đảm bảo, tiến độ thu NSĐP chưa đảm bảo':okD?'tiến độ thu NSĐP đảm bảo, tiến độ thu NSNN chưa đảm bảo':'tiến độ thu NSNN và tiến độ thu NSĐP chưa đảm bảo';
+  out.push({text:`Như vậy, ${m12?(okN&&okD?'thu NSNN và thu NSĐP đã đạt':'thu NSNN và thu NSĐP chưa đạt'):who} so với ${m12?'dự toán':'tiến độ bình quân ('+tbp+'%)'}. Trong thời gian tới, địa phương phải tiếp tục tập trung cho công tác thu, đảm bảo thu đạt và vượt dự toán được giao`+(low.length?`, trong đó quyết liệt tập trung vào các lĩnh vực thu có tiến độ thu còn thấp, chưa đạt ${m12?'dự toán':'tiến độ'} như ${low.map(x=>`${NAMES[x.k]} (${pct(x.r)}%)`).join('; ')}.`:'.')});
+  const dc=dt.chi;
+  const over=chi.dtpt>dc.dtpt||chi.tx>dc.tx||chi.total>dc.tong;
+  out.push({text:`(2) Về chi: tổng chi ngân sách ${thang} tháng trên địa bàn là ${fmt(chi.total)} triệu đồng đạt ${p(chi.total,dc.tong)}% so với dự toán giao (${fmt(chi.total)}/${fmt(dc.tong)} triệu đồng). Trong đó chi đầu tư phát triển ${fmt(chi.dtpt)} triệu đồng đạt ${p(chi.dtpt,dc.dtpt)}% dự toán giao đầu năm (${fmt(chi.dtpt)}/${fmt(dc.dtpt)} triệu đồng); chi thường xuyên: ${fmt(chi.tx)} triệu đồng đạt ${p(chi.tx,dc.tx)}% so với dự toán giao (${fmt(chi.tx)}/${fmt(dc.tx)} triệu đồng).`+(over?' Phần chi tăng thêm so với dự toán giao đầu năm là do phát sinh các nguồn tỉnh bổ sung trong năm và nguồn năm trước chuyển sang.':'')});
+  if(cmp){
+    const {t,c,n,r,td}=cmp,tinh=c_tinh(cmp);
+    out.push({h:true,text:`* So sánh ${xaName} với ngân sách tỉnh và các xã, phường (số liệu đến ngày ${cmp.ngay||'…'})`});
+    out.push({text:'- Đối với ngân sách tỉnh:'});
+    const parts=[];
+    if(tinh.nsnn)parts.push(`tổng thu NSNN của xã chiếm ${pct3(t.nsnn/tinh.nsnn)}% (${fmt(t.nsnn)}/${fmt(tinh.nsnn)} triệu đồng)`);
+    if(tinh.nsdp)parts.push(`tổng thu NSĐP của xã chiếm ${pct3(t.nsdp/tinh.nsdp)}% (${fmt(t.nsdp)}/${fmt(tinh.nsdp)} triệu đồng)`);
+    if(parts.length)out.push({text:`(1) Về thu: ${parts.join('; ')}.`});
+    if(tinh.chi)out.push({text:`(2) Về chi: tổng chi ngân sách xã chiếm ${pct3(c.th/tinh.chi)}% (${fmt(c.th)}/${fmt(tinh.chi)} triệu đồng).`});
+    out.push({text:'- Đối với ngân sách các xã, phường:'});
+    out.push({text:`(1) Về thu: Tổng thu NSNN của xã đứng thứ ${r.thu}/${n} xã phường (${fmt(t.nsnn)} triệu đồng); tốc độ thu NSNN đứng thứ ${r.tdThu}/${n} xã phường (${pct(td.thu)}%). Tổng thu NSĐP của xã đứng thứ ${r.dp}/${n} xã phường (${fmt(t.nsdp)} triệu đồng); tốc độ thu NSĐP đứng thứ ${r.tdDp}/${n} (${pct(td.dp)}%).`});
+    out.push({text:`(2) Về chi: tổng chi ngân sách xã đứng thứ ${r.chi}/${cmp.nc} xã, phường (${fmt(c.th)} triệu đồng); tốc độ chi đứng thứ ${r.tdChi}/${cmp.nc} xã, phường (${pct(td.chi)}%).`});
+  }
+  return out;
+  function c_tinh(c){return c.tinh||{}}
+};
+})();
+
+/*@@TC_PART@@*/
+/* Xuất Word: lấy mẫu báo cáo (mau-bao-cao.docx), giữ nguyên đầu trang, dựng lại các đoạn nội dung đúng thể thức:
+   dòng tiêu đề in đậm; nhãn "(1) Về thu:", "(2) Về chi:" in đậm nghiêng; còn lại chữ thường, cỡ 14, giãn dòng 1,5, thụt đầu dòng 1,25 cm, căn đều. */
+(function(){
+const W='http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+const X=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const rpr=(b,i)=>`<w:rPr>${b?'<w:b/>':''}${i?'<w:i/>':''}<w:color w:val="000000"/><w:sz w:val="28"/><w:szCs w:val="28"/><w:lang w:val="vi-VN"/></w:rPr>`;
+const run=(t,b,i)=>t?`<w:r>${rpr(b,i)}<w:t xml:space="preserve">${X(t)}</w:t></w:r>`:'';
+const PPR_H='<w:pPr><w:spacing w:before="0" w:after="0" w:line="360" w:lineRule="auto"/><w:ind w:right="6"/><w:rPr><w:b/><w:sz w:val="28"/><w:szCs w:val="28"/></w:rPr></w:pPr>';
+const PPR_B='<w:pPr><w:spacing w:before="0" w:after="0" w:line="360" w:lineRule="auto"/><w:ind w:right="6" w:firstLine="709"/><w:jc w:val="both"/><w:rPr><w:sz w:val="28"/><w:szCs w:val="28"/></w:rPr></w:pPr>';
+/* một đoạn: tiêu đề (đậm) hoặc đoạn thường; nhãn (1) Về thu: / (2) Về chi: ở đầu đoạn in đậm nghiêng */
+function para(x){
+  if(x.h)return `<w:p>${PPR_H}${run('           '+x.text.trim(),true,false)}</w:p>`;
+  const m=x.text.match(/^(\(\d\)\s+Về\s+(?:thu|chi)\s*:)([\s\S]*)$/i);
+  const rest=m?m[2]:x.text;
+  return `<w:p>${PPR_B}${m?run(m[1],true,true):''}${run(rest,false,false)}</w:p>`;
+}
+TC.buildDocx=async function(paras){
+  await TC.need('docx');const zip=await JSZip.loadAsync(window.TC_TEMPLATE_B64,{base64:true});
+  const xml=await zip.file('word/document.xml').async('string');
+  const doc=new DOMParser().parseFromString(xml,'application/xml');
+  const body=doc.getElementsByTagNameNS(W,'body')[0];
+  const ps=[...body.childNodes].filter(n=>n.localName==='p');
+  const tail=ps[11];
+  const frag=new DOMParser().parseFromString(`<w:root xmlns:w="${W}">${paras.map(para).join('')}</w:root>`,'application/xml');
+  [...frag.documentElement.childNodes].forEach(n=>body.insertBefore(doc.importNode(n,true),tail));
+  for(let i=5;i<=10;i++)body.removeChild(ps[i]);
+  let out=new XMLSerializer().serializeToString(doc);
+  if(!/^<\?xml/.test(out))out='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n'+out;
+  zip.file('word/document.xml',out);
+  return zip.generateAsync({type:'blob',mimeType:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+};
+})();
+
+/*@@TC_PART@@*/
+/* Xuất Excel theo mẫu Thu-Chi của xã (sheet thu và sheet chi, phông Times New Roman, khung viền, định dạng số triệu đồng).
+   Viết thẳng tệp xlsx bằng JSZip để có đậm, nghiêng, viền, gộp ô (bản SheetJS miễn phí không ghi được định dạng). */
+(function(){
+const {R}=TC,E=TC.engine;
+const X=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const colName=n=>{let s='';while(n>0){const m=(n-1)%26;s=String.fromCharCode(65+m)+s;n=(n-m-1)/26|0}return s};
+const NF={int:'_(* #,##0_);_(* \\(#,##0\\);_(* "-"??_);_(@_)',pct:'0.00%;\\-0.00%;"-"'};
+
+function Styles(){
+  const fonts=['<font><sz val="11"/><name val="Times New Roman"/><family val="1"/></font>'],borders=['<border><left/><right/><top/><bottom/><diagonal/></border>'],xfs=['<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'],cache={};
+  const side=(n,t)=>t?`<${n} style="${t}"><color auto="1"/></${n}>`:`<${n}/>`;
+  const idx=(arr,x)=>{let i=arr.indexOf(x);if(i<0){arr.push(x);i=arr.length-1}return i};
+  const BD={head:['thin','thin','thin','thin'],data:['thin','thin','hair','hair'],line:['','','','thin'],'':['','','','']};
+  this.get=o=>{
+    const k=JSON.stringify(o);if(k in cache)return cache[k];
+    const f=idx(fonts,`<font>${o.b?'<b/>':''}${o.i?'<i/>':''}${o.u?'<u/>':''}<sz val="${o.sz||12}"/><name val="Times New Roman"/><family val="1"/></font>`);
+    const bd=BD[o.bd||''],b=idx(borders,`<border>${side('left',bd[0])}${side('right',bd[1])}${side('top',bd[2])}${side('bottom',bd[3])}<diagonal/></border>`);
+    const nf=o.nf==='int'?164:o.nf==='pct'?165:0;
+    const al=`<alignment${o.h?` horizontal="${o.h}"`:''} vertical="center"${o.wrap?' wrapText="1"':''}/>`;
+    xfs.push(`<xf numFmtId="${nf}" fontId="${f}" fillId="0" borderId="${b}" xfId="0" applyNumberFormat="1" applyFont="1" applyBorder="1" applyAlignment="1">${al}</xf>`);
+    return cache[k]=xfs.length-1;
+  };
+  this.xml=()=>`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="2"><numFmt numFmtId="164" formatCode="${X(NF.int)}"/><numFmt numFmtId="165" formatCode="${X(NF.pct)}"/></numFmts><fonts count="${fonts.length}">${fonts.join('')}</fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="${borders.length}">${borders.join('')}</borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="${xfs.length}">${xfs.join('')}</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
+}
+function Sheet(name,st){
+  this.name=name;this.st=st;this.lines=[];this.cells={};this.merges=[];this.heights={};this.widths=[];this.freeze=0;
+  this.set=(r,c,v,s,f)=>{if(s&&s.nf==='pct'&&typeof v==='number')v=Math.round(v*10000)/10000;this.cells[r+','+c]={v,s:st.get(s||{}),f}};
+  this.box=(r1,c1,r2,c2,s)=>{for(let r=r1;r<=r2;r++)for(let c=c1;c<=c2;c++)if(!this.cells[r+','+c])this.set(r,c,null,s)};
+  this.merge=(r1,c1,r2,c2,v,s)=>{this.set(r1,c1,v,s);this.box(r1,c1,r2,c2,s);if(r1!==r2||c1!==c2)this.merges.push(`${colName(c1)}${r1}:${colName(c2)}${r2}`)};
+  this.xml=()=>{
+    const rows={};let maxR=1,maxC=1;
+    Object.entries(this.cells).forEach(([k,c])=>{const [r,cc]=k.split(',').map(Number);(rows[r]=rows[r]||[]).push([cc,c]);maxR=Math.max(maxR,r);maxC=Math.max(maxC,cc)});
+    const body=Object.keys(rows).map(Number).sort((a,b)=>a-b).map(r=>{
+      const cs=rows[r].sort((a,b)=>a[0]-b[0]).map(([c,x])=>{
+        const ref=colName(c)+r,v=x.v;
+        if(x.f){const isS=typeof v==='string';return `<c r="${ref}" s="${x.s}"${isS?' t="str"':''}><f>${X(x.f)}</f><v>${isS?X(v):(v==null?'':v)}</v></c>`}
+        if(v==null||v==='')return `<c r="${ref}" s="${x.s}"/>`;
+        if(typeof v==='number')return `<c r="${ref}" s="${x.s}"><v>${v}</v></c>`;
+        return `<c r="${ref}" s="${x.s}" t="inlineStr"><is><t xml:space="preserve">${X(v)}</t></is></c>`;
+      }).join('');
+      return `<row r="${r}"${this.heights[r]?` ht="${this.heights[r]}" customHeight="1"`:''}>${cs}</row>`;
+    }).join('');
+    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"${this.lines.length?' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"':''}><sheetPr><pageSetUpPr fitToPage="1"/></sheetPr><dimension ref="A1:${colName(maxC)}${maxR}"/><sheetViews><sheetView showGridLines="0" workbookViewId="0">${this.freeze?`<pane ySplit="${this.freeze}" topLeftCell="A${this.freeze+1}" activePane="bottomLeft" state="frozen"/>`:''}</sheetView></sheetViews><sheetFormatPr defaultRowHeight="16.5"/><cols>${this.widths.map((w,i)=>`<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join('')}</cols><sheetData>${body}</sheetData>${this.merges.length?`<mergeCells count="${this.merges.length}">${this.merges.map(m=>`<mergeCell ref="${m}"/>`).join('')}</mergeCells>`:''}<pageMargins left="0.5" right="0.4" top="0.6" bottom="0.6" header="0.3" footer="0.3"/><pageSetup paperSize="9" orientation="${this.orient||'landscape'}" fitToHeight="0"/>${this.lines.length?'<drawing r:id="rId1"/>':''}</worksheet>`;
+  };
+  /* đường kẻ ngắn (hình vẽ) dưới dòng r, căn giữa khối cột c1..c2, dài len điểm ảnh; chỉnh theo độ rộng cột */
+  this.drawingXml=()=>{
+    const wpx=c=>Math.round((this.widths[c-1]||8.43)*7+5),hpx=r=>Math.round((this.heights[r]||16.5)*4/3),E=9525;
+    const at=x=>{let c=1;while(x>=wpx(c)){x-=wpx(c);c++}return [c-1,Math.round(x*E)]};
+    return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">'+this.lines.map((l,i)=>{
+      let x0=0;for(let c=1;c<l.c1;c++)x0+=wpx(c);let bw=0;for(let c=l.c1;c<=l.c2;c++)bw+=wpx(c);
+      const a=at(x0+bw/2-l.len/2),b=at(x0+bw/2+l.len/2),ro=Math.round((hpx(l.r)-0.5)*E);
+      return `<xdr:twoCellAnchor editAs="oneCell"><xdr:from><xdr:col>${a[0]}</xdr:col><xdr:colOff>${a[1]}</xdr:colOff><xdr:row>${l.r-1}</xdr:row><xdr:rowOff>${ro}</xdr:rowOff></xdr:from><xdr:to><xdr:col>${b[0]}</xdr:col><xdr:colOff>${b[1]}</xdr:colOff><xdr:row>${l.r-1}</xdr:row><xdr:rowOff>${ro}</xdr:rowOff></xdr:to><xdr:cxnSp macro=""><xdr:nvCxnSpPr><xdr:cNvPr id="${i+2}" name="Duong ke ${i+1}"/><xdr:cNvCxnSpPr/></xdr:nvCxnSpPr><xdr:spPr><a:xfrm><a:off x="${a[0]*0}" y="0"/><a:ext cx="${Math.round(l.len*E)}" cy="0"/></a:xfrm><a:prstGeom prst="line"><a:avLst/></a:prstGeom><a:ln w="9525"><a:solidFill><a:srgbClr val="000000"/></a:solidFill></a:ln></xdr:spPr></xdr:cxnSp><xdr:clientData/></xdr:twoCellAnchor>`}).join('')+'</xdr:wsDr>';
+  };
+}
+async function pack(sheets,st){
+  const z=new JSZip();
+  z.file('[Content_Types].xml',`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${sheets.map((s,i)=>`<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('')}${sheets.map((s,i)=>s.lines.length?`<Override PartName="/xl/drawings/drawing${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>`:'').join('')}</Types>`);
+  z.file('_rels/.rels','<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>');
+  z.file('xl/workbook.xml',`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><bookViews><workbookView/></bookViews><sheets>${sheets.map((s,i)=>`<sheet name="${X(s.name)}" sheetId="${i+1}" r:id="rId${i+1}"/>`).join('')}</sheets><calcPr fullCalcOnLoad="1"/></workbook>`);
+  z.file('xl/_rels/workbook.xml.rels',`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${sheets.map((s,i)=>`<Relationship Id="rId${i+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i+1}.xml"/>`).join('')}<Relationship Id="rId${sheets.length+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`);
+  z.file('xl/styles.xml',st.xml());
+  sheets.forEach((s,i)=>z.file(`xl/worksheets/sheet${i+1}.xml`,s.xml()));
+  sheets.forEach((s,i)=>{if(!s.lines.length)return;z.file(`xl/drawings/drawing${i+1}.xml`,s.drawingXml());z.file(`xl/worksheets/_rels/sheet${i+1}.xml.rels`,`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/drawing${i+1}.xml"/></Relationships>`)});
+  return z.generateAsync({type:'blob',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+}
+
+/* ---- khung đầu trang giống mẫu: UBND tỉnh, quốc hiệu, tiêu đề, tên xã, đơn vị tính ---- */
+/* chiều cao dòng theo số dòng chữ sau khi tự xuống dòng trong cột Nội dung rộng w (ký tự); chữ đậm chiếm chỗ hơn */
+const rowH=(name,bold,w)=>{const cpl=Math.max(10,Math.floor(w*(bold?1:1.1))),n=Math.max(1,Math.ceil(String(name||'').length/cpl));return n===1?16.5:Math.ceil(n*15.5+3)};
+function head(sh,lastCol,title,xa,split,opt){
+  /* quốc hiệu, tiêu ngữ và tên cơ quan đặt cân đối hai bên TIÊU ĐỀ (không dạt ra hai mép bảng): khối trái căn giữa quanh mép trái của dòng tiêu đề, khối phải quanh mép phải, đối xứng qua giữa bảng. Bảng hẹp thì hai khối chia đôi bề ngang. */
+  const W=c=>sh.widths[c-1]||8.43,tot=[...Array(lastCol)].reduce((a,_,i)=>a+W(i+1),0),mid=tot/2;
+  const tw=Math.min(tot,String(title).length*1.55),lw=17*1.4+4,rw=34*1.4+4; /* bề rộng chữ ước theo cỡ 14 đậm (tiêu đề) và 11 đậm (hai khối) */
+  const d=Math.max(tw/2,(lw+rw)/2+2);
+  const span=(cx,w)=>{let x=0,c1=0,c2=1;for(let c=1;c<=lastCol;c++){const l=x,r=x+W(c);if(!c1&&r>cx-w/2)c1=c;if(l<cx+w/2)c2=c;x=r}c1=c1||1;return [c1,Math.max(c1,c2)]};
+  const X=c=>{let x=0;for(let i=1;i<c;i++)x+=W(i);return x},cen=(a,b)=>(X(a)+X(b+1))/2;
+  /* chọn dải cột đủ rộng cho chữ, tâm gần điểm cần nhất (cột rộng hẹp khác nhau nên tâm dải không trùng hẳn) */
+  const best=(cx,w,lo)=>{let o=null,e=1e9;for(let a=lo;a<=lastCol;a++)for(let b=a;b<=lastCol;b++){if(X(b+1)-X(a)<w)continue;const v=Math.abs(cen(a,b)-cx)+(X(b+1)-X(a))*0.02;if(v<e){e=v;o=[a,b]}break}return o||span(cx,w)};
+  let [l1,l2]=best(Math.max(lw/2,mid-d),lw,1),[r1,r2]=best(Math.min(tot-rw/2,2*mid-cen(l1,l2)),rw,l2+1); /* khối phải đối xứng với khối trái qua giữa trang */
+  if(r1<=l2){const h=Math.max(1,Math.floor(lastCol/2));l1=1;l2=h;r1=h+1;r2=lastCol} /* chồng nhau thì chia đôi */
+  const B={b:1,sz:11,h:'center'};
+  sh.merge(1,l1,1,l2,'ỦY BAN NHÂN DÂN',B);sh.merge(1,r1,1,r2,'CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM',B);
+  sh.merge(2,l1,2,l2,'TỈNH TÂY NINH',B);sh.merge(2,r1,2,r2,'Độc lập - Tự do - Hạnh phúc',B);
+  sh.merge(4,1,4,lastCol,title,{b:1,sz:14,h:'center',wrap:1});sh.merge(5,1,5,lastCol,xa.toUpperCase(),{b:1,sz:14,h:'center',wrap:1});
+  sh.heights[1]=20;sh.heights[2]=20;sh.heights[4]=38;sh.heights[5]=22;
+  sh.lines.push({r:2,c1:l1,c2:l2,len:64},{r:2,c1:r1,c2:r2,len:120}); /* hai đường kẻ ngắn dưới "TỈNH TÂY NINH" và "Độc lập - Tự do - Hạnh phúc" */
+}
+const P=(num,den)=>den>0?num/den:'';
+/* công thức cộng theo cấp dòng (dùng cho báo cáo thu chi hàng ngày và các phụ lục): dòng cha = SUM các dòng con trực tiếp đang có trong sheet.
+   Chỉ ghi công thức khi tổng các dòng con đúng bằng số của dòng cha (lệch không quá 0,5), không thì giữ số như cũ, nên công thức luôn ra đúng số đang thấy.
+   rows: [{stt,name}] theo thứ tự trong sheet; val(i,k) số ô; ref(i,k) địa chỉ ô. Trả về map 'i,k' -> công thức. */
+const ROMAN=/^(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII)$/;
+const hLevel=(stt,name)=>{const t=String(stt==null?'':stt).trim(),n=String(name||'').trim();
+  if(ROMAN.test(t))return 3; /* I, V, X là số La Mã, không phải chữ cái */
+  if(/^[IVX]+\.\d+$/.test(t))return 4; /* I.1, II.2: mục con của số La Mã */
+  if(/^[A-Z]$/.test(t))return 1;if(/^[A-Z]\.\d+$/.test(t))return 2;
+  if(/^\d+$/.test(t))return 5;if(/^\d+\.\d+$/.test(t))return 6;if(/^\d+\.\d+\.\d+$/.test(t))return 7;
+  if(/^[a-z]$/.test(t))return 8;if(/^[a-z]\.\d+$/.test(t))return 9;
+  if(/^[-+]$/.test(t)||(!t&&/^(Bao gồm:?\s*)?[-+]\s/i.test(n)))return 10;
+  return 99}; /* 99: dòng ghi chú, "Trong đó", "*", "**", dòng không số thứ tự: không tính vào cấp */
+TC.hierF=function(rows,nk,val,ref,blank){ /* blank: ô tổng chưa có số mà các dòng con cũng trống thì vẫn ghi công thức (mẫu để điền tiếp) */
+  const n=rows.length,L=rows.map(r=>hLevel(r.stt,r.name)),out={},num=v=>typeof v==='number'&&isFinite(v);
+  const sumF=(ks,k)=>ks.length===1?ref(ks[0],k):`SUM(${ks.map(j=>ref(j,k)).join(',')})`;
+  const fit=(i,ks,k)=>{const v=val(i,k);if(!ks.length)return null;
+    if(!num(v))return blank&&ks.length>1&&!/^trong đó/i.test(String((rows[i+1]||{}).name||'').trim())&&ks.every(j=>!num(val(j,k)))?sumF(ks,k):null; /* "Trong đó" là liệt kê một phần, không cộng */let t=0,has=false;ks.forEach(j=>{const x=val(j,k);if(num(x)){t+=x;has=true}});
+    return has&&Math.abs(t-v)<=0.5?sumF(ks,k):null};
+  const kidsOf=i=>{const lv=L[i],sc=[];for(let j=i+1;j<n;j++){if(L[j]===99)continue;if(L[j]<=lv)break;sc.push(j)}
+    if(!sc.length)return [];const m=Math.min(...sc.map(j=>L[j]));return sc.filter(j=>L[j]===m)};
+  const top=()=>{const sc=[];for(let j=1;j<n;j++)if(L[j]!==99)sc.push(j);if(!sc.length)return [];const m=Math.min(...sc.map(j=>L[j]));return sc.filter(j=>L[j]===m)};
+  const find=re=>rows.findIndex(r=>re.test(String(r.name||'')));
+  for(let i=0;i<n;i++){
+    const nm=String(rows[i].name||'').trim();
+    for(let k=0;k<nk;k++){
+      let f=null;
+      if(/^BỘI CHI|^BỘI THU/i.test(nm)){const a=find(/^TỔNG NGUỒN THU/i),b=find(/^TỔNG CHI/i);
+        if(a>=0&&b>=0&&num(val(i,k))&&num(val(a,k))&&num(val(b,k))){const v=val(i,k);if(Math.abs(val(a,k)-val(b,k)-v)<=0.5)f=`${ref(a,k)}-${ref(b,k)}`;else if(Math.abs(val(b,k)-val(a,k)-v)<=0.5)f=`${ref(b,k)}-${ref(a,k)}`}
+        else if(a>=0&&b>=0&&blank&&!num(val(i,k)))f=`${ref(a,k)}-${ref(b,k)}`}
+      else if(L[i]===99){
+        if(i===0&&/^TỔNG/i.test(nm)){const t=top();f=fit(i,t.filter(j=>!/huy động|đóng góp/i.test(rows[j].name)),k)||fit(i,t,k)} /* thu: mục V huy động, đóng góp không cộng vào tổng thu */
+        else if(/trừ tiền sử dụng đất|- TSDĐ/i.test(nm)){ /* thu nội địa trừ tiền sử dụng đất, xổ số */
+          const a=rows.findIndex(r=>/^THU NỘI ĐỊA$/i.test(String(r.name).trim())),b=rows.findIndex((r,j)=>j>i&&hLevel(r.stt,r.name)===5&&/tiền sử dụng đất/i.test(r.name)),c=rows.findIndex((r,j)=>j>i&&hLevel(r.stt,r.name)===5&&/xổ số/i.test(r.name));
+          if(a>=0&&b>=0&&num(val(i,k))&&num(val(a,k))){const t=val(a,k)-(val(b,k)||0)-(c>=0?val(c,k)||0:0);if(Math.abs(t-val(i,k))<=0.5)f=`${ref(a,k)}-${ref(b,k)}`+(c>=0?`-${ref(c,k)}`:'')}}
+      }
+      else f=fit(i,kidsOf(i),k);
+      if(f)out[i+','+k]=f}}
+  return out};
+
+
+/* ---- sheet THU: khung dòng theo mẫu 16-ThuNSNN2026; số thực hiện lấy từ các khoản lá của TABMIS, dự toán lấy từ phụ lục V theo tên ---- */
+const D=(re,parent)=>({re,parent});
+const KT=(...a)=>a; /* các mã TABMIS gộp vào dòng */
+const THU=[
+ ['1','Thu từ khu vực DNNN do trung ương quản lý',KT('1.1'),D(/doanh nghiệp (nhà nước )?trung ương/i),1],
+ ['1.1','Thuế giá trị gia tăng',KT('1.1.1'),D(/^-?\s*Thuế giá trị gia tăng/i,/doanh nghiệp (nhà nước )?trung ương/i)],
+ ['1.2','Thuế thu nhập doanh nghiệp',KT('1.1.3'),D(/^-?\s*Thuế thu nhập doanh nghiệp/i,/doanh nghiệp (nhà nước )?trung ương/i)],
+ ['1.3','Thuế tiêu thụ đặc biệt',KT('1.1.2'),D(/^-?\s*Thuế tiêu thụ đặc biệt/i,/doanh nghiệp (nhà nước )?trung ương/i)],
+ ['1.4','Thuế tài nguyên',KT('1.1.4','1.1.5'),D(/^-?\s*Thuế tài nguyên/i,/doanh nghiệp (nhà nước )?trung ương/i)],
+ ['2','Thu từ khu vực DNNN do địa phương quản lý',KT('1.2'),D(/doanh nghiệp (nhà nước )?địa phương/i),1],
+ ['2.1','Thuế giá trị gia tăng',KT('1.2.1'),D(/^-?\s*Thuế giá trị gia tăng/i,/doanh nghiệp (nhà nước )?địa phương/i)],
+ ['2.2','Thuế thu nhập doanh nghiệp',KT('1.2.3'),D(/^-?\s*Thuế thu nhập doanh nghiệp/i,/doanh nghiệp (nhà nước )?địa phương/i)],
+ ['2.3','Thuế tài nguyên',KT('1.2.4','1.2.5'),D(/^-?\s*Thuế tài nguyên/i,/doanh nghiệp (nhà nước )?địa phương/i)],
+ ['2.4','Thuế tiêu thụ đặc biệt',KT('1.2.2'),D(/^-?\s*Thuế tiêu thụ đặc biệt/i,/doanh nghiệp (nhà nước )?địa phương/i)],
+ ['3','Thu từ khu vực doanh nghiệp có vốn đầu tư nước ngoài',KT('2'),D(/vốn (ĐTNN|đầu tư nước ngoài)/i),1],
+ ['3.1','Thuế giá trị gia tăng',KT('2.1')],['3.2','Thuế thu nhập doanh nghiệp',KT('2.3')],['3.3','Thuế tiêu thụ đặc biệt',KT('2.2')],['3.4','Thuế tài nguyên',KT('2.4','2.5')],
+ ['4','Thu từ khu vực kinh tế ngoài quốc doanh',KT('3'),D(/ngoài quốc doanh/i),1],
+ ['4.1','Thuế giá trị gia tăng',KT('3.1'),D(/^-?\s*Thuế giá trị gia tăng/i,/ngoài quốc doanh/i)],
+ ['4.2','Thuế thu nhập doanh nghiệp',KT('3.3'),D(/^-?\s*Thuế thu nhập doanh nghiệp/i,/ngoài quốc doanh/i)],
+ ['4.3','Thuế tiêu thụ đặc biệt',KT('3.2'),D(/^-?\s*Thuế tiêu thụ đặc biệt/i,/ngoài quốc doanh/i)],
+ ['4.4','Thuế tài nguyên',KT('3.4','3.5'),D(/^-?\s*Thuế tài nguyên/i,/ngoài quốc doanh/i)],
+ ['5','Thuế thu nhập cá nhân',KT('4'),D(/^Thuế thu nhập cá nhân/i),1],
+ ['6','Thuế bảo vệ môi trường',KT('5'),D(/^Thuế bảo vệ môi trường/i),1],
+ ['7','Lệ phí trước bạ',KT('6'),D(/^Lệ phí trước bạ/i),1],
+ ['8','Thu phí, lệ phí',KT('7'),D(/^(Phí\s*-?\s*lệ phí|Thu phí)/i),1],
+ ['-','Phí và lệ phí trung ương',KT('7.1'),null,0,1],['-','Phí và lệ phí địa phương',KT('7.2','7.4'),null,0,1],
+ ['9','Thuế sử dụng đất nông nghiệp',KT('8.1'),D(/^Thuế sử dụng đất nông nghiệp/i),1],
+ ['10','Thuế sử dụng đất phi nông nghiệp',KT('8.2'),D(/^Thuế sử dụng đất phi nông nghiệp/i),1],
+ ['11','Tiền cho thuê đất, thuê mặt nước, mặt biển',KT('8.3'),D(/^Thu tiền cho thuê đất/i),1],
+ ['12','Thu tiền sử dụng đất',KT('8.4'),D(/^Thu tiền sử dụng đất/i),1],
+ ['13','Tiền cho thuê và tiền bán nhà ở thuộc sở hữu nhà nước',KT('8.5'),D(/^Thu tiền cho thuê và bán nhà/i),1],
+ ['14','Thu từ hoạt động xổ số kiến thiết',KT('9'),D(/xổ số/i),1],
+ ['15','Thu tiền cấp quyền khai thác khoáng sản',KT('10'),D(/cấp quyền khai thác/i),1],
+ ['16','Thu khác ngân sách',KT('11'),D(/^Thu khác ngân sách/i),1],
+ ['17','Thu từ quỹ đất công ích, hoa lợi công sản khác',KT('12'),D(/quỹ đất công ích/i),1],
+ ['18','Thu hồi vốn, thu cổ tức',KT('13.1','13.2'),D(/^Thu hồi vốn/i),1],
+ ['19','Lợi nhuận được chia của Nhà nước và lợi nhuận sau thuế còn lại sau khi trích lập các quỹ của doanh nghiệp nhà nước',KT('13.3','13.4'),null,1],
+ ['20','Chênh lệch thu chi Ngân hàng Nhà nước',KT('13.5'),null,1]
+];
+function thuVal(thu,codes){
+  let a=0,b=0;
+  (thu.leaves||[]).forEach(l=>{if(codes.some(c=>l.stt===c||l.stt.startsWith(c+'.'))){a+=l.rx+l.rt;b+=l.rx}});
+  return {nsnn:a,nsdp:b};
+}
+/* ---- sheet CHI: khung theo mẫu 17-ChiNSDP2026 (cùng kỳ, dự toán, thực hiện) ---- */
+const AREAS=[
+ ['1','Chi giáo dục - đào tạo và dạy nghề',['3'],/^Chi giáo dục/i],
+ ['2','Chi khoa học và công nghệ',['4'],/^Chi (sự nghiệp )?khoa học/i],
+ ['3','Chi quốc phòng, an ninh, trật tự, an toàn xã hội',['1','2'],/^Chi quốc phòng, an ninh/i],
+ ['-','Chi quốc phòng',['1'],/^Chi quốc phòng$/i,1],['-','Chi an ninh, trật tự, an toàn xã hội',['2'],/^Chi an ninh/i,1],
+ ['4','Chi y tế, dân số và gia đình',['5'],/^Chi y tế/i],
+ ['5','Chi văn hóa thông tin',['6'],/^Chi văn (hóa|hoá)/i],
+ ['6','Chi phát thanh, truyền hình',['7'],/^Chi (sự nghiệp )?phát thanh/i],
+ ['7','Chi thể dục thể thao',['8'],/^Chi thể dục/i],
+ ['8','Chi bảo vệ môi trường',['9'],/^Chi bảo vệ môi trường/i],
+ ['9','Chi các hoạt động kinh tế',['10'],/^Chi các hoạt động kinh tế/i],
+ ['10','Chi quản lý nhà nước, Đảng, Đoàn thể',['11'],/^Chi (hoạt động của )?(các )?(cơ quan )?quản lý/i],
+ ['11','Chi bảo đảm xã hội',['12'],/^Chi (bảo|đảm bảo|đảm) ?(đảm|bảo)? ?xã hội/i],
+ ['12','Chi khác',['13'],/^(Các khoản )?chi khác/i]
+];
+TC.RULE_SRC={THU,AREAS}; /* trang "Quy tắc tính" đọc lại từ đây để luôn khớp với cách tính thật */
+/* ---- mô hình dòng (dùng cho cả xem trước lẫn xuất excel): mỗi dòng có dt, th, ck = {nsnn,nsdp} hoặc null ---- */
+const GROUPS=[['dt','Dự toán năm'],['th','Thực hiện'],['tl','Tỷ lệ TH/DT'],['ck','Cùng kỳ năm'],['tc','Tỷ lệ so cùng kỳ']];
+TC.GROUPS=GROUPS;
+TC.defaultCols=()=>{const c={};GROUPS.forEach(([g])=>{c[g+'N']=1;c[g+'D']=1});return c};
+const ratio=(a,b)=>b>0&&a!=null?a/b:null;
+TC.cellVal=(row,g,sub)=>{ /* sub: 'nsnn' | 'nsdp' */
+  const o=g==='dt'?row.dt:g==='th'?row.th:g==='ck'?row.ck:null;
+  if(g==='dt'||g==='th'||g==='ck')return o&&o[sub]!=null?o[sub]:null;
+  if(g==='tl')return row.dt&&row.dt[sub]!=null?ratio(row.th[sub],row.dt[sub]):null;
+  return row.ck&&row.ck[sub]!=null?ratio(row.th[sub],row.ck[sub]):null;
+};
+/* số cùng kỳ người dùng gõ tay đè lên số từ tệp */
+function withCk(rows,ed){ed=ed||{};rows.forEach(r=>['nsnn','nsdp'].forEach(sub=>{const k=r.id+sub;if(k in ed){r.ck=Object.assign({},r.ck||{});r.ck[sub]=ed[k]}}));return rows}
+TC.modelThu=function(ctx){
+  const {thu,tables,info,dt,prev}=ctx,T=tables&&tables.thu,pt=prev&&prev.thu,rule=E.ruleFor(info&&info.nam);
+  const rows=[];
+  const add=(stt,name,b,i,dtv,thv,ckv)=>rows.push({id:'t'+rows.length,stt,name,b:!!b,i:!!i,dt:dtv||null,th:thv,ck:pt?ckv:null});
+  const dTong=dt.thu.tong,dTs=dt.thu.tsdd;
+  const dnoi=E.dtFind(T,/^THU NỘI ĐỊA/i)||{nsnn:dTong.nsnn,nsdp:dTong.nsdp};
+  const dtru=E.dtFind(T,/^Số thu trừ tiền sử dụng đất/i)||{nsnn:dTong.nsnn-dTs.nsnn,nsdp:dTong.nsdp-dTs.nsdp};
+  add('','TỔNG THU NSNN',1,0,{nsnn:dTong.nsnn,nsdp:dTong.nsdp},thu.total,pt&&pt.total);
+  add('I','Thu nội địa',1,0,{nsnn:dnoi.nsnn,nsdp:dnoi.nsdp},thu.total,pt&&pt.total);
+  add('','Thu nội địa - TSDĐ, XSKT',1,0,{nsnn:dtru.nsnn,nsdp:dtru.nsdp},thu.ex,pt&&pt.ex);
+  THU.forEach(([stt,name,codes0,d,top,ital],ix)=>{
+    const codes=rule.thu[ix]||codes0;
+    const dv=d&&T?E.dtFind(T,d.re,d.parent):null;
+    add(stt,name,top,ital,dv&&{nsnn:dv.nsnn,nsdp:dv.nsdp!=null?dv.nsdp:dv.nsnn},thuVal(thu,codes),pt&&thuVal(pt,codes));
+  });
+  add('II','Thu từ dầu thô',1,0,null,{nsnn:0,nsdp:0},pt&&{nsnn:0,nsdp:0});
+  add('III','Thu từ hoạt động xuất, nhập khẩu',1,0,null,{nsnn:0,nsdp:0},pt&&{nsnn:0,nsdp:0});
+  add('IV','Thu viện trợ',1,0,null,{nsnn:0,nsdp:0},pt&&{nsnn:0,nsdp:0});
+  /* mục V riêng, lấy dòng V của TABMIS; không nằm trong I. Thu nội địa và không tính vào tổng thu nên không ảnh hưởng việc đối chiếu mục I với TABMIS */
+  add('V','Các khoản huy động, đóng góp',1,0,null,thu.hd||{nsnn:0,nsdp:0},pt&&(pt.hd||{nsnn:0,nsdp:0}));
+  return withCk(rows,ctx.ck);
+};
+TC.modelChi=function(ctx){
+  const {chi,tables,dt,prev}=ctx,T=tables&&(tables.chi||tables.cd),pc=prev&&prev.chi,rule=E.ruleFor(ctx.info&&ctx.info.nam);
+  const rows=[];
+  const add=(stt,name,b,i,dv,tv,cv)=>rows.push({id:'c'+rows.length,stt,name,b:!!b,i:!!i,dt:dv!=null?{nsdp:dv}:null,th:{nsdp:tv==null?null:tv},ck:pc&&cv!=null?{nsdp:cv}:null,nsdpOnly:1});
+  const dfind=(re)=>{const x=E.dtFind(T,re);return x?x.nsnn:null};
+  add('','TỔNG CHI NSĐP',1,0,dt.chi.tong,chi.total,pc&&pc.total);
+  add('I','Chi đầu tư phát triển',1,0,dt.chi.dtpt,chi.dtpt,pc&&pc.dtpt);
+  add('II','Chi thường xuyên',1,0,dt.chi.tx,chi.tx,pc&&pc.tx);
+  add('','Trong đó:',0,1,null,null,null);
+  const am=new Map(chi.areas.map(a=>[a.stt,a.val])),pm=pc?new Map(pc.areas.map(a=>[a.stt,a.val])):null;
+  const sum=(m,codes)=>codes.some(c=>m.has(c))?codes.reduce((a,c)=>a+(m.get(c)||0),0):null;
+  AREAS.forEach(([stt,name,codes0,re],ix)=>{const codes=rule.chi[ix]||codes0;add(stt,name,0,1,dfind(re),sum(am,codes),pm?sum(pm,codes):null)});
+  add('III','Dự phòng ngân sách',1,0,dfind(/^DỰ PHÒNG NGÂN SÁCH/i),null,null);
+  return withCk(rows,ctx.ck);
+};
+/* cột hiện có theo cờ: trả [{g,sub,label,key}] */
+function colsOf(flags,nsdpOnly,info){
+  const out=[];
+  GROUPS.forEach(([g])=>(nsdpOnly?['D']:['N','D']).forEach(s=>{if(flags[g+s])out.push({g,sub:s==='N'?'nsnn':'nsdp',key:g+s})}));
+  return out;
+}
+TC.colsOf=colsOf;
+const gLabel=(g,info)=>g==='dt'?`Dự toán năm ${info.nam}`:g==='th'?`Thực hiện ${info.thang} tháng năm ${info.nam}`:g==='tl'?'Tỷ lệ TH/DT':g==='ck'?`Cùng kỳ năm ${info.nam-1}`:`Tỷ lệ so cùng kỳ năm ${info.nam-1}`;
+TC.gLabel=gLabel;
+function sheetFrom(st,ctx,name,title,rows,nsdpOnly,notes){
+  const {info,flags,hide}=ctx;
+  const cols=colsOf(flags,nsdpOnly),nc=2+Math.max(cols.length,1),last=nc;
+  const sh=new Sheet(name,st);
+  sh.widths=[6,nsdpOnly?52:52,...cols.map(c=>c.g==='tl'||c.g==='tc'?11:13)];
+  if(cols.length<3)sh.widths.push(...Array(3-cols.length).fill(14));
+  head(sh,last,title,info.xa,3);
+  sh.merge(7,Math.max(3,last-4),7,last,'ĐVT: triệu đồng',{i:1,sz:11,h:'right'});
+  const H={b:1,sz:12,h:'center',wrap:1,bd:'head'};
+  const hr=nsdpOnly?[8,10]:[8,10];
+  sh.merge(8,1,10,1,'STT',H);sh.merge(8,2,10,2,'Nội dung',H);
+  let c0=3;
+  GROUPS.forEach(([g])=>{
+    const cs=cols.filter(c=>c.g===g);if(!cs.length)return;
+    if(nsdpOnly)sh.merge(8,c0,10,c0,gLabel(g,info),H);
+    else{sh.merge(8,c0,9,c0+cs.length-1,gLabel(g,info),H);cs.forEach((c,k)=>sh.set(10,c0+k,c.sub==='nsnn'?'Thu NSNN':'Thu NSĐP',H))}
+    c0+=cs.length;
+  });
+  cols.forEach((c,k)=>sh.set(11,3+k,String(k+1),{b:1,sz:12,h:'center',bd:'head'}));
+  sh.set(11,1,'A',{b:1,sz:12,h:'center',bd:'head'});sh.set(11,2,'B',{b:1,sz:12,h:'center',bd:'head'});
+  [[8,26],[9,30],[10,34]].forEach(([r,h])=>sh.heights[r]=h);sh.freeze=11;
+  let r=12;
+  /* ô tổng ghi công thức SUM các dòng con, ô tỷ lệ ghi công thức chia, để sửa số sau khi xuất thì ô liên quan tự đổi */
+  const vr=rows.filter(x=>!hide.has(x.id)),R0=12,ci=(g,sub)=>cols.findIndex(c=>c.g===g&&c.sub===sub);
+  const HF=TC.hierF(vr,cols.length,(i,k)=>{const c=cols[k];return c.g==='tl'||c.g==='tc'?null:TC.cellVal(vr[i],c.g,c.sub)},(i,k)=>colName(3+k)+(R0+i));
+  vr.forEach((x,i)=>{
+    sh.set(r,1,x.stt,{b:x.b?1:0,i:x.i?1:0,sz:12,h:'center',bd:'data',wrap:1});
+    sh.set(r,2,x.name,{b:x.b?1:0,i:x.i?1:0,sz:13,bd:'data',wrap:1});
+    cols.forEach((c,k)=>{
+      const v=TC.cellVal(x,c.g,c.sub),pc=c.g==='tl'||c.g==='tc';let f=HF[i+','+k]||null;
+      if(pc){const a=ci('th',c.sub),b=ci(c.g==='tl'?'dt':'ck',c.sub);if(a>=0&&b>=0){const A=colName(3+a)+r,B=colName(3+b)+r;f=`IF(AND(ISNUMBER(${A}),N(${B})>0),${A}/${B},"")`}}
+      sh.set(r,3+k,f&&v==null?'':v,{b:x.b||pc?1:0,sz:12,h:'right',bd:'data',nf:pc?'pct':'int'},f||undefined);
+    });
+    sh.heights[r]=rowH(x.name,x.b,52);r++;
+  });
+  if(notes){r++;sh.set(r++,1,'Ghi chú:',{b:1,sz:12});notes.forEach(t=>{sh.merge(r,1,r,last,t,{sz:11,wrap:1});sh.heights[r]=t.length>200?46:t.length>110?32:17;r++})}
+  return sh;
+}
+const NOTES=['(1) Doanh nghiệp nhà nước do trung ương quản lý là doanh nghiệp do bộ, cơ quan ngang bộ, cơ quan thuộc Chính phủ, cơ quan khác ở trung ương đại diện Nhà nước chủ sở hữu 100% vốn điều lệ.',
+ '(2) Doanh nghiệp nhà nước do địa phương quản lý là doanh nghiệp do Ủy ban nhân dân cấp tỉnh đại diện Nhà nước chủ sở hữu 100% vốn điều lệ.',
+ '(3) Doanh nghiệp có vốn đầu tư nước ngoài là các doanh nghiệp mà phần vốn do tổ chức, cá nhân nước ngoài sở hữu từ 51% vốn điều lệ trở lên hoặc có đa số thành viên hợp danh là cá nhân nước ngoài đối với tổ chức kinh tế là công ty hợp danh.',
+ '(4) Doanh nghiệp khu vực kinh tế ngoài quốc doanh là các doanh nghiệp thành lập theo Luật doanh nghiệp, Luật các tổ chức tín dụng, trừ các doanh nghiệp nhà nước do trung ương, địa phương quản lý, doanh nghiệp có vốn đầu tư nước ngoài nêu trên.',
+ '(5) Thu ngân sách nhà nước trên địa bàn, thu ngân sách địa phương cấp xã không có thu từ cổ tức, lợi nhuận được chia của Nhà nước và lợi nhuận sau thuế còn lại sau khi trích lập các quỹ của doanh nghiệp nhà nước, chênh lệch thu, chi Ngân hàng Nhà nước, thu từ dầu thô, thu từ hoạt động xuất, nhập khẩu.'];
+
+/* tạo tệp xlsx: ctx = {thu, chi, tables, info, dt, prev, flags, hide}; truyền mảng ctx thì gộp nhiều đơn vị vào một tệp, mỗi đơn vị hai sheet Thu-A, Chi-A */
+TC.buildXlsx=async function(arg){
+  const st=new Styles(),list=Array.isArray(arg)?arg:[arg],multi=Array.isArray(arg)&&list.length>1,sh=[],used=new Set();
+  list.forEach(c0=>{
+    const ctx=Object.assign({flags:TC.defaultCols(),hide:new Set()},c0);
+    let sn='';
+    if(multi){
+      const base=String(ctx.info.xa||'').replace(/^(xã|phường|thị trấn|đặc khu)\s+/i,'').replace(/[\[\]:*?\/\\]/g,'').trim().slice(0,22)||'DV';
+      sn=base;for(let k=2;used.has(sn.toLowerCase());k++)sn=base+' '+k;used.add(sn.toLowerCase());sn='-'+sn;
+    }
+    sh.push(sheetFrom(st,ctx,'Thu'+sn,`DỰ TOÁN THU NGÂN SÁCH NHÀ NƯỚC THEO LĨNH VỰC NĂM ${ctx.info.nam}`,TC.modelThu(ctx),false,null));
+    sh.push(sheetFrom(st,ctx,'Chi'+sn,`DỰ TOÁN CHI NGÂN SÁCH ĐỊA PHƯƠNG THEO CƠ CẤU CHI NĂM ${ctx.info.nam}`,TC.modelChi(ctx),true,null));
+  });
+  return pack(sh,st);
+};
+
+/* ================= BÁO CÁO THẢO LUẬN DỰ TOÁN THU (mẫu "thảo luận dự toán thu": 20 cột số, năm sau so với năm nay) =================
+   C,D thực hiện năm trước | E,F dự toán năm nay | G,H thực hiện n tháng | I,J ước thực hiện cả năm (nhập) | K,L, M,N tỷ lệ | O,P dự toán năm sau (nhập) | Q,R thống nhất (nhập) | S..V so sánh */
+const TD_AFTER={ /* dòng mẫu thảo luận có thêm so với bảng thu hàng ngày; khóa = STT hoặc tên dòng đứng trước */
+  '3.4':[['3.5','Tiền thuê mặt đất, mặt nước'],['3.6','']],
+  '4.4':[['4.5','']],
+  '6':[['-','Thuế BVMT thu từ hàng hóa nhập khẩu']],
+  'Phí và lệ phí địa phương':[['+','Phí và lệ phí tỉnh'],['+','Phí và lệ phí xã, phường']],
+  '15':[['+','TW cấp giấy phép'],['+','ĐP cấp giấy phép']],
+  '16':[['-','Thu khác NSTW','tw'],['-','Thu khác NSĐP','dp']],
+  'III':[['1','Thuế GTGT thu từ hàng hóa nhập khẩu'],['2','Thuế xuất khẩu'],['3','Thuế nhập khẩu'],['4','Thuế TTĐB thu từ hàng hóa nhập khẩu'],['5','Thuế BVMT thu từ hàng hóa nhập khẩu'],['6','Thu khác']]
+};
+TC.modelThuTD=function(ctx){
+  const base=TC.modelThu(ctx),out=[];let n=0;
+  base.forEach(r=>{
+    out.push(r);
+    const key=(r.stt&&r.stt!=='-'&&TD_AFTER[r.stt]&&!(r.stt==='III'&&!r.b))?r.stt:TD_AFTER[r.name]?r.name:null;
+    if(key)TD_AFTER[key].forEach(([stt,name,dv])=>out.push({id:'x'+(++n),stt,name,b:0,i:0,dt:null,th:null,ck:null,manual:1,of:dv?r:null,dv:dv||null}));
+  });
+  return out;
+};
+/* các khoản có phân chia giữa trung ương và địa phương (theo mẫu: cộng các dòng này ra "Phân chia") */
+const TD_SHARE=['1.1','1.2','1.3','2.1','2.2','2.4','3.1','3.2','3.3','4.1','4.2','4.3','5','6','15'];
+TC.TD_SHARE_STT=TD_SHARE;
+TC.TD_COLS=[ /* thứ tự cột C..V */
+ {k:'cN',g:0,t:'n'},{k:'cD',g:0,t:'n'},{k:'eN',g:1,t:'n'},{k:'eD',g:1,t:'n'},{k:'gN',g:2,t:'n'},{k:'gD',g:2,t:'n'},
+ {k:'uN',g:3,t:'in'},{k:'uD',g:3,t:'in'},{k:'kN',g:4,t:'p'},{k:'kD',g:4,t:'p'},{k:'mN',g:5,t:'p'},{k:'mD',g:5,t:'p'},
+ {k:'oN',g:6,t:'in'},{k:'oD',g:6,t:'in'},{k:'qN',g:7,t:'in'},{k:'qD',g:7,t:'in'},
+ {k:'sN',g:8,t:'n'},{k:'sD',g:8,t:'n'},{k:'vN',g:9,t:'p'},{k:'vD',g:9,t:'p'},
+ {k:'wN',g:10,t:'n'},{k:'wD',g:10,t:'n'}]; /* nhóm 10: ƯTH năm nay trừ dự toán năm nay (tuyệt đối) */
+/* bảng thảo luận chỉ hiện ba nhóm: dự toán năm nay (nhóm 1), ước thực hiện năm nay (nhóm 3), dự toán năm sau (nhóm 6). Các cột thực hiện, tỷ lệ, thống nhất, so sánh vẫn tính trong bộ nhớ nhưng không hiện và không xuất */
+/* thứ tự các nhóm cột có thể hiện: số liệu 1, 3, 6; so sánh ƯTH so DT năm nay (10 tuyệt đối, 5 tỷ lệ), DT năm sau so DT năm nay (8 tuyệt đối, 9 tỷ lệ). Người dùng ẩn hiện từng nhóm, lưu trên máy. */
+/* hai mẫu bảng thảo luận thu:
+   'a' có số thực hiện (đơn vị có tệp thu TABMIS): đúng mẫu Excel thảo luận thu, cột C..V = thực hiện năm trước, dự toán năm nay, thực hiện t tháng, ước thực hiện, TH t tháng so DT, ƯTH so DT, dự toán năm sau, thống nhất, DT năm sau so DT năm nay (tuyệt đối, tương đối); thêm tùy chọn ƯTH so DT tuyệt đối (nhóm 10, mặc định ẩn)
+   'b' không cần dữ liệu thực hiện (đơn vị chỉ lấy từ bảng Tỷ lệ phân cấp): dự toán năm nay, ước thực hiện, dự toán năm sau và các nhóm so sánh
+   Mỗi mẫu nhớ riêng các nhóm cột đang hiện (khóa tdvisA cho mẫu a, tdvis cho mẫu b). */
+TC.TD_ALLS={a:[0,1,2,3,4,10,5,6,7,8,9],b:[1,3,6,10,5,8,9]};
+TC.TD_DEFV={a:[0,1,2,3,4,5,6,7,8,9],b:[1,3,6,10,5,8,9]};
+TC.TD_MODE='b';
+TC.TD_ALL=TC.TD_ALLS.b;
+TC.TD_VIS=TC.TD_ALL.slice();
+TC.tdVisCols=[];
+/* TD_SIDE: cột NSNN (chẵn) và NSĐP (lẻ) nào được hiện, ví dụ ['N','D'] */
+TC.TD_SIDE=['N','D'];
+const tdVisKey=()=>TC.TD_MODE==='a'?'tdvisA':'tdvis';
+TC.tdSetVis=(a,side)=>{TC.TD_VIS=TC.TD_ALL.filter(g=>(a||TC.TD_DEFV[TC.TD_MODE]).includes(g));if(!TC.TD_VIS.length)TC.TD_VIS=[1];
+  if(side){TC.TD_SIDE=['N','D'].filter(x=>side.includes(x));if(!TC.TD_SIDE.length)TC.TD_SIDE=['N','D']}
+  TC.tdVisCols=[];TC.TD_VIS.forEach(g=>TC.TD_COLS.forEach((c,i)=>{if(c.g===g&&TC.TD_SIDE.includes(i%2?'D':'N'))TC.tdVisCols.push(i)}));
+  try{TC.store.set(tdVisKey(),TC.TD_VIS);TC.store.set('tdside',TC.TD_SIDE)}catch(e){}};
+TC.tdLoadVis=()=>{let a=null,sd=null;try{a=TC.store.get(tdVisKey(),null);sd=TC.store.get('tdside',null)}catch(e){}TC.tdSetVis(Array.isArray(a)?a:null,Array.isArray(sd)?sd:null)};
+/* mẫu của một đơn vị: có số thu TABMIS thì mẫu a, không thì mẫu b */
+TC.tdModeOf=w=>w&&w.thu?'a':'b';
+TC.tdMode=m=>{m=m==='a'?'a':'b';if(m===TC.TD_MODE&&TC.tdVisCols.length)return;TC.TD_MODE=m;TC.TD_ALL=TC.TD_ALLS[m];TC.tdLoadVis()};
+TC.tdLoadVis();
+/* tiêu đề nhiều tầng của bảng thảo luận (dùng chung bảng xem trước và Excel): ô {r,c,rs,cs,t}, c = vị trí cột dữ liệu thứ mấy (từ 0). Nhóm so sánh gộp hai cột Tuyệt đối, Tương đối (%) dưới một tiêu đề. */
+TC.tdHdr=info=>{
+  const s=TC.TD_SIDE.length,n=s===2?3:2,y=info.nam,V=TC.tdVisCols,G=TC.tdGroups(info),cells=[];let c=0;
+  const cmp={10:0,5:0,8:1,9:1},sfx=s===1?(TC.TD_SIDE[0]==='N'?' (NSNN)':' (NSĐP)'):'';
+  const lab=[`ƯTH ${y} so DT ${y}${sfx}`,`DT ${y+1} so DT ${y}${sfx}`],typ={10:'Tuyệt đối',8:'Tuyệt đối',5:'Tương đối (%)',9:'Tương đối (%)'};
+  const sub=i=>i%2?'Thu NSĐP':'Tổng thu NSNN';
+  const vis=TC.TD_VIS.map(g=>({g,cols:V.filter(i=>TC.TD_COLS[i].g===g)})).filter(x=>x.cols.length);
+  let idx=0;
+  while(idx<vis.length){
+    const x=vis[idx],g=x.g;
+    if(!(g in cmp)){
+      cells.push({r:0,c,rs:1,cs:x.cols.length,t:G[g]});
+      x.cols.forEach((i,j)=>cells.push({r:1,c:c+j,rs:s===2?2:1,cs:1,t:sub(i)}));
+      c+=x.cols.length;idx++;continue}
+    const id=cmp[g],blk=[];let j=idx,tot=0;
+    while(j<vis.length&&vis[j].g in cmp&&cmp[vis[j].g]===id){blk.push(vis[j]);tot+=vis[j].cols.length;j++}
+    cells.push({r:0,c,rs:1,cs:tot,t:lab[id]});
+    blk.forEach(b=>{
+      cells.push({r:1,c,rs:1,cs:b.cols.length,t:typ[b.g]});
+      if(s===2)b.cols.forEach((i,k)=>cells.push({r:2,c:c+k,rs:1,cs:1,t:sub(i)}));
+      c+=b.cols.length});
+    idx=j}
+  return {n,cells}};
+/* đoạn dưới bảng (Thu NS hưởng 100%, Phân chia, Thu NSĐP, ...) bật tắt được */
+TC.TD_BLK=true;
+TC.tdSetBlk=v=>{TC.TD_BLK=!!v;try{TC.store.set('tdblk',TC.TD_BLK)}catch(e){}};
+try{const b=TC.store.get('tdblk',null);if(b!=null)TC.TD_BLK=!!b}catch(e){}
+TC.tdGroups=info=>{const y=info.nam,t=info.thang;return [
+  `Thực hiện năm ${y-1}`,`Dự toán năm ${y}`,`Thực hiện ${t} tháng năm ${y}`,`Ước thực hiện năm ${y}`,`TH ${t} tháng so DT ${y}`,`ƯTH ${y} so DT ${y} (%)`,
+  `Dự toán năm ${y+1}`,`Thống nhất DT ${y+1}`,`DT ${y+1} so DT ${y} (tuyệt đối)`,`DT ${y+1} so DT ${y} (%)`,`ƯTH ${y} so DT ${y} (tuyệt đối)`]};
+const gv=(o,s)=>o&&o[s]!=null?o[s]:null;
+/* giá trị 20 ô của một dòng: [{v,t,k}] ; inp = số người dùng gõ, khóa theo id dòng */
+TC.tdRow=(row,inp)=>{
+  const m=(inp&&inp[row.id])||{},man=row.manual,pick=(k,v)=>man&&m[k]!=null?m[k]:v;
+  const fN=(n,d)=>n==null&&d!=null?d:n; /* thu NSNN luôn >= thu NSĐP: ô NSNN trống mà NSĐP có số thì NSNN lấy bằng NSĐP */
+  /* dòng suy ra từ dòng mẹ: 'w' = trích về NSTW (NSNN - NSĐP của mẹ), 'tw' = thu khác NSTW (cùng cách tính), 'dp' = thu khác NSĐP (= NSĐP của mẹ); số gõ tay hoặc từ bảng phân cấp ưu tiên hơn */
+  const pv=row.of?TC.tdRowMap(row.of,inp):null,der=k=>{
+    if(!pv)return null;const g=k[0],s=k[1],pn=pv[g+'N'],pd=pv[g+'D'];
+    if(row.dv==='dp')return pd!=null?pd:null;
+    if(s==='D')return null;
+    return pn!=null&&pd!=null&&pn-pd>0.5?pn-pd:null};
+  const mm=row.dv==='w'?{}:m,dd=(k,v)=>v!=null?v:der(k);
+  /* dự toán năm nay: số gõ tay của dòng mẫu ưu tiên; dòng thường lấy từ kho, chưa có thì lấy số đã điền sẵn từ bảng Tỷ lệ phân cấp */
+  const dtv=(k,sd)=>{const t=gv(row.dt,sd);if(man&&m[k]!=null)return m[k];if(t)return t;return m[k]!=null?m[k]:t};
+  const cD=dd('cD',mm.cD!=null?mm.cD:gv(row.ck,'nsdp')),eD=dd('eD',dtv('eD','nsdp')),gD=dd('gD',pick('gD',gv(row.th,'nsdp'))),uD=dd('uD',mm.uD!=null?mm.uD:null),oD=dd('oD',mm.oD!=null?mm.oD:null),qD=mm.qD!=null?mm.qD:null;
+  const cN=fN(dd('cN',mm.cN!=null?mm.cN:gv(row.ck,'nsnn')),cD),eN=fN(dd('eN',dtv('eN','nsnn')),eD),gN=fN(dd('gN',pick('gN',gv(row.th,'nsnn'))),gD),uN=fN(dd('uN',mm.uN!=null?mm.uN:null),uD),oN=fN(dd('oN',mm.oN!=null?mm.oN:null),oD),qN=fN(mm.qN!=null?mm.qN:null,qD);
+  const rt=(a,b)=>b>0&&a!=null?Math.round(a/b*10000)/10000:null,df=(q,o,e)=>{const x=q!=null?q:o;return x==null?null:x-(e||0)};
+  const sN=df(qN,oN,eN),sD=df(qD,oD,eD),wN=uN==null?null:uN-(eN||0),wD=uD==null?null:uD-(eD||0);
+  const val={cN,cD,eN,eD,gN,gD,uN,uD,kN:rt(gN,eN),kD:rt(gD,eD),mN:rt(uN,eN),mD:rt(uD,eD),oN,oD,qN,qD,sN,sD,vN:rt(qN!=null?qN:oN,eN),vD:rt(qD!=null?qD:oD,eD),wN,wD};
+  return TC.TD_COLS.map(c=>({k:c.k,t:c.t,v:val[c.k],inp:row.dv==='w'?false:c.t==='in'||c.k==='cN'||c.k==='cD'||(man&&c.g<3)}));
+};
+TC.tdRowMap=(row,inp)=>{const o={};TC.tdRow(row,inp).forEach(c=>o[c.k]=c.v);return o};
+/* các dòng thuế có trích về NSTW: thêm dòng "Trong đó: trích về NSTW" ngay dưới dòng mẹ khi dự toán năm sau có phần NSTW (tiền thuê đất, tiền sử dụng đất thì luôn thêm) */
+TC.TD_TW_STT=['1.1','1.2','1.3','2.1','2.2','2.4','3.1','3.2','3.3','4.1','4.2','4.3','5','6','11','12'];
+TC.tdAddTw=(rows,inp)=>{const out=[];rows.forEach(r=>{out.push(r);
+  if(r.manual||!TC.TD_TW_STT.includes(r.stt))return;
+  const v=TC.tdRowMap(r,inp);
+  if(r.stt==='11'||r.stt==='12'||(v.oN!=null&&v.oD!=null&&v.oN-v.oD>0.5))out.push({id:r.id+'w',stt:'-',name:'Trong đó: trích về NSTW',b:0,i:1,dt:null,th:null,ck:null,of:r,dv:'w'})});
+  return out};
+/* khối cuối bảng: các dòng tính từ bảng (Thu NS hưởng 100%, Phân chia); cột NSNN (C,E,G,I,O,Q) */
+TC.tdBlock=(rows,inp)=>{
+  const cells=rows.map(r=>({r,c:TC.tdRow(r,inp)}));
+  const share=new Array(22).fill(null),h100=new Array(22).fill(null),noidia=cells.find(x=>x.r.stt==='I'&&/^Thu nội địa/i.test(x.r.name));
+  /* cột số (NSNN và NSĐP): Phân chia = cộng các khoản phân chia; Thu NS hưởng 100% = Thu nội địa trừ Phân chia */
+  TD_BLK_NUM.forEach(i=>{
+    let s=0,has=false;cells.forEach(x=>{if(!x.r.manual&&TD_SHARE.includes(x.r.stt)&&x.c[i].v!=null){s+=x.c[i].v;has=true}});
+    share[i]=has?s:null;const ni=noidia&&noidia.c[i].v;h100[i]=has&&ni!=null?ni-s:null});
+  [share,h100].forEach(TC.tdBlkCmp);
+  const E=()=>null;
+  return [{name:'Thu NS hưởng 100%',v:h100},{name:'Phân chia',v:share},{name:'Thu NSĐP',v:E()},{name:'Trừ TSDĐ',v:E()},{name:'Thu NSĐP trừ TSDĐ',v:E()},{name:'Tăng thu',v:E()},{name:'50% tăng thu',v:E()},{name:'Số bổ sung thời kì ổn định',v:E()},{name:'Dự phòng',v:E()}];
+};
+const TD_BLK_NUM=[0,1,2,3,4,5,6,7,12,13,14,15];
+/* cột so sánh của một dòng đoạn dưới, cùng cách tính với các dòng trong bảng (TC.tdRow) */
+TC.tdBlkCmp=v=>{const rt=(a,b)=>b>0&&a!=null?Math.round(a/b*10000)/10000:null;
+  [0,1].forEach(sd=>{const e=v[2+sd],g=v[4+sd],u=v[6+sd],o=v[12+sd],q=v[14+sd],x=q!=null?q:o;
+    v[8+sd]=rt(g,e);v[10+sd]=rt(u,e);v[16+sd]=x==null?null:x-(e||0);v[18+sd]=rt(x,e);v[20+sd]=u==null?null:u-(e||0)})};
+/* số đồng bộ sang Phụ lục cân đối: thu NSĐP hưởng 100% (= NSNN của các khoản 100% NSĐP) và thu NSĐP từ khoản phân chia, theo số thống nhất (chưa có thì dự toán năm sau) */
+TC.tdSync=(rows,inp)=>{
+  const cells=rows.map(r=>({r,c:TC.tdRow(r,inp)})),noidia=cells.find(x=>x.r.stt==='I'&&/^Thu nội địa/i.test(x.r.name));
+  const pick=(c,sd)=>{const q=c[14+sd].v,o=c[12+sd].v;return q!=null?q:o};
+  let sN=0,sD=0,has=false;
+  cells.forEach(x=>{if(!x.r.manual&&TD_SHARE.includes(x.r.stt)){const n=pick(x.c,0),d=pick(x.c,1);if(n!=null){sN+=n;has=true}if(d!=null)sD+=d}});
+  const niN=noidia?pick(noidia.c,0):null,niD=noidia?pick(noidia.c,1):null,hN=has&&niN!=null?niN-sN:null,h=has&&niD!=null?niD-sD:null;
+  /* thu NSĐP hưởng 100% lấy phần còn lại của thu NSĐP nội địa sau khoản phân chia, để hai khoản cộng đúng bằng thu NSĐP nội địa; hN là số NSNN của các khoản ngoài danh sách phân chia, chênh với h là phần NSTW hưởng ở các khoản đó */
+  return {h100:h,chia:has?sD:null,noidiaD:niD,h100N:hN,diff:h!=null&&hN!=null?hN-h:null};
+};
+/* bảng chi (phụ lục chi) hoặc cân đối dựng từ khung trong kho dự toán; vals[i] là số của dòng i */
+TC.skelTable=(kind,info,vals)=>{
+  const sk=JSON.parse(JSON.stringify(window.TC_DT_SKEL[kind])),y=info.nam+1;
+  if(kind==='chi')sk.rows=sk.rows.filter(r=>String(r.stt||'').length<=8);
+  sk.rows.forEach((r,i)=>{r.v=(r.v||[null]).map((_,k)=>vals&&k===0&&vals[i]!=null?vals[i]:null)});
+  sk.title=sk.title.slice();sk.title[0]=kind==='cd'?'PHỤ LỤC CÂN ĐỐI':'PHỤ LỤC DỰ TOÁN CHI';
+  sk.title[1]=sk.title[1].replace(/NĂM\s+\d{4}/,'NĂM '+y);sk.title[2]=String(info.xa||'').toUpperCase();
+  if(kind==='cd')sk.heads=['Dự toán năm '+y];
+  return sk;
+};
+function sheetTD(st,ctx,name){
+  const {info}=ctx,rows=ctx.rows.filter(x=>!ctx.hide.has(x.id)),inp=ctx.inp||{},G=TC.tdGroups(info),V=TC.tdVisCols,last=2+V.length;
+  const sh=new Sheet(name,st);
+  sh.widths=[5.6,56,...V.map(()=>13)];
+  head(sh,last,`DỰ TOÁN THU NGÂN SÁCH NHÀ NƯỚC THEO LĨNH VỰC NĂM ${info.nam+1}`,info.xa,last-3,{tl:1});
+  sh.merge(7,last-1,7,last,'ĐVT: triệu đồng',{i:1,sz:11,h:'right'});
+  const H={b:1,sz:12,h:'center',wrap:1,bd:'head'};
+  const HD=TC.tdHdr(info),nr=8+HD.n; /* nr = dòng đánh số cột, dữ liệu bắt đầu ở nr+1 */
+  sh.merge(8,1,nr-1,1,'STT',H);sh.merge(8,2,nr-1,2,'Nội dung',H);
+  HD.cells.forEach(x=>sh.merge(8+x.r,3+x.c,8+x.r+x.rs-1,3+x.c+x.cs-1,x.t,H));
+  sh.set(nr,1,'A',H);sh.set(nr,2,'B',H);V.forEach((_,i)=>sh.set(nr,3+i,String(i+1),H));
+  (HD.n===3?[[8,44],[9,22],[10,34]]:[[8,44],[9,36]]).forEach(([r,h])=>sh.heights[r]=h);sh.freeze=nr;
+  /* các ô tổng, tỷ lệ, so sánh ghi bằng CÔNG THỨC (kèm giá trị đã tính) để sửa số trong Excel thì các ô liên quan tự đổi */
+  const rowNo={},vals={};let r0=nr+1;rows.forEach(x=>{rowNo[x.id]=r0++;vals[x.id]=TC.tdRow(x,inp)});
+  const CH={t0:['t1','t41','t42','t43'],t3:['t4','t5','t6','t7'],t8:['t9','t10','t11','t12'],t13:['t14','t15','t16','t17','x1','x2'],t18:['t19','t20','t21','t22','x3'],t26:['t27','t28'],t28:['x5','x6'],t35:['x7','x8'],t36:['x9','x10'],t42:['x11','x12','x13','x14','x15','x16']};
+  const all=ctx.rows,i0=all.findIndex(x=>x.id==='t3'),i1=all.findIndex(x=>x.id==='t41');
+  CH.t1=all.slice(i0,i1<0?undefined:i1).filter(x=>!x.manual&&/^\d+$/.test(x.stt)).map(x=>x.id);
+  const P=k=>V.indexOf(k),L=k=>colName(3+P(k)),VALK=[0,1,2,3,4,5,6,7,12,13,14,15];
+  const num=v=>typeof v==='number'&&isFinite(v);
+  const sumF=(id,k)=>{ /* công thức cộng các dòng con có trong bảng, chỉ dùng khi bằng đúng giá trị dòng cha */
+    const v=vals[id][k].v;if(!num(v))return null;
+    if(id==='t2'){const a=rowNo.t1,b=rowNo.t32,c=rowNo.t34;if(!a||!b||!c)return null;const t=(vals.t1[k].v||0)-(vals.t32[k].v||0)-(vals.t34[k].v||0);return Math.abs(t-v)<=0.5?`${L(k)}${a}-${L(k)}${b}-${L(k)}${c}`:null}
+    const kids=(CH[id]||[]).filter(c=>rowNo[c]);if(!kids.length)return null;
+    let s=0,has=false;kids.forEach(c=>{const x=vals[c][k].v;if(num(x)){s+=x;has=true}});
+    return has&&Math.abs(s-v)<=0.5?`SUM(${kids.map(c=>L(k)+rowNo[c]).join(',')})`:null};
+  /* cột so sánh ghi bằng công thức, cùng cách tính và làm tròn như web: tuyệt đối = số sau trừ số trước (ô trước trống tính 0, ô sau trống thì để trống); tỷ lệ = số sau chia số trước làm tròn 4 chữ số thập phân (hiện %), số trước phải lớn hơn 0.
+     Chỉ ghi công thức khi hai cột nguồn (cùng NSNN hoặc NSĐP) đang có trong bảng, không thì ghi số. */
+  const cmpF=(id,k)=>{
+    const sd=k%2,g=TC.TD_COLS[k].g,af=g===4?4+sd:(g===5||g===10)?6+sd:12+sd,bf=2+sd; /* nhóm 4: TH t tháng / DT năm nay */
+    if(P(af)<0||P(bf)<0)return null;
+    if((g===8||g===9)&&vals[id][14+sd].v!=null)return null; /* có số thống nhất thì web lấy số đó, giữ nguyên giá trị */
+    const A=L(af)+rowNo[id],B=L(bf)+rowNo[id];
+    return (g===4||g===5||g===9)?`IF(AND(ISNUMBER(${A}),N(${B})>0),ROUND(${A}/N(${B}),4),"")`:`IF(ISNUMBER(${A}),${A}-N(${B}),"")`};
+  const wF=(id,k)=>{ /* NSĐP = NSNN trừ phần trích về NSTW */
+    const w=rowNo[id+'w'];if(!w||k%2===0||!VALK.includes(k)||P(k-1)<0)return null;
+    const pN=vals[id][k-1].v,pD=vals[id][k].v,wN=vals[id+'w'][k-1].v;
+    return num(pN)&&num(pD)&&num(wN)&&Math.abs(pN-wN-pD)<=0.5?`${L(k-1)}${rowNo[id]}-${L(k-1)}${w}`:null};
+  let r=nr+1;
+  rows.forEach(x=>{
+    const sx={b:x.b?1:0,i:x.i?1:0,sz:12,h:'center',bd:'data',wrap:1};
+    sh.set(r,1,x.stt,sx);
+    sh.set(r,2,x.name,{b:x.b?1:0,i:x.i?1:0,sz:12,bd:'data',wrap:1});
+    V.forEach((k,p)=>{
+      const c=vals[x.id][k],st={b:x.b?1:0,i:x.i?1:0,sz:12,h:'right',bd:'data',nf:c.t==='p'?'pct':'int'},cv=c.v==null?'':c.v;
+      const f=[4,5,8,9,10].includes(TC.TD_COLS[k].g)?cmpF(x.id,k):(wF(x.id,k)||sumF(x.id,k));
+      sh.set(r,3+p,f?cv:c.v,st,f||undefined);
+    });
+    sh.heights[r]=rowH(x.name,x.b,56);r++;
+  });
+  if(!TC.TD_BLK)return sh;
+  r++;
+  const blk=TC.tdBlock(ctx.rows,inp),shareIds=ctx.rows.filter(x=>!x.manual&&TD_SHARE.includes(x.stt)).map(x=>x.id),shF={};
+  const shown=blk.map((_,bi)=>!ctx.hide.has('bk'+bi)),rowAt={};let rr=r;shown.forEach((on,bi)=>{if(on)rowAt[bi]=rr++});
+  const pcRow=rowAt[1]; /* dòng "Phân chia" (nếu còn hiện) để các công thức trỏ tới */
+  if(shareIds.length&&shareIds.every(id=>rowNo[id]))V.forEach(k=>{if(!TD_BLK_NUM.includes(k))return;const v=blk[1].v&&blk[1].v[k];if(v==null)return;const t=shareIds.reduce((a,id)=>a+(vals[id][k].v||0),0);if(Math.abs(t-v)<=0.5)shF[k]=`SUM(${shareIds.map(id=>L(k)+rowNo[id]).join(',')})`});
+  /* cột so sánh của dòng đoạn dưới: công thức trên chính dòng đó khi hai cột nguồn đang hiện */
+  const blkCmpF=(k,rr)=>{const sd=k%2,g=TC.TD_COLS[k].g,bf=2+sd,af=g===4?4+sd:(g===5||g===10)?6+sd:12+sd;
+    if(P(af)<0||P(bf)<0)return null;
+    let A=L(af)+rr;const B=L(bf)+rr;
+    if((g===8||g===9)&&P(14+sd)>=0)A=`IF(ISNUMBER(${L(14+sd)}${rr}),${L(14+sd)}${rr},${A})`; /* có số thống nhất thì so số thống nhất */return (g===4||g===5||g===9)?`IF(AND(ISNUMBER(${A}),N(${B})>0),ROUND(${A}/N(${B}),4),"")`:`IF(ISNUMBER(${A}),${A}-N(${B}),"")`};
+  blk.forEach((b,bi)=>{if(!shown[bi])return;sh.set(r,2,b.name,{b:1,sz:11});V.forEach(k=>{const v=b.v&&b.v[k];if(v==null)return;
+    let f=null;const pc=TC.TD_COLS[k].t==='p',st={sz:11,h:'right',nf:pc?'pct':'int'};
+    if(!TD_BLK_NUM.includes(k))f=bi<2?blkCmpF(k,r):null;
+    else{if(bi===1)f=shF[k]||null;
+      if(bi===0&&pcRow&&rowNo.t1&&shF[k]&&num(vals.t1[k].v)&&Math.abs(vals.t1[k].v-blk[1].v[k]-v)<=0.5)f=`${L(k)}${rowNo.t1}-${L(k)}${pcRow}`}
+    sh.set(r,3+P(k),v,st,f||undefined)});r++});
+  return sh;
+}
+/* arg: {rows,info,inp,hide} hoặc mảng; nhiều đơn vị thì mỗi đơn vị một sheet Thu-<tên> */
+TC.buildXlsxTD=async function(arg){
+  const st=new Styles(),list=Array.isArray(arg)?arg:[arg],multi=list.length>1,sh=[],used=new Set(),m0=TC.TD_MODE;
+  list.forEach(c0=>{
+    const ctx=Object.assign({hide:new Set(),inp:{}},c0);let sn='';
+    if(multi){const base=String(ctx.info.xa||'').replace(/^(xã|phường|thị trấn|đặc khu)\s+/i,'').replace(/[\[\]:*?\/\\]/g,'').trim().slice(0,22)||'DV';sn=base;for(let k=2;used.has(sn.toLowerCase());k++)sn=base+' '+k;used.add(sn.toLowerCase());sn='-'+sn}
+    if(ctx.mode)TC.tdMode(ctx.mode);
+    sh.push(sheetTD(st,ctx,'Thu-TL'+sn));
+  });
+  TC.tdMode(m0);
+  return pack(sh,st);
+};
+
+/* ===== Nguồn ước thực hiện năm nay và dự toán năm sau: bảng "Tỷ lệ phân cấp" (Google Sheets tải xlsx, sheet "Sheet chi tiết": mỗi xã 6 cột = DT năm nay, ƯTH năm nay, DT năm sau, mỗi loại NSNN và NSĐP) ===== */
+/* khóa so sánh tên xã: bỏ khác biệt đặt dấu thanh (hòa/hoà) nhưng GIỮ dấu thanh (Tân Thạnh khác Tân Thành) */
+TC.normXa=s=>String(s||'').toLowerCase().normalize('NFD').split(/\s+/).filter(Boolean).map(w=>{const t=(w.match(/[\u0300\u0301\u0303\u0309\u0323]/g)||[]).join('');return w.replace(/[\u0300\u0301\u0303\u0309\u0323]/g,'')+t}).join(' ');
+/* id dòng bảng thảo luận -> số dòng trong sheet chi tiết (dòng 7 = TỔNG THU NSNN) */
+TC.TD_PC_MAP={t0:7,t1:8,t2:9,t3:11,t4:12,t5:13,t6:14,t7:15,t8:16,t9:17,t10:18,t11:20,t12:19,t13:21,t14:22,t15:23,t16:25,t17:26,t18:27,t19:28,t20:29,t21:30,t22:32,x3:33,
+  t23:38,t24:40,x4:41,t25:35,t26:42,t27:43,t29:37,t30:36,t31:46,t32:44,t33:48,t34:56,t35:52,x7:53,t36:49,x9:50,x10:51,t37:54,t38:55,t42:57,x11:58,x12:59,x13:60,x14:61,x15:62,x16:63,t43:64,t44:65};
+/* dòng tính bằng hiệu của hai dòng trong sheet (dòng cha trừ dòng "trong đó/bao gồm") */
+TC.TD_PC_DIFF={t28:[42,43],x8:[52,53]};
+TC.TD_PC_NAME={x3:'Thuế bảo vệ môi trường'}; /* dòng mẫu để trống tên nhưng bảng phân cấp có số */
+TC.parsePhanCap=async function(file){
+  await TC.need('xlsx');const wb=XLSX.read(await file.arrayBuffer(),{type:'array'});
+  const sn=wb.SheetNames.find(n=>/chi ti[eế]t/i.test(n))||wb.SheetNames.find(n=>{const a=XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,defval:null});return a.slice(0,8).some(r=>r.filter(x=>/^(Xã|Phường|Đặc khu|Thị trấn)\s/.test(String(x||''))).length>=10)});
+  if(!sn)throw new Error('Không thấy sheet chi tiết (mỗi xã, phường 6 cột) trong tệp này.');
+  const a=XLSX.utils.sheet_to_json(wb.Sheets[sn],{header:1,raw:true,defval:null});
+  const hi=a.findIndex(r=>r.filter(x=>/^(Xã|Phường|Đặc khu|Thị trấn)\s/.test(String(x||''))).length>=10);
+  if(hi<0)throw new Error('Không nhận ra dòng tên xã, phường trong sheet chi tiết.');
+  const num=v=>typeof v==='number'&&isFinite(v)?v:null,xa={},names={};
+  a[hi].forEach((v,c)=>{if(!/^(Xã|Phường|Đặc khu|Thị trấn)\s/.test(String(v||'')))return;
+    const key=TC.normXa(v),rows={};
+    for(let r=6;r<=65;r++){const row=a[r]||[],vals=[0,1,2,3,4,5].map(k=>num(row[c+k]));if(vals.some(x=>x!=null))rows[r+1]=vals}
+    xa[key]=rows;names[key]=String(v).trim()});
+  return {ts:Date.now(),name:file.name,n:Object.keys(xa).length,sheet:sn,xa,names};
+};
+/* số nền cho bảng thảo luận của một xã: {idDòng:{uN,uD,oN,oD,(eN,eD cho dòng thêm),name}} ; người dùng gõ đè thì ưu tiên số gõ */
+TC.tdBase=function(pc,xaName,rows){
+  const r=pc&&pc.xa[TC.normXa(xaName)];if(!r)return null;
+  const out={},g=(n,k)=>r[n]?r[n][k]:null,has=n=>!!r[n];
+  const put=(id,n,man,diff)=>{
+    const o={},v=k=>diff?(g(diff[0],k)==null&&g(diff[1],k)==null?null:(g(diff[0],k)||0)-(g(diff[1],k)||0)):g(n,k);
+    const E=v(0),ED=v(1),UN=v(2),UD=v(3),ON=v(4),OD=v(5);
+    if(UN!=null)o.uN=UN;if(UD!=null)o.uD=UD;if(ON!=null)o.oN=ON;if(OD!=null)o.oD=OD;
+    if(E!=null)o.eN=E;if(ED!=null)o.eD=ED;if(man&&TC.TD_PC_NAME[id])o.name=TC.TD_PC_NAME[id];
+    if(Object.keys(o).length)out[id]=o};
+  const man=new Set(rows.filter(x=>x.manual).map(x=>x.id));
+  Object.entries(TC.TD_PC_MAP).forEach(([id,n])=>{if(has(n))put(id,n,man.has(id))});
+  Object.entries(TC.TD_PC_DIFF).forEach(([id,[a,b]])=>{if(has(a))put(id,null,man.has(id),[a,b])});
+  return out;
+};
+
+/* ===== Phụ lục V (dự toán thu năm sau, mẫu như phụ lục V của dự toán đầu năm) lấy từ số thống nhất của bảng thảo luận (chưa có thì dự toán năm sau) ===== */
+const PL_IDX=[['t0'],['t1'],['t2'],['t3','t8'],['t3'],['t8'],['t9'],['t10'],['t12'],['t11'],['t13'],['t18'],['t19'],['t20'],['t21'],['t22'],['t23'],['t24'],['t25'],['t26'],['t29'],['t30'],['t31'],['t32'],['t33'],['t34'],['t35'],null,['t36'],['x9'],['x10'],['t37']];
+/* trả về bảng thu theo khung phụ lục V (cùng dạng bảng trong kho Dự toán đầu năm) */
+TC.tdToPL=function(rows,inp,info){
+  const sk=JSON.parse(JSON.stringify(window.TC_DT_SKEL.thu)),by={};
+  rows.forEach(r=>{by[r.id]=TC.tdRow(r,inp)});
+  const fin=(id,s)=>{const c=by[id];if(!c)return null;const q=c.find(x=>x.k==='q'+s).v,o=c.find(x=>x.k==='o'+s).v;return q!=null?q:o};
+  sk.rows.forEach((r,i)=>{const ids=PL_IDX[i];r.v=[null,null];if(!ids)return;
+    r.v=['N','D'].map(sd=>{let sum=null;ids.forEach(id=>{const v=fin(id,sd);if(v!=null)sum=(sum||0)+v});return sum})});
+  sk.title=sk.title.slice();
+  sk.title[0]='PHỤ LỤC DỰ TOÁN THU';
+  sk.title[1]=sk.title[1].replace(/NĂM\s+\d{4}/,'NĂM '+(info.nam+1));
+  sk.title[2]=String(info.xa||'').toUpperCase();
+  return sk;
+};
+function sheetPL(st,t,name){
+  const lc=2+t.heads.length,sh=new Sheet(name,st);sh.orient='portrait';sh.widths=lc===4?[5.3,54,16.7,14]:[5.3,54,18];
+  const T={sz:14,b:1,h:'center',wrap:1};
+  sh.merge(1,1,1,lc,t.title[0],T);sh.merge(2,1,2,lc,t.title[1],T);sh.merge(3,1,3,lc,t.title[2],T);
+  sh.merge(4,1,4,lc,t.title[3],{i:1,sz:12,h:'center',wrap:1});sh.heights[1]=18.75;sh.heights[2]=18.75;sh.heights[3]=18.75;sh.heights[4]=34.5;
+  sh.set(6,lc,'ĐVT: triệu đồng',{i:1,sz:11,h:'right'});
+  const H={b:1,sz:12,h:'center',wrap:1,bd:'head'};
+  sh.set(7,1,'STT',H);sh.set(7,2,'Nội dung',H);t.heads.forEach((h,k)=>sh.set(7,3+k,h,H));sh.heights[7]=30;
+  sh.set(8,1,'A',H);sh.set(8,2,'B',H);t.heads.forEach((_,k)=>sh.set(8,3+k,String(k+1),H));
+  let r=9;
+  const HF=TC.hierF(t.rows,t.heads.length,(i,k)=>t.rows[i].v[k],(i,k)=>colName(3+k)+(9+i),true); /* ô tổng ghi công thức cộng các dòng con */
+  t.rows.forEach((x,i)=>{
+    const B={b:x.b?1:0,i:x.i?1:0,sz:12,bd:'data',wrap:1};
+    sh.set(r,1,x.stt,Object.assign({h:'center'},B));sh.set(r,2,x.name,B);
+    x.v.forEach((v,k)=>sh.set(r,3+k,v,Object.assign({h:'right',nf:'int'},B),HF[i+','+k]||undefined));
+    sh.heights[r]=rowH(x.name,x.b,54);r++;
+  });
+  return sh;
+}
+/* arg: {tables:{thu},info} hoặc mảng; nhiều đơn vị thì mỗi đơn vị một sheet ThuNSNN-<tên> */
+TC.buildXlsxPL=async function(arg,kind){
+  kind=kind||'thu';const SN={thu:'ThuNSNN',chi:'ChiNSDP',cd:'CanDoi'}[kind];
+  const st=new Styles(),list=Array.isArray(arg)?arg:[arg],multi=list.length>1,sh=[],used=new Set(),m0=TC.TD_MODE;
+  list.forEach(c=>{let sn='';
+    if(multi){const base=String(c.info.xa||'').replace(/^(xã|phường|thị trấn|đặc khu)\s+/i,'').replace(/[\[\]:*?\/\\]/g,'').trim().slice(0,18)||'DV';sn=base;for(let k=2;used.has(sn.toLowerCase());k++)sn=base+' '+k;used.add(sn.toLowerCase());sn='-'+sn}
+    sh.push(sheetPL(st,c.tables[kind],SN+sn));
+  });
+  return pack(sh,st);
+};
+
+/* bảng thu theo khung phụ lục V dựng từ bảng Tỷ lệ phân cấp: col 0 = dự toán năm nay, 2 = ước thực hiện, 4 = dự toán năm sau (dùng khi kho chưa có phụ lục V) */
+TC.plFromPC=function(pc,xaName,col){
+  const r=pc&&pc.xa[TC.normXa(xaName)];if(!r)return null;
+  const sk=JSON.parse(JSON.stringify(window.TC_DT_SKEL.thu));
+  const val=(id,k)=>{const d=TC.TD_PC_DIFF[id];
+    if(d){const a=r[d[0]]?r[d[0]][col+k]:null,b=r[d[1]]?r[d[1]][col+k]:null;return a==null&&b==null?null:(a||0)-(b||0)}
+    const n=TC.TD_PC_MAP[id];return n&&r[n]?r[n][col+k]:null};
+  sk.rows.forEach((row,i)=>{const ids=PL_IDX[i];row.v=[0,1].map(k=>{let sum=null;(ids||[]).forEach(id=>{const v=val(id,k);if(v!=null)sum=(sum||0)+v});return sum})});
+  return {thu:sk};
+};
+})();
+
+/*@@TC_PART@@*/
+/* khung ba bảng phụ lục dự toán (V thu, VI chi, VII cân đối) để gõ tay khi chưa có tệp; giá trị để trống */
+window.TC_DT_SKEL={"thu":{"kind":"thu","title":["PHỤ LỤC V","DỰ TOÁN THU NGÂN SÁCH NHÀ NƯỚC TRÊN ĐỊA BÀN NĂM 2026","XÃ …","(Kèm theo Quyết định số: …/QĐ-UBND ngày … của Ủy ban nhân dân tỉnh Tây Ninh)","ĐVT: triệu đồng"],"heads":["Tổng thu NSNN","Thu NSĐP"],"rows":[{"stt":"","name":"TỔNG THU NSNN","v":[null,null],"b":true,"i":false,"inp":true},{"stt":"I","name":"THU NỘI ĐỊA","v":[null,null],"b":true,"i":false,"inp":true},{"stt":"","name":"Số thu trừ tiền sử dụng đất, XSKT","v":[null,null],"b":false,"i":false,"inp":true},{"stt":"1","name":"Thu từ khu vực doanh nghiệp nhà nước","v":[null,null],"b":true,"i":false,"inp":true},{"stt":"1.1","name":"Thu từ khu vực doanh nghiệp trung ương","v":[null,null],"b":false,"i":true,"inp":true},{"stt":"1.2","name":"Thu từ khu vực doanh nghiệp địa phương","v":[null,null],"b":false,"i":true,"inp":true},{"stt":"","name":"- Thuế giá trị gia tăng","v":[null,null],"b":false,"i":false,"inp":true},{"stt":"","name":"- Thuế thu nhập doanh nghiệp","v":[null,null],"b":false,"i":false,"inp":true},{"stt":"","name":"- Thuế tiêu thụ đặc biệt","v":[null,null],"b":false,"i":false,"inp":true},{"stt":"","name":"- Thuế tài nguyên","v":[null,null],"b":false,"i":false,"inp":true},{"stt":"2","name":"Thu từ khu vực doanh nghiệp có vốn ĐTNN","v":[null,null],"b":true,"i":false,"inp":true},{"stt":"3","name":"Thu từ khu vực kinh tế ngoài quốc doanh","v":[null,null],"b":true,"i":false,"inp":true},{"stt":"","name":"- Thuế giá trị gia tăng","v":[null,null],"b":false,"i":false,"inp":true},{"stt":"","name":"- Thuế thu nhập doanh nghiệp","v":[null,null],"b":false,"i":false,"inp":true},{"stt":"","name":"- Thuế tiêu thụ đặc biệt","v":[null,null],"b":false,"i":false,"inp":true},{"stt":"","name":"- Thuế tài nguyên","v":[null,null],"b":false,"i":false,"inp":true},{"stt":"4","name":"Thuế thu nhập cá nhân","v":[null,null],"b":true,"i":false,"inp":true},{"stt":"5","name":"Thuế bảo vệ môi trường","v":[null,null],"b":true,"i":false,"inp":true},{"stt":"6","name":"Lệ phí trước bạ","v":[null,null],"b":true,"i":false,"inp":true},{"stt":"7","name":"Phí - lệ phí","v":[null,null],"b":true,"i":false,"inp":true},{"stt":"8","name":"Thuế sử dụng đất nông nghiệp","v":[null,null],"b":true,"i":false,"inp":true},{"stt":"9","name":"Thuế sử dụng đất phi nông nghiệp","v":[null,null],"b":true,"i":false,"inp":true},{"stt":"10","name":"Thu tiền cho thuê đất, thuê mặt nước","v":[null,null],"b":true,"i":false,"inp":true},{"stt":"11","name":"Thu tiền sử dụng đất","v":[null,null],"b":true,"i":false,"inp":true},{"stt":"12","name":"Thu tiền cho thuê và bán nhà ở thuộc SHNN","v":[null,null],"b":true,"i":false,"inp":true},{"stt":"13","name":"Thu từ hoạt động xổ số","v":[null,null],"b":true,"i":false,"inp":true},{"stt":"14","name":"Thu tiền cấp quyền khai thác tài nguyên khoáng sản, tài nguyên nước","v":[null,null],"b":true,"i":false,"inp":true},{"stt":"15","name":"Thu tiền sử dụng khu vực biển","v":[null,null],"b":true,"i":false,"inp":true},{"stt":"16","name":"Thu khác ngân sách","v":[null,null],"b":true,"i":false,"inp":true},{"stt":"","name":"Bao gồm: - Trung ương","v":[null,null],"b":false,"i":true,"inp":true},{"stt":"","name":"- Địa phương","v":[null,null],"b":false,"i":false,"inp":true},{"stt":"17","name":"Thu từ quỹ đất công ích và thu hoa lợi, công sản khác","v":[null,null],"b":true,"i":false,"inp":true}]},"chi":{"kind":"chi","title":["PHỤ LỤC VI","DỰ TOÁN CHI NGÂN SÁCH ĐỊA PHƯƠNG NĂM 2026","XÃ …","(Kèm theo Quyết định số: …/QĐ-UBND ngày … của Ủy ban nhân dân tỉnh Tây Ninh)","ĐVT: triệu đồng"],"heads":["Tổng chi NSĐP"],"rows":[{"stt":"","name":"TỔNG CHI NSĐP (A+B)","v":[null],"b":true,"i":false,"inp":true},{"stt":"A","name":"CHI CÂN ĐỐI NSĐP","v":[null],"b":true,"i":false,"inp":true},{"stt":"I","name":"CHI ĐTPT","v":[null],"b":true,"i":false,"inp":true},{"stt":"1","name":"Chi từ nguồn NSTT","v":[null],"b":false,"i":false,"inp":true},{"stt":"2","name":"Chi từ nguồn thu tiền sử dụng đất","v":[null],"b":false,"i":false,"inp":true},{"stt":"II","name":"CHI THƯỜNG XUYÊN (1)","v":[null],"b":true,"i":false,"inp":true},{"stt":"","name":"Trong đó:","v":[null],"b":false,"i":true,"inp":false},{"stt":"1","name":"Chi giáo dục - đào tạo và dạy nghề","v":[null],"b":false,"i":false,"inp":true},{"stt":"2","name":"Chi sự nghiệp khoa học và công nghệ, ĐMST và CĐS","v":[null],"b":false,"i":false,"inp":true},{"stt":"3","name":"Chi quốc phòng, an ninh, trật tự, an toàn xã hội","v":[null],"b":false,"i":false,"inp":true},{"stt":"4","name":"Chi y tế, dân số và gia đình","v":[null],"b":false,"i":false,"inp":true},{"stt":"5","name":"Chi văn hóa thông tin","v":[null],"b":false,"i":false,"inp":true},{"stt":"6","name":"Chi phát thanh, truyền hình, thông tấn","v":[null],"b":false,"i":false,"inp":true},{"stt":"7","name":"Chi thể dục thể thao","v":[null],"b":false,"i":false,"inp":true},{"stt":"8","name":"Chi bảo vệ môi trường","v":[null],"b":false,"i":false,"inp":true},{"stt":"9","name":"Chi các hoạt động kinh tế","v":[null],"b":false,"i":false,"inp":true},{"stt":"10","name":"Chi hoạt động của các cơ quan quản lý nhà nước, Đảng, đoàn thể","v":[null],"b":false,"i":false,"inp":true},{"stt":"11","name":"Chi bảo đảm xã hội","v":[null],"b":false,"i":false,"inp":true},{"stt":"12","name":"Chi khác","v":[null],"b":false,"i":false,"inp":true},{"stt":"III","name":"DỰ PHÒNG NGÂN SÁCH","v":[null],"b":true,"i":false,"inp":true},{"stt":"IV","name":"CHI TẠO NGUỒN CCTL","v":[null],"b":true,"i":false,"inp":true},{"stt":"B","name":"CHI CTMTQG, CTMT, NHIỆM VỤ","v":[null],"b":true,"i":false,"inp":true},{"stt":"B.1","name":"NGUỒN NSTW","v":[null],"b":true,"i":false,"inp":true},{"stt":"*","name":"Chi đầu tư phát triển","v":[null],"b":true,"i":false,"inp":true},{"stt":"**","name":"Chi thường xuyên","v":[null],"b":true,"i":false,"inp":true},{"stt":"I","name":"CHI CTMTQG","v":[null],"b":true,"i":false,"inp":true},{"stt":"II","name":"CHI CTMT, NHIỆM VỤ","v":[null],"b":true,"i":false,"inp":true},{"stt":"II.1","name":"Chi ĐTPT","v":[null],"b":true,"i":false,"inp":true},{"stt":"II.2","name":"Chi thường xuyên","v":[null],"b":true,"i":false,"inp":true},{"stt":"1","name":"Kinh phí hỗ trợ địa phương sản xuất lúa","v":[null],"b":false,"i":false,"inp":true},{"stt":"B.2","name":"NGUỒN NS TỈNH","v":[null],"b":true,"i":false,"inp":true},{"stt":"I","name":"CHI ĐTPT","v":[null],"b":true,"i":false,"inp":true},{"stt":"1","name":"Nguồn NSTT của NST","v":[null],"b":false,"i":false,"inp":true},{"stt":"2","name":"Nguồn thu tiền sử dụng đất NST","v":[null],"b":false,"i":false,"inp":true},{"stt":"","name":"Chi đầu tư giao thông","v":[null],"b":false,"i":false,"inp":true},{"stt":"3","name":"Nguồn thu xổ số kiến thiết","v":[null],"b":false,"i":false,"inp":true},{"stt":"","name":"Chi đầu tư thực hiện 02 Đề án Giáo dục","v":[null],"b":false,"i":false,"inp":true},{"stt":"II","name":"CHI THƯỜNG XUYÊN","v":[null],"b":true,"i":false,"inp":true},{"stt":"(1) DT chi thường xuyên năm 2026 được giao theo MLCS 2.340.000 đồng (đã bao gồm phần chênh lệch tăng lương 850.000 đồng từ MLCS 1.490.000 đồng lên 2.340.000 đồng)","name":"","v":[null],"b":false,"i":false,"inp":true},{"stt":"Trong đó:","name":"","v":[null],"b":false,"i":false,"inp":true},{"stt":"- 10% tiết kiệm chi thường xuyên dành thực hiện CCTL năm 2026: 4.471 triệu đồng.","name":"","v":[null],"b":false,"i":false,"inp":true}]},"cd":{"kind":"cd","title":["PHỤ LỤC VII","DỰ TOÁN THU, CHI NGÂN SÁCH CẤP XÃ VÀ SỐ BỔ SUNG CÂN ĐỐI, BỔ SUNG CÓ MỤC TIÊU NĂM 2026","XÃ …","(Kèm theo Quyết định số: …/QĐ-UBND ngày … của Ủy ban nhân dân tỉnh Tây Ninh)","ĐVT: triệu đồng"],"heads":["Dự toán năm 2026"],"rows":[{"stt":"A","name":"TỔNG NGUỒN THU NSĐP","v":[null],"b":true,"i":false,"inp":true},{"stt":"I","name":"Thu NSĐP được hưởng theo phân cấp","v":[null],"b":true,"i":false,"inp":true},{"stt":"1","name":"Thu NSĐP hưởng 100%","v":[null],"b":false,"i":false,"inp":true},{"stt":"2","name":"Thu NSĐP hưởng từ các khoản thu phân chia","v":[null],"b":false,"i":false,"inp":true},{"stt":"II","name":"Thu bổ sung từ ngân sách cấp trên","v":[null],"b":true,"i":false,"inp":true},{"stt":"1","name":"Thu bổ sung cân đối ngân sách","v":[null],"b":false,"i":false,"inp":true},{"stt":"a","name":"Thu bổ sung cân đối ngân sách đầu giai đoạn","v":[null],"b":false,"i":false,"inp":true},{"stt":"b","name":"Thu bổ sung tăng thêm chế độ chính sách","v":[null],"b":false,"i":false,"inp":true},{"stt":"2","name":"Thu bổ sung có mục tiêu","v":[null],"b":false,"i":false,"inp":true},{"stt":"2.1","name":"Thu bổ sung từ nguồn thực hiện cải cách tiền lương","v":[null],"b":false,"i":false,"inp":true},{"stt":"2.2","name":"Thu bổ sung có mục tiêu thực hiện các CTMTQG, CTMT, nhiệm vụ","v":[null],"b":false,"i":false,"inp":true},{"stt":"a","name":"BSCMT vốn CTMTQG","v":[null],"b":false,"i":false,"inp":true},{"stt":"b","name":"BSCMT thực hiện các CTMT, nhiệm vụ","v":[null],"b":false,"i":false,"inp":true},{"stt":"b.1","name":"Vốn ĐTPT","v":[null],"b":false,"i":false,"inp":true},{"stt":"b.2","name":"Vốn SN","v":[null],"b":false,"i":false,"inp":true},{"stt":"III","name":"Thu kết dư","v":[null],"b":true,"i":false,"inp":true},{"stt":"IV","name":"Thu chuyển nguồn","v":[null],"b":true,"i":false,"inp":true},{"stt":"B","name":"TỔNG CHI NSĐP","v":[null],"b":true,"i":false,"inp":true},{"stt":"B.1","name":"CHI CÂN ĐỐI NSĐP","v":[null],"b":true,"i":false,"inp":true},{"stt":"1","name":"Chi đầu tư phát triển","v":[null],"b":false,"i":false,"inp":true},{"stt":"2","name":"Chi thường xuyên","v":[null],"b":false,"i":false,"inp":true},{"stt":"3","name":"Dự phòng ngân sách","v":[null],"b":false,"i":false,"inp":true},{"stt":"4","name":"Chi tạo nguồn, điều chỉnh tiền lương","v":[null],"b":false,"i":false,"inp":true},{"stt":"B.2","name":"CHI CÁC CTMTQG, CTMT, NHIỆM VỤ","v":[null],"b":true,"i":false,"inp":true},{"stt":"*","name":"Chi ĐTPT","v":[null],"b":true,"i":false,"inp":true},{"stt":"**","name":"Chi SN","v":[null],"b":true,"i":false,"inp":true},{"stt":"I","name":"NGUỒN NSTW BSCMT","v":[null],"b":true,"i":false,"inp":true},{"stt":"*","name":"Chi ĐTPT","v":[null],"b":true,"i":false,"inp":true},{"stt":"**","name":"Chi SN","v":[null],"b":true,"i":false,"inp":true},{"stt":"I.1","name":"Chi các Chương trình mục tiêu Quốc gia","v":[null],"b":true,"i":false,"inp":true},{"stt":"I.2","name":"Chi các Chương trình mục tiêu, nhiệm vụ","v":[null],"b":true,"i":false,"inp":true},{"stt":"1","name":"Chi ĐTPT","v":[null],"b":false,"i":false,"inp":true},{"stt":"2","name":"Chi SN","v":[null],"b":false,"i":false,"inp":true},{"stt":"","name":"Kinh phí hỗ trợ địa phương sản xuất lúa","v":[null],"b":false,"i":false,"inp":true},{"stt":"II","name":"NGUỒN NS TỈNH","v":[null],"b":true,"i":false,"inp":true},{"stt":"II.1","name":"Chi ĐTPT","v":[null],"b":true,"i":false,"inp":true},{"stt":"1","name":"Nguồn NSTT của NS tỉnh","v":[null],"b":false,"i":false,"inp":true},{"stt":"2","name":"Nguồn thu tiền sử dụng đất NST","v":[null],"b":false,"i":false,"inp":true},{"stt":"","name":"Chi đầu tư giao thông","v":[null],"b":false,"i":false,"inp":true},{"stt":"3","name":"Nguồn thu XSKT","v":[null],"b":false,"i":false,"inp":true},{"stt":"","name":"Chi đầu tư thực hiện 02 Đề án Giáo dục","v":[null],"b":false,"i":false,"inp":false},{"stt":"II.2","name":"Chi thường xuyên","v":[null],"b":true,"i":false,"inp":true},{"stt":"B.3","name":"CHI CHUYỂN NGUỒN SANG NĂM SAU","v":[null],"b":true,"i":false,"inp":true},{"stt":"C","name":"BỘI CHI NSĐP/BỘI THU NSĐP","v":[null],"b":true,"i":false,"inp":true}]}};
+
+/*@@TC_PART@@*/
+window.TC_IMG={pig:(window.TC_BOOT&&window.TC_BOOT.pig)||'',bg:(window.TC_BOOT&&window.TC_BOOT.bg)||''};
+
+/*@@TC_PART@@*/
+/* Danh sách 96 xã, phường theo thứ tự STT (lấy từ bảng của tab Tỷ lệ phân cấp thu). STT chỉ dùng để đánh số khi báo cáo. */
+window.TC_XA96=["Phường Long An","Phường Tân An","Phường Khánh Hậu","Xã Thuận Mỹ","Xã An Lục Long","Xã Vĩnh Công","Xã Tầm Vu","Xã Vàm Cỏ","Xã Tân Trụ","Xã Nhựt Tảo","Xã Bến Lức","Xã Mỹ Yên","Xã Bình Đức","Xã Lương Hòa","Xã Thạnh Lợi","Xã Thủ Thừa","Xã Mỹ An","Xã Mỹ Thạnh","Xã Tân Long","Xã An Ninh","Xã Hiệp Hòa","Xã Hậu Nghĩa","Xã Hòa Khánh","Xã Đức Lập","Xã Mỹ Hạnh","Xã Đức Hòa","Xã Mỹ Quý","Xã Đông Thành","Xã Đức Huệ","Xã Phước Lý","Xã Mỹ Lộc","Xã Cần Giuộc","Xã Phước Vĩnh Tây","Xã Tân Tập","Xã Long Cang","Xã Rạch Kiến","Xã Mỹ Lệ","Xã Tân Lân","Xã Cần Đước","Xã Long Hựu","Xã Tân Thạnh","Xã Hậu Thạnh","Xã Nhơn Hòa Lập","Xã Nhơn Ninh","Xã Thạnh Hóa","Xã Tân Tây","Xã Thạnh Phước","Xã Bình Thành","Xã Bình Hòa","Xã Mộc Hóa","Phường Kiến Tường","Xã Tuyên Thạnh","Xã Bình Hiệp","Xã Vĩnh Hưng","Xã Tuyên Bình","Xã Khánh Hưng","Xã Tân Hưng","Xã Vĩnh Châu","Xã Vĩnh Thạnh","Xã Hưng Điền","Phường Tân Ninh","Phường Hòa Thành","Phường Long Hoa","Phường Ninh Thạnh","Phường Bình Minh","Phường An Tịnh","Xã Bến Cầu","Xã Long Thuận","Xã Long Chữ","Xã Phước Thạnh","Xã Thạnh Đức","Xã Phước Chỉ","Xã Hưng Thuận","Phường Gia Lộc","Phường Gò Dầu","Phường Trảng Bàng","Xã Hảo Đước","Xã Châu Thành","Xã Ninh Điền","Xã Hòa Hội","Xã Phước Vinh","Xã Trà Vong","Xã Thạnh Bình","Xã Tân Biên","Xã Tân Lập","Phường Thanh Điền","Xã Tân Hòa","Xã Tân Thành","Xã Tân Hội","Xã Tân Phú","Xã Tân Châu","Xã Tân Đông","Xã Dương Minh Châu","Xã Cầu Khởi","Xã Lộc Ninh","Xã Truông Mít"];
+
+/*@@TC_PART@@*/
+/* Tab "Báo cáo thu chi": màn đầu chọn báo cáo mới, đã lưu hoặc dự toán đầu năm; nạp tệp thu, chi (TABMIS: xls, xlsx, pdf; một hay nhiều địa bàn); dự toán lấy từ kho; xuất Word + Excel (tách hoặc gộp nhiều đơn vị); lưu báo cáo. */
+(function(){
+const {fmt,pct,esc,$}=TC,E=TC.engine;
+const KEYS=['tong','tsdd','phi','lpb','tncn','nqd','dnnn','sdd_pnn','khac'];
+const RULE=2026; /* bộ công thức tính đang áp dụng (quy tắc năm 2026); năm khác có công thức riêng thì thêm bộ mới */
+const XA=window.TC_XA96||[];
+/* Mỗi đơn vị (xã, phường) trong một lần chạy có một "w" lưu trạng thái làm việc riêng. Đơn vị đang xem nằm thẳng trong S (S.cur là khóa), các đơn vị khác nằm trong u.w. */
+const WF=['info','auto','thu','chi','prev','src','tables','dtSrc','savedAt','dt','paras','ck','hide','rep','dirty','td','pcOnly'];
+const SEED={'27748':'Xã Vĩnh Châu','27931':'Xã Hậu Nghĩa','27937':'Xã Đức Hòa','27943':'Xã An Ninh','27952':'Xã Hiệp Hòa','27964':'Xã Đức Lập','27976':'Xã Mỹ Hạnh','27979':'Xã Hòa Khánh'}; /* mã địa bàn đã biết; các mã khác tự học từ tệp có ghi tên */
+const MAXALL=120; /* chọn một lần ở ô chung */
+const MAXF=60; /* tối đa 60 tệp mỗi ô (chuyên quản phụ trách tới 21 đơn vị, mỗi đơn vị có thể có cả Excel và PDF) */
+const S={files:{thu:[],chi:[],pthu:[],pchi:[]},fileWarn:{},runWarn:[],z:{S:90,W:100,D:90,T:90},kind:'daily',expT:'sep',thuMore:false,expW:'sep',expX:'sep',mode:'',back:'',editInfo:false,showPrev:false,showCmp:false,namUser:false,U:[],cur:'',split:50,
+  src:{thu:[],chi:[]},thu:null,chi:null,info:{xa:'',ngay:'',thang:'',nam:2026},auto:{},tables:null,dtSrc:'',savedAt:'',dt:null,bieu:null,paras:[],prev:{thu:null,chi:null},cols:null,hide:null,ck:{},dsub:'thu',gOn:{dt:1,th:1,tl:1,ck:1,tc:1},rep:'',dirty:false};
+const nrm=s=>String(s||'').replace(/\s+/g,' ').trim();
+const xaTitle=x=>nrm(x).replace(/^Xã(?=\s)/,'xã').replace(/^Phường(?=\s)/,'phường');
+const keyOf=n=>nrm(n).toLowerCase();
+const canon=n=>{n=nrm(n);const i=XA.findIndex(x=>x.toLowerCase()===n.toLowerCase());return i>=0?XA[i]:n.toLowerCase().replace(/(^|\s)\S/g,m=>m.toUpperCase())};
+const stt96=n=>XA.findIndex(x=>x.toLowerCase()===keyOf(n))+1;
+const clone=o=>JSON.parse(JSON.stringify(o));
+const dmy=m=>`${String(m.ngay).padStart(2,'0')}/${String(m.thang).padStart(2,'0')}/${m.nam}`;
+const newW=xa=>({info:{xa,ngay:'',thang:'',nam:S.info.nam||2026},auto:{xa:true},thu:null,chi:null,prev:{thu:null,chi:null},src:{thu:[],chi:[]},tables:null,dtSrc:'',savedAt:'',dt:null,paras:[],ck:{},hide:null,rep:'',dirty:false,td:null});
+const newU=(key,xa,w)=>({key,xa,thuG:[],chiG:[],pthuG:[],pchiG:[],w:w||newW(xa),gen:false});
+const curU=()=>S.U.find(u=>u.key===S.cur);
+const W=u=>u.key===S.cur?S:u.w;
+const stash=()=>{const u=curU();if(u)WF.forEach(f=>{u.w[f]=S[f]})};
+const pull=u=>{WF.forEach(f=>{S[f]=u.w[f]});S.cur=u.key};
+function activate(key){stash();const u=S.U.find(x=>x.key===key);if(u)pull(u)}
+const genUnits=()=>S.U.filter(u=>u.gen&&!(u.pcOnly&&u.pick===false)&&(S.kind==='td'?W(u).dt:W(u).paras.length));
+
+/* nút Quay lại của điện thoại, trình duyệt: mỗi màn "sâu" (Quy tắc, Dự toán, Báo cáo đã lưu, đang mở báo cáo đã lưu) giữ một mục lịch sử, Quay lại thì lùi một màn trong app thay vì thoát ra trang trắng */
+let histOn=false;
+const isDeep=()=>!S.collapsed;
+function histSync(){const d=isDeep();
+  if(d&&!histOn){try{history.pushState({tc:1},'');histOn=true}catch(e){}}
+  else if(!d&&histOn){histOn=false;try{if(history.state&&history.state.tc)history.back()}catch(e){}}}
+window.addEventListener('popstate',()=>{if(!histOn)return;histOn=false;if(!S.el||!S.el.isConnected)return;
+  const b=S.el.querySelector('#b-back');if(b){b.click();return}
+  collapse()});
+/* thu gọn: ẩn nội dung bên dưới hàng thẻ, giữ nguyên việc đang làm (bấm lại thẻ thì mở tiếp đúng chỗ cũ) */
+function collapse(){if(!S.el)return;if((S.mode==='new'||S.mode==='open')&&S.U&&S.U.length)stash();S.collapsed=true;render(S.el)}
+function render(el){
+  S.el=el;drawTabs();histSync();
+  const vk=S.mode+'|'+(S.hub?1:0);if(S._vk!==vk){S._vk=vk;try{window.scrollTo(0,0)}catch(e){}} /* đổi màn thì về đầu trang, khỏi nằm ngoài vùng nhìn */
+  if(S.collapsed){el.innerHTML='<div class="idlehint"><div class="ih-i" aria-hidden="true">☝️</div><b>Chọn một thẻ hoặc một nút ở trên để bắt đầu</b><br>Bấm lại vào mục đang mở thì thu gọn lại. Việc đang làm dở vẫn được giữ.</div>';return}
+  if(S.mode==='dt'){el.innerHTML='<div class="row" style="margin-bottom:10px"><button class="btn sm" id="b-back">← Quay lại</button></div><div id="dtv"></div>';$('#b-back',el).onclick=()=>{S.mode=S.back||'';if(S.rc){S.collapsed=true;S.rc=false}render(el)};TC.dtView($('#dtv',el));return}
+  if(S.mode==='rules'){rulesView(el);return}
+  if(!S.mode)startView(el);else if(S.kind==='cd'&&S.mode==='new')cdView(el);else flowView(el);
+}
+const goRules=()=>{S.rc=S.collapsed;S.collapsed=false;S.back=S.mode==='rules'?'':S.mode;S.mode='rules';render(S.el)};
+const goDt=()=>{S.rc=S.collapsed;S.collapsed=false;S.back=S.mode==='dt'?'':S.mode;S.mode='dt';render(S.el)};
+const fb=(id,t)=>`<div class="filebox" id="fb-${id}"><label style="color:var(--tx);font-weight:600">${t}</label><input type="file" id="f-${id}" class="vh" accept=".xlsx,.xls"><div class="row" style="margin:4px 0 2px;gap:8px"><button type="button" class="btn sm pick" data-pick="f-${id}">Tải file</button></div><div class="nm">Chưa chọn tệp</div><div class="chk" id="chk-${id}"></div></div>`;
+/* khu nhập dữ liệu: một ô kéo thả chung, rồi bảng "Dữ liệu cho báo cáo này" chỉ liệt kê đúng những gì loại báo cáo đang chọn cần (dấu * là bắt buộc). Giữ nguyên các id f-, d-, fl-, chk-, fb- để wire() và renderFiles() vẫn chạy */
+const reqRows=()=>{const ny=S.info.nam,py=ny-1,td=S.kind==='td',it=S.itab||'thu';
+  if(!td)return [['dt',`Dự toán đầu năm ${ny}`,'phụ lục V, VI, VII','Kho dự toán',1],['thu',`Thu năm ${ny}`,'số liệu thực hiện','TABMIS B2-01',1],['chi',`Chi năm ${ny}`,'số liệu thực hiện','TABMIS B3-01',1],['pthu',`Thu cùng kỳ năm ${py}`,'để so sánh','TABMIS B2-01',0],['pchi',`Chi cùng kỳ năm ${py}`,'để so sánh','TABMIS B3-01',0]];
+  if(it==='chi')return [['dt',`Dự toán chi ${ny}`,'phụ lục VI','Kho dự toán',0],['pcc',`Ước thực hiện ${ny} và dự toán chi ${ny+1}`,'chờ mẫu chi','chờ mẫu chi',0],['chi',`Chi năm ${ny}`,'chờ mẫu chi','TABMIS B3-01',0],['pchi',`Chi cả năm ${py}`,'chờ mẫu chi','TABMIS B3-01',0]];
+  return [['dt',`Dự toán ${ny}`,'phụ lục V','Kho dự toán',1],['pc',`Ước thực hiện ${ny} và dự toán ${ny+1}`,'bảng Tỷ lệ phân cấp','.xlsx Google Sheets',1],['thu',`Thu năm ${ny}`,'số liệu thực hiện','TABMIS B2-01',0],['pthu',`Thu cả năm ${py}`,'số liệu thực hiện','TABMIS B2-01',0]]};
+function inputArea(td,py){
+  const ny=S.info.nam;
+  const row=([id,lab,sub,mau,req])=>{
+    const star=req?' <span class="req" title="Bắt buộc">*</span>':'';
+    if(id==='dt')return `<tr class="irow" id="fb-dt"><td class="nm"><b>${lab}${star}</b><small>${sub}</small></td><td>${mau}</td><td><span id="st-dt"></span></td><td class="ra"><button type="button" class="btn sm pri" id="b-dtgo">Nạp dự toán</button></td></tr>`;
+    if(id==='pcc')return `<tr class="irow" id="fb-pcc"><td class="nm"><b>${lab}${star}</b><small>${sub}</small></td><td>${mau}</td><td><span class="chip wn">Chờ mẫu chi</span>${TC.tip('Phần này sẽ nhận số ước thực hiện và dự toán chi năm sau khi có mẫu chi, giống phần ước thực hiện và dự toán của báo cáo thảo luận thu.')}</td><td class="ra"><button type="button" class="btn sm" disabled>Chờ mẫu chi</button></td></tr>`;
+    if(id==='pc')return `<tr class="irow" id="fb-pc"><td class="nm"><b>${lab}${star}</b><small>${sub}</small></td><td>${mau}</td><td><input type="file" id="f-pc" class="vh" accept=".xlsx" multiple><div class="flist" id="pc-list"></div><div class="nm" id="pc-st" style="font-size:12.5px;color:var(--mut)"></div></td><td class="ra"><button type="button" class="btn sm pri" data-pick="f-pc" title="Tải tệp .xlsx để thêm mới">Tải tệp</button> <button type="button" class="btn sm" id="pc-sync" title="Tải lại số đang dùng chung trên máy chủ (do Quản trị đồng bộ)">Làm mới</button>${pcGoiOk()?` <button type="button" class="btn sm pri" id="pc-goi" title="Lấy số dự toán theo phương án mặc định của app Tỷ lệ phân cấp, xem trước rồi mới ghi">⟳ Đồng bộ DT ${S.info.nam+1}</button>`:''}<span id="pc-undo"></span></td></tr>`;
+    return `<tr class="irow" id="fb-${id}"><td class="nm"><b>${lab}${star}</b><small>${sub}</small></td><td>${mau}</td><td><div id="fl-${id}"></div><div class="chk" id="chk-${id}"></div></td><td class="ra"><input type="file" id="f-${id}" class="vh" accept=".xls,.xlsx,.pdf,.htm,.html" multiple><input type="file" id="d-${id}" webkitdirectory multiple hidden><button type="button" class="btn sm" data-repl="${id}">Thay thế</button><button type="button" class="btn sm pri" data-pick="f-${id}">Thêm tệp</button><button type="button" class="btn sm" data-dir="${id}">Thư mục</button></td></tr>`};
+  const all=`<div class="drop filebox inAll" id="fb-all"><div class="ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="M7 9l5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg></div><div class="dtx"><b>Kéo thả hoặc Tải tệp dữ liệu vào đây</b>${TC.tip('Nhận tệp .xls, .xlsx, .pdf xuất từ TABMIS, tối đa 120 tệp mỗi lần (đủ cho 21 đơn vị chuyên quản, cả thu, chi, năm nay và cùng kỳ), kéo thả hoặc chọn cả thư mục. Web tự nhận thu hay chi, năm nay hay cùng kỳ, đơn vị, ngày, tháng, năm, rồi xếp vào đúng dòng bên dưới. Tệp .xls dạng vỏ tự ghép với thư mục _files đi kèm. Chọn cả tệp Excel và tệp PDF của cùng một báo cáo thì web đối chiếu hai bên.')}<div class="muted fbh">Web tự nhận thu hay chi, đơn vị, năm</div></div><div class="sl-acts-h"><input type="file" id="f-all" class="vh" accept=".xls,.xlsx,.pdf,.htm,.html" multiple><input type="file" id="d-all" webkitdirectory multiple hidden><button type="button" class="btn pri" data-pick="f-all">Chọn tệp</button><button type="button" class="btn" data-dir="all">Chọn thư mục</button></div></div><div class="chk" id="chk-all"></div>`;
+  return `<div id="ready" class="ready"></div>${all}
+   <h3 class="s">Dữ liệu cho báo cáo này <span class="muted" style="font-weight:400">· dấu <span class="req">*</span> là bắt buộc</span></h3>
+   <div class="wrap"><table class="itab"><tr><th style="width:30%">Loại số liệu</th><th style="width:15%">Mẫu</th><th>Trạng thái</th><th style="width:250px"></th></tr>${reqRows().map(row).join('')}</table></div>`;
+}
+/* điều kiện đủ dữ liệu cho từng loại báo cáo: dùng cho thanh tiến độ và hai ô "Sẵn sàng" */
+const hasDt=w=>w.dtSrc==='saved'||w.dtSrc==='pc'||(w.tables&&w.dt);
+function reqState(){
+  const U=S.U.map(W),every=f=>U.length>0&&U.every(f),pc=!!pcGet(S);
+  const R={thuA:every(w=>!!w.thu),chiA:every(w=>!!w.chi),dt:every(hasDt),pc};
+  const daily=[['tệp thu',R.thuA],['tệp chi',R.chiA],['dự toán',R.dt]],tdt=[['bảng Tỷ lệ phân cấp',R.pc],['dự toán',R.dt]];
+  const cur=S.kind!=='td'?daily:(S.itab==='chi'?[]:tdt);
+  return {R,daily,tdt,cur};
+}
+function renderReady(el){
+  const rd=$('#ready',el);if(!rd)return;
+  const {daily,tdt,cur}=reqState(),chip=(n,L,on)=>{const miss=L.filter(x=>!x[1]).map(x=>x[0]);return `<div class="rd${on?' on':''}"><b>${n}</b> ${miss.length?`<span class="chip wn"><span class="cdot"></span>Thiếu: ${esc(miss.join(', '))}</span>`:'<span class="chip ok"><span class="cdot"></span>Sẵn sàng</span>'}</div>`};
+  const td=S.kind==='td',chi=td&&S.itab==='chi';
+  rd.innerHTML=chip('Thu chi hàng ngày',daily,!td)+chip('Thảo luận thu',tdt,td&&!chi)+(chi?'<div class="rd on"><b>Thảo luận chi</b> <span class="chip wn"><span class="cdot"></span>Chờ mẫu chi</span></div>':'');
+  const n=cur.filter(x=>x[1]).length,p=$('#prog',el);
+  if(p)p.innerHTML=cur.length?`<span>Đã đủ <strong>${n}/${cur.length}</strong> dữ liệu bắt buộc</span><div class="pbar"><i style="width:${Math.round(n/cur.length*100)}%"></i></div>`:'<span>Không có dữ liệu bắt buộc, đang chờ mẫu chi</span>';
+  const sd=$('#st-dt',el);
+  if(sd){const U=S.U.map(W),ok=U.filter(hasDt),no=U.filter(w=>!hasDt(w)),nm=w=>esc(w.info.xa||'(chưa có tên)'),src=ok.reduce((a,w)=>(a[w.dtSrc==='pc'?1:0]++,a),[0,0]);
+    sd.innerHTML=!U.length?'<span class="chip no">✕ Chưa có đơn vị</span>'+TC.tip('Chọn tệp hoặc đơn vị ở phần "Thông tin đơn vị xuất báo cáo" để biết đơn vị nào đã có dự toán.')
+     :!no.length?'<span class="chip ok">✓ Đã đồng bộ</span>'+TC.tip(`Đủ dự toán cho ${ok.length}/${U.length} đơn vị: ${src[0]} đơn vị lấy từ kho dự toán, ${src[1]} đơn vị lấy từ bảng Tỷ lệ phân cấp. Dự toán nạp bằng nút "Nạp dự toán" được lưu thẳng vào kho dự toán.`)
+     :`<span class="chip ${ok.length?'wn':'no'}">${ok.length?'!':'✕'} ${ok.length?'Thiếu '+no.length+'/'+U.length+' đơn vị':'Chưa đồng bộ'}</span>`+TC.tip(`Chưa có dự toán: ${no.map(nm).join(', ')}. Bấm "Nạp dự toán" để tải phụ lục, web tự lưu vào kho dự toán.`)}
+}
+const tdOpen=()=>S.tdOpen!==undefined?S.tdOpen:genUnits().length>0;
+function flowView(el){
+  const td=S.kind==='td',showCmp=!td&&(S.showCmp||!!S.bieu),py=S.info.nam-1;
+  el.innerHTML=`
+  ${S.mode==='open'?`<div class="row" style="margin-bottom:10px"><b>${td?'Đang mở bảng thảo luận đã lưu':'Đang mở báo cáo đã lưu'}</b></div>`:''}
+  <div class="card"><div class="step hdp"><b>1</b><h2 style="margin:0">Nhập dữ liệu</h2><span class="sp"></span><div class="prog" id="prog"></div></div>
+    ${inputArea(td,py)}
+    <h3 class="s">Thông tin đơn vị xuất báo cáo</h3>
+    <div id="units"></div>
+    <div id="warn1"></div>
+    <div class="tool"><label>Dự toán năm</label><input type="number" id="i-nam" min="2000" max="2100" style="width:100px"><span id="rulenote" class="muted"></span><span class="sp"></span><button class="btn sm" id="b-kho" aria-expanded="false">Lấy số liệu đã lưu trong kho ▾</button>${TC.tip('Số thu, chi đã đọc từ tệp trước đây được lưu theo từng xã và từng ngày, dùng lại không cần chọn tệp.')}</div><div id="kho" hidden></div>
+    <div class="row" style="margin-top:12px"><button class="btn sm" id="t-cmp" ${td?'hidden':''} aria-expanded="${showCmp}">Số liệu so sánh với các xã, phường còn lại (không bắt buộc) ${showCmp?'▴':'▾'}</button></div>
+    <div id="sec-cmp" ${showCmp?'':'hidden'} style="margin-top:10px"><h3 style="margin-top:4px">Số liệu so sánh với tỉnh và các xã, phường còn lại <span class="muted" style="font-weight:400">(không bắt buộc)</span></h3>
+    <div class="grid g2">${fb('bieu','Biểu thu chi 96 xã, phường (xlsx)')}</div>
+    <div id="cmpbox" hidden><label style="display:flex;gap:8px;align-items:center;color:var(--tx);margin-top:10px"><input type="checkbox" id="c-use" checked style="width:auto;min-height:0"> Thêm phần so sánh vào báo cáo</label>
+    <div class="grid g3" style="margin-top:8px"><div><label>Thu NSNN toàn tỉnh (triệu đồng)</label><input type="text" class="ni" inputmode="numeric" id="t-nsnn"></div><div><label>Thu NSĐP toàn tỉnh (triệu đồng)</label><input type="text" class="ni" inputmode="numeric" id="t-nsdp"></div><div><label>Chi NSĐP toàn tỉnh (triệu đồng)</label><input type="text" class="ni" inputmode="numeric" id="t-chi"></div></div>
+    <p class="muted">Để trống ô nào thì bỏ câu tỷ trọng ở ô đó. Số xếp hạng lấy từ biểu 96 xã (đến ngày <span id="bd"></span>).</p></div></div></div>
+  <div class="card" style="margin-top:12px"><div class="step"><b>2</b><h2 style="margin:0">${td?'Tạo bảng thảo luận':'Xuất báo cáo'}</h2></div>
+    <div class="grid g2">${td&&S.itab==='chi'?`<button class="opt" id="o-lv"><b>Tạo bảng thảo luận dự toán chi ${S.info.nam+1}</b><span>Dùng các tệp chi TABMIS đã nhận ở mục 1. Mẫu bảng chi đang chờ file Excel mẫu, hiện web mới lưu số chi đã đọc để dùng sau.</span></button>`:td?`<button class="opt" id="o-lv"><b>Tạo bảng thảo luận dự toán thu ${S.info.nam+1}</b><span>Dùng các tệp thu TABMIS đã nhận ở mục 1 để lấy dự toán ${S.info.nam} và số thực hiện. Ước thực hiện ${S.info.nam} và dự toán ${S.info.nam+1} điền từ bảng Tỷ lệ phân cấp, bạn gõ đè nếu cần rồi xuất Excel theo mẫu.</span></button><button class="opt${tdOpen()?' on':''}" id="o-pc" aria-expanded="${tdOpen()}"><b>Tạo bảng thảo luận thu không cần dữ liệu thực hiện</b><span>Không cần tệp TABMIS. Bấm vào để chọn địa bàn (tất cả hoặc theo chuyên quản phụ trách), web điền sẵn từ bảng Tỷ lệ phân cấp và dự toán đã lưu trong kho.</span></button>`:`<button class="opt" id="o-lv"><b>Tạo báo cáo thu chi hàng ngày</b><span>Viết nội dung, xem trước bảng số liệu, xuất Word và Excel thu chi. Nhiều đơn vị thì tạo cho tất cả một lần.</span></button>`}</div>${td&&S.itab!=='chi'?`<div id="tpick" class="tpanel" ${tdOpen()?'':'hidden'}></div>`:''}</div>
+  <div id="out"></div>`;
+  TC.bindNum(el);wire(el);fillInfo(el);renderUnits(el);
+  el.querySelectorAll('#itab button').forEach(b=>b.onclick=()=>{S.itab=b.dataset.it;flowView(el)});
+  ['thu','chi','pthu','pchi'].forEach(id=>renderFiles(el,id));
+  if(td&&S.itab!=='chi'){tdPickEl=el;tdPickBox(el)}
+  if(S.mode==='open'){chk(el,'thu',['Đang dùng số liệu đã lưu cùng báo cáo. Chọn tệp mới nếu muốn thay.']);chk(el,'chi',['Đang dùng số liệu đã lưu cùng báo cáo. Chọn tệp mới nếu muốn thay.'])}
+  if(S.bieu){const b=$('#fb-bieu',el);b.classList.add('ok');$('.nm',b).textContent='Đã nạp biểu '+S.bieu.n+' xã, phường';$('#cmpbox',el).hidden=false;$('#bd',el).textContent=S.bieu.ngay||'?'}
+  renderWarn1(el);renderPc(el);
+  $('#b-kho',el).onclick=()=>{const k=$('#kho',el),on=k.hidden;k.hidden=!on;$('#b-kho',el).setAttribute('aria-expanded',on);$('#b-kho',el).textContent='Lấy số liệu đã lưu trong kho '+(on?'▴':'▾');if(on)khoPanel(el)};
+  if(genUnits().length)showOut(el,1)
+}
+/* ---- trang "Quy tắc tính": mọi người xem, tài khoản quản trị sửa (lưu theo từng năm, có lịch sử); đọc thẳng từ cách web đang tính ---- */
+const reTxt=r=>r?String(r.source).replace(/^\^/,'').replace(/\$$/,'').replace(/\\s\*-\?\\s\*/g,' ').replace(/-\?\\s\*|\\s\*/g,'').replace(/\(\?:/g,'(').replace(/\(([^()|]*)\)\?/g,'$1').replace(/\(([^()|]*)\|[^()]*\)/g,'$1').replace(/[\\?]/g,'').replace(/\s+/g,' ').trim():'';
+const RULE_HIST0=[
+  ['28/10/2026','Ghi nhận bộ quy tắc năm 2026 theo cách tính bảng tay Bình Thành, Vĩnh Châu: làm tròn từng khoản rồi cộng; cộng bù ±1; NSNN = NSĐP + NSTW của các khoản 7.1, 8.3, 8.4, 11; trừ dòng huy động đóng góp khi so tổng; tiến độ bình quân số tháng / 12.'],
+  ['28/10/2026','H bổ sung: thêm mục La Mã "V. Các khoản huy động, đóng góp" sau mục IV, lấy số thực hiện từ dòng V của TABMIS, không có dự toán thì để trống dự toán; nằm ngoài mục I nên không ảnh hưởng đối chiếu thu nội địa với TABMIS và không tính vào tổng thu NSNN.'],
+  ['28/10/2026','H bổ sung: thuế bảo vệ môi trường (mã 5) cũng cộng phần NSTW vào NSNN (thấy ở Đức Hòa, Đức Lập có NSTW).']];
+const codeList=t=>String(t||'').split(/[,;\s]+/).map(x=>x.trim()).filter(Boolean);
+const sameArr=(a,b)=>a.length===b.length&&a.every((x,i)=>x===b[i]);
+function rulesView(el){
+  const {THU,AREAS}=TC.RULE_SRC,admin=TC.auth.can('admin');
+  const store=E.ruleStore(),years=[...new Set([RULE,...Object.keys(store).map(Number)])].sort((a,b)=>a-b);
+  if(!S.ruY||!years.includes(S.ruY))S.ruY=years.includes(S.info.nam)?S.info.nam:RULE;
+  const y=S.ruY,rule=E.ruleFor(y),own=store[y],edit=admin&&S.ruEdit,via=E.ruleYear(y);
+  const tw=codes=>rule.twadd.filter(c=>codes.some(x=>c===x||c.startsWith(x+'.')));
+  const cl=codes=>codes.map(c=>'<code>'+esc(c)+'</code>').join(', ');
+  const inp=(k,ix,codes)=>`<input type="text" class="ru-c" data-k="${k}" data-i="${ix}" value="${esc(codes.join(', '))}" style="min-width:110px" aria-label="Mã TABMIS">`;
+  const thuRows=THU.map(([stt,name,codes0,d,top],ix)=>{
+    const codes=rule.thu[ix]||codes0,t=tw(codes);
+    return `<tr class="${top?'rb':''}"><td class="c">${esc(stt)}</td><td style="text-align:left">${esc(name)}</td><td style="text-align:left">${edit?inp('thu',ix,codes):codes.length?cl(codes):'<span class="muted">không lấy từ TABMIS</span>'}${rule.thu[ix]?' <span class="badge draft">đã sửa</span>':''}</td><td style="text-align:left">${t.length?'NSNN = NSĐP + NSTW của '+cl(t):'NSNN = NSĐP'}</td><td style="text-align:left">${d?esc(reTxt(d.re))+(d.parent?' <span class="muted">(trong nhóm «'+esc(reTxt(d.parent))+'»)</span>':''):'<span class="muted">không lấy dự toán</span>'}</td></tr>`}).join('');
+  const chiRows=AREAS.map(([stt,name,codes0,re],ix)=>{const codes=rule.chi[ix]||codes0;return `<tr><td class="c">${esc(stt)}</td><td style="text-align:left">${esc(name)}</td><td style="text-align:left">${edit?inp('chi',ix,codes):cl(codes)}${rule.chi[ix]?' <span class="badge draft">đã sửa</span>':''}</td><td style="text-align:left">${esc(reTxt(re))}</td></tr>`}).join('');
+  const li=a=>a.map(x=>`<li>${x}</li>`).join('');
+  const hist=[...RULE_HIST0.map(([d,t])=>({d,t,by:'',y:'mặc định'})),...Object.entries(store).flatMap(([yy,o])=>(o.history||[]).map(h=>({d:h.at,t:h.note+(h.changes&&h.changes.length?' ('+h.changes.join('; ')+')':''),by:h.by,y:yy,ts:h.ts})))];
+  const twEdit=edit?`<input type="text" id="ru-tw" value="${esc(rule.twadd.join(', '))}" style="max-width:340px" aria-label="Các khoản cộng NSTW">`:rule.twadd.map(c=>'<code>'+esc(c)+'</code>').join(', ');
+  const nrEdit=edit?`<input type="text" id="ru-nr" value="${esc(rule.norec.join(', '))}" style="max-width:200px" aria-label="Khoản lấy ở cấp cha">`:rule.norec.map(c=>'<code>'+esc(c)+'</code>').join(', ');
+  const tlEdit=edit?`<input type="number" id="ru-tol" min="0" max="20" value="${rule.tol}" style="width:70px" aria-label="Ngưỡng bù">`:`<b>${rule.tol}</b>`;
+  el.innerHTML=`<div class="row" style="margin-bottom:10px"><button class="btn sm" id="b-back">← Quay lại</button><b>Quy tắc tính báo cáo thu chi</b></div>
+  <div class="card"><div class="row"><label style="margin:0">Bộ quy tắc của năm</label><select id="ru-y" style="width:auto">${years.map(v=>`<option ${v===y?'selected':''}>${v}</option>`).join('')}</select>
+   <span class="badge ${own?'fin':'draft'}">${own?'bộ riêng của năm '+y:'dùng bộ mặc định (chưa có bộ riêng năm '+y+')'}</span>
+   ${admin?(edit?'':'<button class="btn sm pri" id="ru-ed">Sửa quy tắc</button>'):'<span class="muted">Chỉ tài khoản quản trị sửa được.</span>'}</div>
+   <p class="muted" style="margin:8px 0 0">Trang này đọc thẳng từ cách web đang tính nên luôn khớp với số trong báo cáo. Quy tắc lưu theo từng năm; báo cáo của năm chưa có bộ riêng dùng bộ của năm gần nhất trước đó (nếu có), nếu không thì dùng bộ mặc định.${via!=null&&via!==y?' <b>Năm '+y+' đang dùng bộ năm '+via+'.</b>':''}</p>
+   ${admin&&!edit?`<div class="row" style="margin-top:8px"><span class="muted">Thêm bộ quy tắc cho năm</span><input type="number" id="ru-ny" value="${Math.max(...years)+1}" min="2000" max="2100" style="width:90px"><span class="muted">sao chép từ năm ${y}</span><button class="btn sm" id="ru-new">Tạo bộ mới</button></div>`:''}
+   ${edit?`<div class="warn" style="margin-top:10px">Đang sửa bộ quy tắc năm ${y}. Mã TABMIS ghi cách nhau bằng dấu phẩy, ví dụ <code>7.2, 7.4</code>; mã cha tự gồm các mã con. Sửa xong ghi lý do rồi bấm Lưu. Sau khi lưu, quay lại báo cáo, web tự tính lại số từ các tệp đã chọn.
+    <div class="row" style="margin-top:8px"><input type="text" id="ru-note" placeholder="Lý do sửa (bắt buộc), ví dụ: thuế BVMT cộng thêm NSTW" style="flex:1;min-width:260px"><button class="btn pri" id="ru-save">Lưu quy tắc năm ${y}</button><button class="btn" id="ru-cancel">Hủy</button>${own?'<button class="btn" id="ru-reset">Khôi phục mặc định</button>':''}</div></div>`:''}</div>
+  <div class="card" style="margin-top:12px"><h2 style="margin-top:0">1. Nguyên tắc chung (số liệu thu, chi lấy từ TABMIS)</h2><ol class="rules">${li([
+   '<b>Đơn vị</b> là triệu đồng. Tệp .xls và .pdf TABMIS tính bằng đồng nên web chia cho 1.000.000. Tệp nhiều địa bàn đã là triệu đồng.',
+   '<b>Cột lấy số</b> của TABMIS: cột 13 "lũy kế ngân sách cấp xã" là số của xã, phường; cột 9 là phần ngân sách trung ương (NSTW). Tệp nhiều địa bàn thì mỗi xã một cột, phần NSTW nằm ở tệp NSTW đi kèm.',
+   '<b>Làm tròn:</b> mỗi khoản (dòng lá) làm tròn về triệu đồng (từ 0,5 trở lên thì làm tròn lên), rồi cộng các số đã làm tròn để ra tổng. Không cộng số lẻ rồi mới làm tròn.',
+   `<b>Cộng bù ±1 triệu:</b> web so tổng các khoản đã làm tròn với dòng "A. Thu ngân sách nhà nước" của TABMIS (cột xã, đã trừ dòng "V. Các khoản huy động đóng góp"). Lệch từ 1 đến ${tlEdit} triệu thì cộng hoặc trừ 1 triệu vào khoản có phần lẻ bị làm tròn nhiều nhất, lặp lại cho đến khi khớp. Lệch hơn ngưỡng đó thì không tự bù mà hiện cảnh báo đỏ để bạn kiểm tra tệp. Chi làm tương tự với dòng "A. Chi ngân sách nhà nước".`,
+   `<b>Khoản cha có khoản con:</b> web lấy các khoản lá. Nếu một khoản con đúng bằng tổng các khoản con còn lại (dòng tổng trùng, ví dụ 7.3 = 7.1 + 7.4) thì bỏ khoản đó để không cộng hai lần. Các khoản lấy ở cấp cha, không xuống khoản lá: ${nrEdit}.`,
+   `<b>Thu NSĐP</b> = tổng các khoản lá (cột xã). <b>Thu NSNN</b> = thu NSĐP + phần NSTW của các khoản: ${twEdit}.`,
+   '<b>Tổng thu trừ tiền sử dụng đất, xổ số kiến thiết</b> = tổng thu trừ khoản <code>8.4</code> (tiền sử dụng đất) trừ khoản <code>9</code> (xổ số kiến thiết), tính riêng cho NSNN và NSĐP.',
+   '<b>Chi NSĐP</b> chỉ có một cột. Tổng chi = làm tròn dòng "A. Chi ngân sách nhà nước". Chi đầu tư phát triển = dòng "I. Chi đầu tư phát triển". Chi thường xuyên = tổng các lĩnh vực dưới dòng "III. Chi thường xuyên", mỗi lĩnh vực làm tròn riêng rồi bù ±1 như trên.',
+   '<b>Tiến độ bình quân</b> = số tháng báo cáo / 12 (10 tháng là 83%, tháng 12 là 100% dự toán). <b>Tỷ lệ</b> = thực hiện / dự toán giao. <b>So cùng kỳ</b> = thực hiện / cùng kỳ năm trước (chỉ hiện khi có số cùng kỳ).',
+   '<b>"Các khoản thu chưa đạt tiến độ"</b> chỉ xét: thu phí, lệ phí; lệ phí trước bạ; thuế thu nhập cá nhân; kinh tế ngoài quốc doanh; doanh nghiệp nhà nước; thuế sử dụng đất phi nông nghiệp; thu khác ngân sách (không xét tiền sử dụng đất). Khoản nào có dự toán NSNN lớn hơn 0 và tỷ lệ thấp hơn tiến độ bình quân thì liệt kê, xếp từ thấp đến cao. Tháng 12 thì so với 100% dự toán.',
+   '<b>Thu từ dầu thô, xuất nhập khẩu, viện trợ</b> (các dòng II, III, IV) để 0 vì ngân sách xã không có. <b>Mục V "Các khoản huy động, đóng góp"</b> lấy từ dòng V của TABMIS, đứng riêng sau mục IV; không nằm trong mục I và không tính vào tổng thu NSNN, nên việc đối chiếu mục I (thu nội địa) với TABMIS không bị ảnh hưởng. Khi so tổng các khoản với dòng A của TABMIS, web trừ dòng V ra.'])}
+   </ol><p class="muted" style="margin:8px 0 0">Các điểm in đậm ở mục 1 chưa sửa được trên trang (làm tròn, tiến độ bình quân, cách chọn khoản chưa đạt tiến độ, cột TABMIS): nhắn mình khi cần đổi.</p></div>
+  <div class="card" style="margin-top:12px"><h2 style="margin-top:0">2. Dự toán đầu năm</h2><ol class="rules">${li([
+   'Lấy từ ba phụ lục của quyết định giao dự toán: <b>phụ lục V</b> (thu), <b>phụ lục VI</b> (chi), <b>phụ lục VII</b> (cân đối), nhập một lần cho mỗi xã và năm ở trang Dự toán đầu năm.',
+   'Các con số dùng viết báo cáo được đọc lại từ ba bảng này mỗi lần tạo báo cáo, nên sửa số trong bảng dự toán là báo cáo đổi theo.',
+   'Dự toán chi: tổng chi NSĐP; chi đầu tư phát triển = chi đầu tư của nguồn cân đối + chi đầu tư của nguồn tỉnh bổ sung; chi thường xuyên = chi thường xuyên của nguồn cân đối + chi sự nghiệp của nguồn tỉnh bổ sung.',
+   '<b>Kiểm tra dự toán:</b> thu NSĐP − tổng chi NSĐP + thu bổ sung cân đối + thu bổ sung có mục tiêu = 0 thì hiện "Khớp". Ô thu bổ sung để trống được coi là 0.'])}</ol></div>
+  <div class="card" style="margin-top:12px"><h2 style="margin-top:0">3. Bảng thu: dòng báo cáo lấy số từ đâu</h2>
+   <p class="muted" style="margin:0 0 8px">Cột "Mã TABMIS" là số thứ tự khoản trong báo cáo B2-01 (khoản có mã con thì gồm cả các mã con).</p>
+   <div class="tw"><table class="t rules"><tr><th>STT</th><th style="text-align:left">Dòng trong báo cáo</th><th style="text-align:left">Mã TABMIS lấy số thực hiện</th><th style="text-align:left">NSNN tính thế nào</th><th style="text-align:left">Dòng dự toán lấy ở phụ lục V (dòng có tên bắt đầu bằng)</th></tr>${thuRows}<tr class="rb"><td class="c">II, III, IV</td><td style="text-align:left">Thu từ dầu thô; xuất, nhập khẩu; viện trợ</td><td style="text-align:left"><span class="muted">không lấy, để 0</span></td><td style="text-align:left">NSNN = NSĐP</td><td style="text-align:left"><span class="muted">không lấy dự toán</span></td></tr><tr class="rb"><td class="c">V</td><td style="text-align:left">Các khoản huy động, đóng góp</td><td style="text-align:left"><code>V</code> <span class="muted">dòng V của TABMIS (ngoài mục I)</span></td><td style="text-align:left">NSNN = NSĐP, không tính vào tổng thu</td><td style="text-align:left"><span class="muted">không lấy dự toán</span></td></tr></table></div></div>
+  <div class="card" style="margin-top:12px"><h2 style="margin-top:0">4. Bảng chi: lĩnh vực lấy số từ đâu</h2>
+   <p class="muted" style="margin:0 0 8px">Chi thường xuyên theo lĩnh vực, lấy từ báo cáo B3-01 dưới dòng "III. Chi thường xuyên". Dòng "Dự phòng ngân sách" chỉ có dự toán, thực hiện để trống.</p>
+   <div class="tw"><table class="t rules"><tr><th>STT</th><th style="text-align:left">Lĩnh vực</th><th style="text-align:left">Mã TABMIS</th><th style="text-align:left">Dòng dự toán lấy ở phụ lục VI (dòng có tên bắt đầu bằng)</th></tr>${chiRows}</table></div></div>
+  <div class="card" style="margin-top:12px"><h2 style="margin-top:0">5. Lịch sử quy tắc</h2>
+   <div class="tw"><table class="t"><tr><th>Ngày</th><th>Bộ</th><th style="text-align:left">Nội dung</th><th>Người sửa</th></tr>${hist.map(h=>`<tr><td class="c">${esc(h.d)}</td><td class="c">${esc(h.y)}</td><td style="text-align:left">${esc(h.t)}</td><td class="c">${esc(h.by||'')}</td></tr>`).join('')}</table></div></div>`;
+  $('#b-back',el).onclick=()=>{S.ruEdit=false;const ch=S.ruChanged;S.ruChanged=false;S.mode=S.back||'';if(S.rc){S.collapsed=true;S.rc=false}render(el);if(ch&&S.mode&&S.mode!=='dt'){S.U.forEach(u=>{if(!u.opened)u.gen=false});S.runWarn=[];if(S.files.thu.length||S.files.chi.length)reloadAll(el);TC.toast('Đã áp dụng quy tắc mới, bấm Tạo báo cáo để tính lại')}};
+  $('#ru-y',el).onchange=e=>{S.ruY=+e.target.value;S.ruEdit=false;rulesView(el)};
+  const ed=$('#ru-ed',el);if(ed)ed.onclick=()=>{S.ruEdit=true;rulesView(el)};
+  const cn=$('#ru-cancel',el);if(cn)cn.onclick=()=>{S.ruEdit=false;rulesView(el)};
+  const nw=$('#ru-new',el);if(nw)nw.onclick=()=>{const ny=+$('#ru-ny',el).value;if(!ny||store[ny])return TC.toast(ny?'Năm '+ny+' đã có bộ quy tắc':'Nhập năm',1);
+    const st=E.ruleStore(),cur=E.ruleFor(y);st[ny]=Object.assign(cur,{history:[{at:new Date().toLocaleDateString('vi-VN'),ts:Date.now(),by:TC.user.name||TC.user.username,note:'Tạo bộ quy tắc năm '+ny+' (sao chép từ năm '+y+')',changes:[]}]});TC.store.set('rules',st);TC.log('rules new '+ny);S.ruY=ny;S.ruChanged=true;rulesView(el)};
+  const rs=$('#ru-reset',el);if(rs)rs.onclick=async()=>{if(!await TC.dialog('Khôi phục mặc định','<p style="margin:0">Xóa bộ quy tắc riêng của năm '+y+' và dùng lại bộ mặc định? Lịch sử sửa của bộ này cũng bị xóa.</p>','Khôi phục'))return;
+    const st=E.ruleStore();delete st[y];TC.store.set('rules',st);TC.log('Khôi phục quy tắc','năm '+y);S.ruEdit=false;S.ruChanged=true;rulesView(el)};
+  const sv=$('#ru-save',el);if(sv)sv.onclick=()=>{
+    const note=nrm($('#ru-note',el).value);if(!note)return TC.toast('Ghi lý do sửa trước khi lưu',1);
+    const tws=codeList($('#ru-tw',el).value),nrs=codeList($('#ru-nr',el).value),tol=+$('#ru-tol',el).value;
+    const okc=l=>l.every(c=>/^(V|\d+(\.\d+)*)$/.test(c));
+    if(!okc(tws)||!okc(nrs))return TC.toast('Mã TABMIS chỉ gồm số và dấu chấm (ví dụ 7.1), riêng "V" là dòng V huy động đóng góp',1);
+    if(!(tol>=0&&tol<=20))return TC.toast('Ngưỡng bù từ 0 đến 20 triệu',1);
+    const next={twadd:tws,norec:nrs,tol,thu:{},chi:{}},ch=[];let bad='';
+    [['thu',THU],['chi',AREAS]].forEach(([k,arr])=>el.querySelectorAll(`input.ru-c[data-k="${k}"]`).forEach(i=>{
+      const ix=+i.dataset.i,l=codeList(i.value),def=arr[ix][2];if(!okc(l))bad=`${arr[ix][1]}: mã không hợp lệ`;
+      if(!sameArr(l,def))next[k][ix]=l;
+      const was=rule[k][ix]||def;if(!sameArr(l,was))ch.push(`${arr[ix][1].slice(0,30)}: ${was.join(',')||'(trống)'} → ${l.join(',')||'(trống)'}`)}));
+    if(bad)return TC.toast(bad,1);
+    if(!sameArr(tws,rule.twadd))ch.push(`cộng NSTW: ${rule.twadd.join(',')} → ${tws.join(',')}`);
+    if(!sameArr(nrs,rule.norec))ch.push(`lấy ở cấp cha: ${rule.norec.join(',')} → ${nrs.join(',')}`);
+    if(tol!==rule.tol)ch.push(`ngưỡng bù: ${rule.tol} → ${tol}`);
+    if(!ch.length)return TC.toast('Chưa có gì thay đổi',1);
+    const st=E.ruleStore(),old=st[y];next.history=[...((old&&old.history)||[]),{at:new Date().toLocaleDateString('vi-VN'),ts:Date.now(),by:TC.user.name||TC.user.username,note,changes:ch}];
+    st[y]=next;TC.store.set('rules',st);TC.log('Sửa quy tắc','năm '+y);S.ruEdit=false;S.ruChanged=true;TC.toast('Đã lưu quy tắc năm '+y);rulesView(el)};
+}
+function newReport(el,kind){
+  Object.assign(S,{kind:kind||'daily',files:{thu:[],chi:[],pthu:[],pchi:[]},fileWarn:{},runWarn:[],dtOpen:{},gOnUser:0,mode:'new',rep:'',editInfo:false,showPrev:kind==='td',showCmp:false,namUser:false,U:[],cur:'',src:{thu:[],chi:[]},thu:null,chi:null,info:{xa:'',ngay:'',thang:'',nam:S.info.nam||2026},auto:{},tables:null,dtSrc:'',savedAt:'',dt:null,bieu:null,paras:[],prev:{thu:null,chi:null},cols:null,hide:null,ck:{},dsub:'thu',gOn:{dt:1,th:1,tl:1,ck:1,tc:1},dirty:false});
+  render(el);
+}
+
+function fillInfo(el){
+  const n=$('#i-nam',el);if(n)n.value=S.info.nam;
+  el.querySelectorAll('.pyear').forEach(a=>{a.textContent=S.info.nam-1});
+  try{reqRows().forEach(([id,lab])=>{const b=el.querySelector('#fb-'+id+' td.nm b');if(b&&b.firstChild&&b.firstChild.nodeType===3)b.firstChild.textContent=lab})}catch(e){} /* nhãn năm của các ô nhập theo năm báo cáo */
+  const r=$('#rulenote',el);if(r)r.innerHTML=S.info.nam&&S.info.nam!==RULE?`<span class="bad-t">Công thức tính trong web theo quy tắc năm ${RULE}. Báo cáo năm ${S.info.nam} có thể có công thức khác, bạn rà kỹ số liệu hoặc báo mình bổ sung.</span>`:`Quy tắc tính: năm ${RULE}. <button class="btn sm" id="ru-go">Xem quy tắc</button>`;
+  const rg=$('#ru-go',el);if(rg)rg.onclick=goRules;
+}
+const readInfo=()=>{};
+function chk(el,id,lines,bad){const c=$('#chk-'+id,el);if(!c)return;c.innerHTML=lines.map(l=>`<div>${esc(l)}</div>`).join('');c.style.color=bad?'var(--bad)':'';}
+
+/* bảng theo dõi các đơn vị đã nhận từ tệp: tệp thu, chi, cùng kỳ, ngày, kỳ, dự toán, cảnh báo (chữ đỏ khi thiếu) */
+const short=g=>g.map(x=>x.name).filter((v,i,a)=>a.indexOf(v)===i).map(n=>n.length>26?n.slice(0,12)+'…'+n.slice(-10):n).join(', ');
+function renderUnits(el){
+  renderReady(el);
+  const b=$('#units',el);if(!b)return;
+  /* dự toán nạp ở mục Dự toán đầu năm sau khi đã có dòng đơn vị: mỗi lần vẽ lại, đơn vị nào còn báo thiếu thì tìm lại trong kho */
+  S.U.forEach(u=>{const w=W(u);if(!w.tables&&w.dtSrc!=='saved'&&w.dtSrc!=='pc')loadSavedFor(w)});
+  if(!S.U.length){b.innerHTML=`<div class="muted" style="display:flex;align-items:center">Chưa có đơn vị nào.${TC.tip('Chọn tệp thu hoặc chi ở trên, mỗi đơn vị nhận được sẽ hiện thành một dòng ở đây. Bỏ tệp thì dòng tương ứng mất theo.')}</div>`;return}
+  const has=w=>w.dtSrc==='saved'||w.dtSrc==='pc'||(w.tables&&w.dt);
+  const detail=(u,w)=>{
+    const k=esc(u.key),name=canon(w.info.xa||u.xa);
+    if(!w.info.xa)return `<div class="bad-note" style="margin:0">Chưa biết tên đơn vị nên chưa tìm được dự toán. Gõ tên ở cột Đơn vị.</div>`;
+    if(has(w)){
+      const dd=w.tables?E.deriveDt(w.tables):w.dt,t=(dd&&dd.thu)||{},c=(dd&&dd.chi)||{},g=x=>t[x]||{nsnn:0,nsdp:0};
+      return `<div class="ok-note" style="margin:0">${w.dtSrc==='pc'?`✓ Chưa có phụ lục dự toán trong kho nên web dùng <b>dự toán ${w.info.nam} lấy từ bảng Tỷ lệ phân cấp</b> (chỉ phần thu, đủ cho bảng thảo luận). Nạp phụ lục V, VI, VII vào kho thì web ưu tiên số trong kho.`:`✓ Đã có dữ liệu dự toán ${esc(name)} năm ${w.info.nam} (cập nhật${w.savedAt?' lúc '+esc(w.savedAt):' cùng báo cáo'}). Web tự dùng, không phải nạp lại.`}<div class="sumline">Triệu đồng: thu NSNN ${fmt(g('tong').nsnn)}, NSĐP ${fmt(g('tong').nsdp)}; tiền sử dụng đất ${fmt(g('tsdd').nsnn)}; tổng chi ${fmt(c.tong||0)}, đầu tư phát triển ${fmt(c.dtpt||0)}, thường xuyên ${fmt(c.tx||0)}. <button class="btn sm" data-go="1">Xem, sửa</button></div></div>`;
+    }
+    return `<div class="bad-note" style="margin:0">✗ Chưa có dự toán <b>${esc(name)}</b> năm ${w.info.nam}. Nhập ngay tại đây, dữ liệu lưu vào kho Dự toán đầu năm và dùng cho mọi báo cáo sau.
+      <div class="row" style="margin-top:6px"><label class="btn sm pri" style="cursor:pointer">Tải file phụ lục dự toán (xlsx, pdf)<input type="file" data-f="${k}" accept=".xlsx,.xls,.pdf" multiple style="display:none"></label><button class="btn sm" data-hand="${k}">Nhập tay tại đây</button><span class="muted" data-msg="${k}"></span></div><div data-ed="${k}"></div></div>`;
+  };
+  const rows=S.U.map(u=>{const w=W(u),unk=u.unknown,k=esc(u.key);
+     const cell=(g,hv)=>g.length?`<span class="chip ok">✓ Đã nhận</span>${TC.tip(esc(short(g)))}`:hv?`<span class="chip ok">✓ Số liệu đã lưu</span>${TC.tip('Dùng số liệu đã lưu trong kho'+(w.info.ngay?', đến '+esc(w.info.ngay):''))}`:'<span class="chip wn"><b class="x">✕</b> Chưa có tệp</span>';
+     const pw=w.prev.thu||w.prev.chi?`<span class="chip ok">✓ ${w.prev.thu&&w.prev.chi?'Thu, chi':w.prev.thu?'Thu':'Chi'}</span>`+(w.prevKho?TC.tip('Lấy từ kho số liệu'):''):'<span class="chip no">– Không có</span>';
+     const notes=[];
+     if(unk)notes.push('chưa nhận ra tên đơn vị trong tệp, gõ tên ở cột Đơn vị');
+     if(S.kind==='td'&&w.info.xa){const pc=pcGet(w);if(pc&&!pc.xa[TC.normXa(w.info.xa)])notes.push('không có trong bảng Tỷ lệ phân cấp')}
+     if(!w.thu&&!(S.kind==='td'&&w.chi)&&!u.pcOnly)notes.push('chưa có số liệu thu năm nay (chưa có tệp thu)');if(!w.chi&&S.kind!=='td')notes.push('chưa có số liệu chi năm nay (chưa có tệp chi)');
+     [['thu',w.thu],['chi',w.chi]].forEach(([kk,x])=>{if(x&&x.chk&&Math.abs(x.chk.target-x.chk.sum)>3)notes.push('tổng '+kk+' lệch dòng A của TABMIS')});
+     if(w.info.xa&&!has(w))notes.push('chưa có dự toán '+w.info.nam+' của đơn vị này');
+     if((u.thuG[0]||{}).noTw)notes.push('chưa có tệp NSTW');
+     const a=(u.thuG[0]||{}).m,c=(u.chiG[0]||{}).m;if(a&&c&&a.ngay&&c.ngay&&(a.ngay!==c.ngay||a.thang!==c.thang||a.nam!==c.nam))notes.push('ngày số liệu thu khác chi');
+     const nameCell=unk?`<input type="text" class="uname" data-k="${k}" placeholder="Gõ tên, ví dụ Xã Vĩnh Châu${u.ma?' (mã '+esc(u.ma)+')':''}" style="min-width:190px">`:`<b>${esc(canon(w.info.xa||u.xa))}</b>`;
+     const op=S.dtOpen&&S.dtOpen[u.key];
+     const main=`<tr data-u="${k}" class="${u.key===S.cur?'sel':''}"><td data-l="Đơn vị" style="text-align:left"><span class="stt">${stt96(u.xa)||'–'}</span>${nameCell}</td><td data-l="Tệp thu" style="text-align:left">${cell(u.thuG,u.opened&&w.thu)}</td><td data-l="Tệp chi" style="text-align:left">${cell(u.chiG,u.opened&&w.chi)}</td><td data-l="Cùng kỳ" class="c">${pw}</td>
+      <td data-l="Số liệu đến ngày" class="c"><input type="text" class="ucell" data-k="${k}" data-f="ngay" value="${esc(w.info.ngay||'')}" placeholder="dd/mm/yyyy" inputmode="numeric" style="width:105px;text-align:center" aria-label="Số liệu đến ngày"></td>
+      <td data-l="Kỳ báo cáo" class="c"><input type="number" class="ucell" data-k="${k}" data-f="thang" value="${w.info.thang||''}" min="1" max="12" style="width:56px;text-align:center" aria-label="Kỳ báo cáo (tháng)"> tháng</td>
+      <td data-l="Dự toán" class="c"><button type="button" class="chip bchip ${has(w)?'ok':'wn'}" data-dt="${k}" aria-expanded="${!!op}">${has(w)?'✓ Đã có':'<b class="x">✕</b> Thiếu'} ${op?'▴':'▾'}</button></td><td data-l="Tình trạng" style="text-align:left">${notes.length?`<span class="chip wn">! Còn thiếu</span>${TC.tip(notes.map(n=>'• '+esc(n)).join('<br>'))}`:'<span class="chip ok">✓ Sẵn sàng</span>'}</td></tr>`;
+     return main+(op?`<tr class="dtrow"><td colspan="8" style="text-align:left">${detail(u,w)}</td></tr>`:'');
+  }).join('');
+  b.innerHTML=`<p class="muted" style="margin:0 0 6px">Có <b>${S.U.length} đơn vị</b>. Web tự nhận ngày và kỳ từ tệp, nhận sai thì sửa ngay ở ô trong bảng. Bấm mũi tên ở cột Dự toán để xem hoặc nhập dự toán.</p><div class="tw"><table class="t ulist"><tr><th style="text-align:left">Đơn vị</th><th style="text-align:left">Tệp thu</th><th style="text-align:left">Tệp chi</th><th>${S.kind==='td'?'Cả năm '+(S.info.nam-1):'Cùng kỳ'}</th><th>Số liệu đến ngày</th><th>Kỳ báo cáo</th><th>Dự toán ${S.info.nam}</th><th style="text-align:left">Tình trạng</th></tr>${rows}</table></div>`;
+  const miss=[];S.U.forEach(u=>{const w=W(u),n=canon(w.info.xa||u.xa)||'Đơn vị chưa rõ tên';if(!w.thu&&!(S.kind==='td'&&w.chi))miss.push(n+' chưa có file thu');if(!w.chi&&S.kind!=='td')miss.push(n+' chưa có file chi')});
+  if(miss.length)b.insertAdjacentHTML('beforeend',`<div class="bad-note" role="alert" style="margin-top:8px"><b>Còn thiếu tệp:</b> ${esc(miss.join('; '))}.</div>`);
+  const after=()=>{S.U.forEach(u=>loadSavedFor(W(u)));renderUnits(el);renderWarn1(el)};
+  b.querySelectorAll('tr[data-u]').forEach(tr=>tr.onclick=e=>{if(e.target.closest('input,button'))return;stash();activate(tr.dataset.u);fillInfo(el);renderUnits(el);if(genUnits().length)showOut(el,1)});
+  b.querySelectorAll('input.uname').forEach(i=>i.onchange=async()=>{const v=nrm(i.value);if(!v)return;const u=S.U.find(x=>x.key===i.dataset.k);if(!u)return;
+    [...u.thuG,...u.chiG,...u.pthuG,...u.pchiG].forEach(g=>{const e=allEnt(g.entId);if(e)e.xaName=v});await reloadAll(el)});
+  b.querySelectorAll('input.ucell').forEach(i=>{
+    const apply=()=>{const u=S.U.find(x=>x.key===i.dataset.k);if(!u)return null;const w=W(u),f=i.dataset.f;
+      if(f==='ngay'){w.info.ngay=nrm(i.value);const m=w.info.ngay.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);if(m){w.info.thang=+m[2];w.info.nam=+m[3];w.auto.thang=w.auto.nam=true;const t=i.closest('tr').querySelector('input[data-f=thang]');if(t)t.value=w.info.thang}}
+      else w.info.thang=+i.value||'';
+      delete w.auto[f];return w};
+    i.oninput=apply;
+    i.onchange=()=>{const w=apply();if(!w)return;if(w.info.nam!==S.info.nam&&w===S){S.namUser=true;S.U.forEach(x=>{W(x).info.nam=S.info.nam=w.info.nam})}S.U.forEach(x=>loadSavedFor(W(x)));fillInfo(el);renderUnits(el)}});
+  b.querySelectorAll('button[data-dt]').forEach(x=>x.onclick=()=>{S.dtOpen=S.dtOpen||{};S.dtOpen[x.dataset.dt]=!S.dtOpen[x.dataset.dt];renderUnits(el)});
+  b.querySelectorAll('[data-go]').forEach(x=>x.onclick=goDt);
+  b.querySelectorAll('input[data-f]').forEach(f=>{if(f.type!=='file')return;f.onchange=async e=>{
+    if(!TC.auth.can('edit'))return TC.toast('Tài khoản này chỉ được xem, không lưu được',1);
+    const files=[...e.target.files],k=f.dataset.f,m=$(`[data-msg="${k}"]`,b);if(m)m.textContent='Đang đọc…';
+    const res=await TC.dt.importFiles(files);
+    after();const m2=$(`[data-msg="${k}"]`,el);
+    if(m2)m2.textContent=res.map(r=>r.ok?`✓ ${r.xa} năm ${r.nam}`:`✗ ${r.name}: ${r.msg}`).join('; ');
+    if(res.some(r=>r.ok))TC.log('Nạp dự toán',res.filter(r=>r.ok).map(r=>r.xa+' '+r.nam).slice(0,3).join(', ')+(res.length>3?'…':''));
+    TC.toast(res.some(r=>r.ok)?'Đã lưu dự toán vào kho':'Không nạp được dự toán',!res.some(r=>r.ok))}});
+  b.querySelectorAll('[data-hand]').forEach(x=>x.onclick=()=>{
+    const u=S.U.find(y=>y.key===x.dataset.hand),w=u&&W(u);if(!w)return;
+    TC.dtEdit($(`[data-ed="${x.dataset.hand}"]`,b),w.info.xa,w.info.nam,after)});
+}
+function renderDt(el){renderUnits(el)}
+function pcChanged(el){
+  renderPc(el);S.U.forEach(u=>{W(u).td&&(W(u).td.base=null);loadSavedFor(W(u))});renderUnits(el);if(genUnits().length)showOut(el,1);
+}
+function renderPc(el){
+  const b=$('#fb-pc',el);if(!b)return;
+  const y=S.info.nam+1,base=TC.store.get('pc:'+y,null),fs=pcFiles(y),st=$('#pc-st',el),pl=$('#pc-list',el),when=t=>t?new Date(t).toLocaleString('vi-VN'):'';
+  st.style.color='';b.classList.toggle('ok',!!(base||fs.length));
+  const info=(base?(base.nguon==='app-ty-le-phan-cap'?`Đang dùng: ${esc(base.pa||base.name)}${base.ma?' · mã '+esc(base.ma):''}, ${base.n} xã, phường, đồng bộ từ app Tỷ lệ phân cấp lúc ${esc(when(base.ts))}${base.dongbo&&base.dongbo.by?' bởi '+esc(base.dongbo.by):''}. `:`Bảng gốc: ${esc(base.name)}, ${base.n} xã, phường, lấy từ tab Tỷ lệ phân cấp lúc ${esc(when(base.ts))}. `):'')+(fs.length?`${fs.length} tệp nạp thêm (tối đa ${PCMAX}), xã trùng thì lấy theo tệp nạp sau cùng. `:'')+(base||fs.length?'':`Chọn tệp để web điền sẵn cột ước thực hiện ${S.info.nam} và dự toán ${S.info.nam+1} cho từng xã, phường.`);
+  pl.innerHTML=(base||fs.length?'<span class="chip ok">✓ Đã đồng bộ</span>':'<span class="chip no">✕ Chưa đồng bộ</span>')+TC.tip(info)+(base?'<button class="btn sm" data-prm="-1" aria-label="Bỏ bảng gốc" style="margin-left:6px">✕ Bỏ</button>':'')
+   +'<div id="pc-sum"></div>';
+  TC.fsum(pl.querySelector('#pc-sum'),'pc',fs.map(f=>({name:f.name,detail:`${f.n} xã, phường · sheet «${f.sheet}» · nạp lúc ${when(f.ts)}`})),{
+    redraw:()=>renderPc(el),
+    onRemove:i=>{TC.store.set('pcf:'+y,pcFiles(y).filter((_,j)=>j!==i));pcChanged(el)},
+    onClear:()=>{TC.store.set('pcf:'+y,[]);pcChanged(el)}});
+  st.textContent='';
+  const un=$('#pc-undo',el);if(un){const pv=pcGoiOk()&&TC.store.get('pcprev:'+y,null);un.innerHTML=pv?' <button type="button" class="btn sm" id="pc-undo-b" title="Trả về số trước lần đồng bộ gần nhất">↶ Hoàn tác</button>':'';const ub=$('#pc-undo-b',el);if(ub)ub.onclick=()=>pcUndo(el)}
+  pl.querySelectorAll('button[data-prm]').forEach(x=>x.onclick=()=>{const i=+x.dataset.prm;
+    TC.log('Bỏ tệp tỷ lệ phân cấp','năm '+y);
+    if(i<0)TC.store.del('pc:'+y)
+    else TC.store.set('pcf:'+y,pcFiles(y).filter((_,j)=>j!==i));
+    pcChanged(el)});
+}
+function renderWarn1(el){
+  const b=$('#warn1',el);if(!b)return;
+  b.innerHTML=S.runWarn.length?`<div class="bad-note" role="alert"><b>Chưa đủ dữ liệu để tạo báo cáo cho:</b><br>${S.runWarn.map(x=>'• '+esc(x)).join('<br>')}</div>`:'';
+}
+const allEnt=id=>{for(const k of ['thu','chi','pthu','pchi']){const e=S.files[k].find(x=>x.id===id);if(e)return e}return null};
+const KINDS={thu:['thu',0],chi:['chi',0],pthu:['thu',1],pchi:['chi',1]};
+let FID=0;
+/* danh sách tệp của một ô: tên tệp, đơn vị nhận được, nút bỏ tệp */
+/* ô tải file dùng chung: một dòng "Đã tải N tệp"; bấm để mở một bảng nổi đè lên trang (không đẩy nội dung, không tải lại trang) có từng tệp, dòng kiểm tra, ✕ Bỏ và nút Bỏ hết; bấm ra ngoài hoặc Đóng là bảng biến mất */
+TC.fopen={};TC.fred={};
+TC.fsum=(box,key,files,opt)=>{
+  if(!box)return;
+  if(!files.length){TC.fopen[key]=false;box.innerHTML='';return}
+  const bad=files.filter(f=>f.err).length,open=!!TC.fopen[key];
+  TC.fred[key]=opt.redraw;
+  box.innerHTML=`<div class="fsum${bad?' has-bad':''}" data-fkey="${key}"><button type="button" class="fsbtn" aria-expanded="${open}"><span class="ft">${bad?'✗':'✓'} Đã tải ${files.length} tệp${bad?`, ${bad} tệp lỗi`:''}</span><span class="fcar">${open?'Thu gọn ▴':'Mở ra ▾'}</span></button>
+    ${open?`<div class="pop" role="dialog"><div class="ph"><span>${files.length} tệp đã tải</span><button type="button" data-fcl="1">✕ Đóng</button></div>${files.map((f,i)=>`<div class="frow ${f.err?'bad':''}"><div class="fmain"><div class="ft">${f.err?'✗':'✓'} ${esc(f.name)}</div>${f.detail?`<div class="fi">${esc(f.detail).replace(/\n/g,'<br>')}</div>`:''}</div>${opt.onRemove?`<button type="button" class="btn sm" data-fx="${i}" aria-label="Bỏ tệp ${esc(f.name)}">✕ Bỏ</button>`:''}</div>`).join('')}${opt.onClear?'<div class="row"><button type="button" class="btn sm" data-fclr="1">Bỏ hết</button></div>':''}</div>`:''}</div>`;
+  box.querySelector('.fsbtn').onclick=()=>{TC.fopen[key]=!TC.fopen[key];opt.redraw()};
+  const cl=box.querySelector('[data-fcl]');if(cl)cl.onclick=()=>{TC.fopen[key]=false;opt.redraw()};
+  box.querySelectorAll('[data-fx]').forEach(x=>x.onclick=()=>opt.onRemove(+x.dataset.fx));
+  const c=box.querySelector('[data-fclr]');if(c)c.onclick=()=>opt.onClear();
+};
+/* bấm ra ngoài bảng nổi thì đóng bảng đó */
+document.addEventListener('mousedown',e=>{for(const k of Object.keys(TC.fopen)){if(!TC.fopen[k])continue;const b=document.querySelector(`[data-fkey="${k}"]`);if(b&&!b.contains(e.target)){TC.fopen[k]=false;TC.fred[k]&&TC.fred[k]()}}});
+const detailOf=e=>(e.pdf?'PDF · ':'')+(e.units&&e.units.length?(e.units.length>3?e.units.length+' đơn vị: '+e.units.slice(0,3).join(', ')+'…':e.units.join(', ')):'')+(e.m&&e.m.ngay?' · đến '+dmy(e.m):'');
+function renderFiles(el,id){
+  const b=$('#fl-'+id,el);if(!b)return;
+  const L=S.files[id],fm=(S.fileMsg||{})[id]||{};
+  /* mỗi tệp có dòng kiểm tra riêng (khớp đủ, thiếu, thừa...) lấy từ lần đọc gần nhất */
+  TC.fsum(b,id,L.map(e=>{const ms=fm[e.id]||[],bad=!!e.err||ms.some(m=>m.k==='bad');
+    const lines=[e.err,...ms.map(m=>(m.k==='bad'?'✗ ':m.k==='ok'?'✓ ':'')+m.t),detailOf(e)].filter(Boolean);
+    return {name:e.name,err:bad?(e.err||'bad'):'',detail:lines.join('\n')}}),{
+    redraw:()=>renderFiles(el,id),
+    onRemove:i=>{S.files[id]=S.files[id].filter((_,j)=>j!==i);delete S.fileWarn[id];loadKind(el,id)},
+    onClear:()=>{S.files[id]=[];delete S.fileWarn[id];loadKind(el,id)}});
+  const bx=$('#fb-'+id,el);if(bx)bx.classList.toggle('ok',L.some(e=>!e.err));
+}
+const readEntry=async(en,path,out)=>{
+  if(en.isFile){const f=await new Promise((ok,no)=>en.file(ok,no));if(path)f._rp=path+en.name;out.push(f)}
+  else if(en.isDirectory){const rd=en.createReader(),all=[];
+    for(;;){const b=await new Promise((ok,no)=>rd.readEntries(ok,no));if(!b.length)break;all.push(...b)}
+    for(const c of all)await readEntry(c,path+en.name+'/',out)}};
+/* báo lệch giữa tổng các khoản cộng được và dòng "A" của TABMIS: nêu thừa hay thiếu bao nhiêu và dòng nào trong tệp có thể là nguyên nhân */
+const chkMsg=(ck,who)=>{
+  const d=ck.target-ck.sum,x=ck.extra;
+  let m=`${who}tổng các khoản cộng được ${fmt(ck.sum)}, dòng "A" của TABMIS là ${fmt(ck.target)} triệu đồng, đang ${d>0?'thiếu':'thừa'} ${fmt(Math.abs(d))} triệu.`;
+  const nm=c=>`"${c.name}"${c.stt?' (mã '+c.stt+')':''} ${fmt(c.val)}`;
+  if(x&&x.hits.length)m+=` Số chênh này khớp với dòng chưa nằm trong công thức cộng: ${x.hits.map(h=>h.map(nm).join(' + ')).join('; ')}. Thường là khoản tạm thu, tạm chi hoặc khoản đóng góp, bạn đối chiếu giúp mình.`;
+  else if(x&&x.tam.length)m+=` Trong tệp có các dòng tạm chưa nằm trong công thức: ${x.tam.map(nm).join('; ')}, có thể là nguyên nhân.`;
+  else m+=' Mình không thấy dòng nào khớp số chênh này, bạn kiểm tra tệp giúp mình.';
+  return m};
+const LBL={thu:'thu',chi:'chi',pthu:'thu kỳ trước',pchi:'chi kỳ trước'};
+const relOf=f=>String(f._rp||f.webkitRelativePath||'').replace(/\\/g,'/');
+const inFilesDir=f=>relOf(f).split('/').slice(0,-1).some(d=>/_files$/i.test(d));
+/* nhận tệp hoặc cả thư mục: bỏ tệp phụ trong thư mục _files, tự ghép vỏ "Excel Workbook Frameset" với sheet001.htm, tự xếp tệp thu và chi vào đúng ô */
+async function prepFiles(id,list){
+  const ok=list.filter(f=>/\.(xls|xlsx|pdf|htm|html)$/i.test(f.name));
+  const folder=list.some(f=>relOf(f));
+  const used=new Set();
+  for(const f of ok){
+    if(!/\.(xls|htm|html)$/i.test(f.name)||f.size>200000)continue;
+    try{const t=await f.text();const info=E.shellInfo(t);if(!info)continue;
+      info.forEach(l=>{const g=E.findSheet(l.href,ok,f);if(g)used.add(g)})}catch(e){}}
+  let keep=ok.filter(f=>!used.has(f)&&!(folder&&inFilesDir(f)));
+  if(id==='all'&&!folder&&keep.length>MAXALL){TC.toast(`Mỗi lần chọn tối đa ${MAXALL} tệp, ${MAXALL} tệp đầu được nhận`,1);keep=keep.slice(0,MAXALL)}
+  const out={};keep.forEach(f=>f.__pool=ok);
+  const peek=[];
+  for(const f of keep){
+    let kind='',nam=0;
+    if(!/\.pdf$/i.test(f.name)){
+      try{const t=await E.readTable(f,null,ok),m=E.meta(t.head&&t.head.length?[...t.head,...t.rows]:t.rows);
+        if(m.kind==='thu'||m.kind==='chi')kind=m.kind;nam=m.nam||0}catch(e){}}
+    peek.push({f,kind,nam})}
+  /* tệp của năm cũ hơn các tệp còn lại (cùng đợt hoặc đã nạp trước) thì tự xếp vào ô cùng kỳ năm trước */
+  const have=Object.values(S.files).flat().map(e=>e.m&&e.m.nam||0);
+  let ref=Math.max(0,...peek.map(x=>x.nam),...have);const ny=+S.info.nam||0;
+  /* năm báo cáo đang chọn là mốc: tệp của năm liền trước (vd tệp cả năm 2025 khi đang làm báo cáo 2026) vào ô cùng kỳ; bạn tự chọn năm thì luôn theo năm đó */
+  if(ny&&(S.namUser?ny>ref:ref===ny-1))ref=ny;
+  const multi=keep.length>1||have.some(Boolean)||ref===ny;let routed=0;const cnt={};
+  for(const x of peek){
+    let tid=id==='all'?(/chi/i.test(x.f.name)&&!/thu/i.test(x.f.name)?'chi':'thu'):id;
+    if((multi||id==='all')&&x.kind){const pre=x.nam&&ref&&x.nam<ref?'p':(x.nam&&ref&&x.nam===ref?'':id[0]==='p'?'p':'');tid=pre+x.kind}
+    if(tid!==id)routed++;cnt[tid]=(cnt[tid]||0)+1;
+    (out[tid]=out[tid]||[]).push(x.f)}
+  return {out,routed,cnt,skipped:ok.length-keep.length}}
+async function addFiles(el,id,list){
+  const {out,routed,cnt}=await prepFiles(id,list);
+  for(const tid of Object.keys(out))await addFilesTo(el,tid,out[tid]);
+  if(id==='all'){const c=$('#chk-all',el),L={thu:'thu năm nay',chi:'chi năm nay',pthu:'thu cùng kỳ năm trước',pchi:'chi cùng kỳ năm trước'};
+    if(c)c.innerHTML=Object.keys(cnt).length?'Đã xếp: '+['thu','chi','pthu','pchi'].filter(k=>cnt[k]).map(k=>`${cnt[k]} tệp ${L[k]}`).join(', ')+'.':'Không có tệp nào dùng được.';return}
+  if(routed)TC.toast(`Đã tự xếp ${routed} tệp vào đúng ô (thu hoặc chi, năm nay hoặc cùng kỳ năm trước)`)}
+async function addFilesTo(el,id,list){
+  const nw=[],arr=S.files[id];delete S.fileWarn[id];
+  for(const f of list){
+    if(arr.some(x=>x.name===f.name&&x.file.size===f.size))continue;
+    if(arr.length>=MAXF){S.fileWarn[id]=`Mỗi ô tối đa ${MAXF} tệp, các tệp thừa chưa được thêm. Bỏ bớt tệp cũ (✕ Bỏ) rồi chọn lại.`;break}
+    arr.push({id:++FID,file:f,name:f.name,pool:f.__pool||null});nw.push(f.name);
+  }
+  await loadKind(el,id);
+  if(nw.length){const un=[...new Set(arr.filter(e=>nw.includes(e.name)).flatMap(e=>e.units||[]))];
+    TC.log('Nạp báo cáo '+LBL[id],nw.length+' tệp'+(un.length?' · '+(un.length>3?un.length+' đơn vị':un.join(', ')):'')+' · '+nw.slice(0,2).join(', ')+(nw.length>2?'…':''))}
+}
+/* đổi năm báo cáo: tệp năm trước năm báo cáo chuyển sang ô cùng kỳ, tệp đúng năm báo cáo chuyển về ô năm nay */
+async function reRoute(el,ny){const ch=new Set();if(!ny)return;
+  for(const k of ['thu','chi']){const p='p'+k,nm=e=>e.m&&e.m.nam||0;
+    const down=S.files[k].filter(e=>nm(e)&&nm(e)<ny),up=S.files[p].filter(e=>nm(e)>=ny);
+    if(down.length){S.files[k]=S.files[k].filter(e=>!down.includes(e));S.files[p].push(...down);ch.add(k);ch.add(p)}
+    if(up.length){S.files[p]=S.files[p].filter(e=>!up.includes(e));S.files[k].push(...up);ch.add(k);ch.add(p)}}
+  for(const id of ['thu','chi','pthu','pchi'])if(ch.has(id))await loadKind(el,id);
+  if(ch.size)TC.toast('Đã xếp lại tệp theo năm báo cáo '+ny)}
+const reloadAll=async el=>{for(const id of ['thu','chi','pthu','pchi']){if(S.files[id].length)await loadKind(el,id)}};
+
+/* đọc lại toàn bộ danh sách tệp của một ô (có thể gồm nhiều đơn vị); tệp excel làm chuẩn, tệp pdf để đối chiếu */
+async function loadKind(el,id){
+  const [kind,pf]=KINDS[id],prev=!!pf,rel=kind==='thu'?/thu/i:/chi/i,items=[],notes=[],L=S.files[id];
+  S.runWarn=[];renderWarn1(el);
+  chk(el,id,L.length?['Đang đọc tệp…']:[]);
+  const code=Object.assign({},SEED,TC.store.get('xacode',{}));
+  for(const e of L){
+    e.units=[];
+    if(e.err&&!e.t)continue;
+    try{
+      if(!e.t){
+        const t=await E.readTable(e.file,rel,e.pool),m=E.meta(t.head&&t.head.length?[...t.head,...t.rows]:t.rows);
+        if(m.kind&&m.kind!==kind)throw new Error(`Đây là báo cáo ${m.kind==='thu'?'thu':'chi'}, hãy chọn ở ô báo cáo ${m.kind==='thu'?'thu':'chi'}.`);
+        e.t=t;e.m=m;e.pdf=!!t.pdf;e.multi=!!E.splitMulti(t.rows,kind,null);e.pool=null;
+      }
+      e.err='';
+    }catch(err){e.err=err.message}
+  }
+  const good=L.filter(e=>e.t&&!e.err);
+  const twF=kind==='thu'?good.find(e=>e.multi&&e.m.cap==='tw'):null;
+  const learn=TC.store.get('xacode',{});
+  good.forEach(e=>{
+    try{
+      const m=e.m;
+      if(e.multi){
+        if(kind==='thu'&&m.cap==='tw'){e.units=['NSTW đi kèm'];return}
+        E.splitMulti(e.t.rows,kind,twF?twF.t.rows:null).forEach(u=>{
+          const res=kind==='thu'?E.computeThu(u.rows,m.div,m.nam||S.info.nam):E.computeChi(u.rows,m.div,m.nam||S.info.nam);
+          if(u.ma&&u.xa){learn[u.ma]=canon(u.xa)}
+          e.units.push(canon(u.xa));
+          items.push({key:keyOf(canon(u.xa)),xa:canon(u.xa),name:e.name,entId:e.id,pdf:false,res,m,noTw:kind==='thu'&&!u.hasTw});
+        });
+      }else{
+        if(m.ma&&m.xa)learn[m.ma]=canon(m.xa);
+        const res=kind==='thu'?E.computeThu(e.t.rows,m.div,m.nam||S.info.nam):E.computeChi(e.t.rows,m.div,m.nam||S.info.nam);
+        let xa=e.xaName||m.xa||(m.ma&&(code[m.ma]||learn[m.ma]))||'';xa=xa?canon(xa):'';
+        e.units.push(xa||'chưa rõ đơn vị'+(m.ma?' (mã '+m.ma+')':''));
+        if(e.xaName&&m.ma)learn[m.ma]=canon(e.xaName);
+        items.push({key:xa?keyOf(xa):'?'+(m.ma||e.id),xa,unknown:!xa,ma:m.ma,name:e.name,entId:e.id,pdf:e.pdf,res,m});
+      }
+    }catch(err){e.err=err.message}
+  });
+  TC.store.set('xacode',learn);
+  if(L.length&&twF&&!good.some(e=>!(e.multi&&e.m.cap==='tw')))notes.push('Tệp NSTW cần chọn cùng tệp NSĐP (báo cáo thu ngân sách địa phương) trong ô này.');
+  if(S.fileWarn[id])notes.push(S.fileWarn[id]);
+  const fld=prev?(kind==='thu'?'pthuG':'pchiG'):(kind==='thu'?'thuG':'chiG');
+  {const best=new Map();items.forEach(it=>{if(!it.xa||!it.m||!it.m.ngay||!it.m.nam)return;const o=best.get(it.key);if(!o||(o.pdf&&!it.pdf))best.set(it.key,it)});best.forEach(it=>tbSave(kind,it))}
+  stash();
+  const sig=u=>u[fld].map(x=>x.entId+':'+x.xa).join(),oldSig=new Map(S.U.map(u=>[u.key,sig(u)]));
+  S.U.forEach(u=>{u[fld]=[];if(prev)W(u).prev[kind]=null});
+  items.forEach(it=>{
+    let u=S.U.find(x=>x.key===it.key);
+    if(!u){
+      if(prev)notes.push(`Tệp cùng kỳ có "${it.xa||it.name}" nhưng chưa có tệp thu, chi năm nay của đơn vị này, web vẫn giữ dòng để bạn biết còn thiếu.`);
+      u=newU(it.key,it.xa);u.unknown=!!it.unknown;u.ma=it.ma;S.U.push(u);
+    }
+    u[fld].push(it);
+  });
+  S.U.forEach(u=>{u[fld].sort((a,b)=>a.pdf-b.pdf);if(oldSig.get(u.key)!==sig(u))u.gen=false});
+  const was=S.cur;
+  S.U=S.U.filter(u=>u.thuG.length||u.chiG.length||u.pthuG.length||u.pchiG.length||u.opened||u.pcOnly);
+  S.U.sort((a,b)=>(stt96(a.xa)||999)-(stt96(b.xa)||999)||a.xa.localeCompare(b.xa,'vi'));
+  if(!S.U.length){S.cur='';Object.assign(S,{thu:null,chi:null,paras:[],dt:null,tables:null,dtSrc:'',prev:{thu:null,chi:null},src:{thu:[],chi:[]},hide:null,ck:{},rep:'',info:{xa:'',ngay:'',thang:'',nam:S.info.nam},auto:{}})}
+  else if(!S.U.find(u=>u.key===was))pull(S.U[0]);
+  S.U.forEach(u=>syncUnit(u));
+  const firstM=(S.U.map(u=>(u.thuG[0]||u.chiG[0]||{}).m).find(x=>x&&x.nam)||{});
+  if(!prev&&firstM.nam&&!S.namUser){S.U.forEach(u=>{const w=W(u);w.info.nam=firstM.nam;w.auto.nam=true;loadSavedFor(w)})}
+  /* kết quả đọc gắn vào từng tệp (fm, theo mã tệp); phần đối chiếu chi tiết và các lưu ý chung nằm dưới ô */
+  const lines=[];let bad=false;
+  const fm={},addM=(it,t,k)=>{if(!it)return;(fm[it.entId]=fm[it.entId]||[]).push({t,k});if(k==='bad')bad=true};
+  S.U.forEach(u=>{
+    const g=u[fld],xa=u.xa||'Đơn vị chưa rõ';
+    for(let i=1;i<g.length;i++){
+      const d=kind==='thu'?E.diffThu(g[0].res,g[i].res):E.diffChi(g[0].res,g[i].res);
+      if(!d.length)addM(g[i],`khớp hoàn toàn với ${g[0].name}`,'ok');
+      else{addM(g[i],`lệch ${d.length} chỗ so với ${g[0].name}, cần kiểm tra`,'bad');lines.push(`${g[i].name} lệch so với ${g[0].name}:`,...d.slice(0,8).map(x=>' · '+x))}
+    }
+    if(g.length===1&&g[0].pdf)addM(g[0],'chỉ có tệp PDF, chọn thêm tệp Excel để đối chiếu','info');
+    const ck=g[0]&&g[0].res.chk;
+    if(ck){if(Math.abs(ck.target-ck.sum)>3)addM(g[0],chkMsg(ck,`${xa}: `),'bad');else addM(g[0],`${xa}: khớp đủ`,'ok')}
+    if(g[0]&&g[0].noTw)addM(g[0],'chưa có tệp NSTW đi kèm nên thu NSNN chỉ gồm phần NSĐP, chọn thêm tệp NSTW nếu cần','bad');
+    if(prev&&g[0]&&g[0].m.nam&&g[0].m.nam>=S.info.nam)addM(g[0],'tệp này có vẻ không phải năm trước','bad');
+  });
+  (S.fileMsg=S.fileMsg||{})[id]=fm;
+  notes.forEach(x=>lines.push(x));
+  chk(el,id,lines,bad||notes.length>0||L.some(e=>e.err));
+  renderFiles(el,id);fillInfo(el);renderUnits(el);renderDt(el);
+  if(!genUnits().length){const o=$('#out',el);if(o)o.innerHTML=''}else if(!genUnits().find(u=>u.key===S.cur)){activate(genUnits()[0].key);fillInfo(el);showOut(el,1)}else showOut(el,1);
+}
+/* đưa dữ liệu từ các tệp vào trạng thái làm việc của đơn vị */
+function syncUnit(u){
+  const w=W(u),set=(f,v)=>{if(v==null||v==='')return;if(!w.info[f]||w.auto[f]){w.info[f]=v;w.auto[f]=true}};
+  w.thu=u.thuG.length?u.thuG[0].res:(u.opened?w.thu:null);
+  w.chi=u.chiG.length?u.chiG[0].res:(u.opened?w.chi:null);
+  if(u.pthuG.length)w.prev.thu=u.pthuG[0].res;if(u.pchiG.length)w.prev.chi=u.pchiG[0].res;
+  w.src={thu:u.thuG,chi:u.chiG};
+  const m=(u.thuG[0]||u.chiG[0]||{}).m;
+  set('xa',u.xa);
+  if(m&&m.ngay){set('ngay',dmy(m));set('thang',m.thang)}else if(m&&m.thang)set('thang',m.thang);
+  autoPrev(u,w);
+  loadSavedFor(w);
+}
+
+/* ---- dự toán: lấy từ kho (mục Dự toán đầu năm) theo tên đơn vị và năm ---- */
+function loadSavedFor(w){
+  const s=w.info.xa?TC.dt.get(w.info.xa,w.info.nam):null;
+  if(s&&s.tables){w.tables=clone(s.tables);w.dtSrc='saved';w.savedAt=s.savedAt||'';return true}
+  /* bảng thảo luận: kho chưa có dự toán thì lấy dự toán năm nay trong bảng Tỷ lệ phân cấp (chỉ phần thu) */
+  if(S.kind==='td'&&w.info.xa){const pc=pcGet(w),t=pc&&TC.plFromPC(pc,w.info.xa,0);
+    if(t){w.tables=t;w.dtSrc='pc';w.savedAt=pc.ts?new Date(pc.ts).toLocaleString('vi-VN'):'';return true}}
+  if(w.dtSrc==='saved'||w.dtSrc==='pc'||w.tables&&!w.dt){w.tables=null}
+  w.dtSrc='';w.savedAt='';return false;
+}
+const loadSaved=()=>loadSavedFor(S);
+function wire(el){
+  el.querySelectorAll('button[data-pick]').forEach(b=>b.onclick=()=>{S.repl='';$('#'+b.dataset.pick,el).click()});
+  el.querySelectorAll('button[data-repl]').forEach(b=>b.onclick=()=>{S.repl=b.dataset.repl;$('#f-'+b.dataset.repl,el).click()});
+  const dg=$('#b-dtgo',el);if(dg)dg.onclick=goDt;
+  [['thu','thu'],['chi','chi'],['pthu','pthu'],['pchi','pchi'],['all','all']].forEach(([id])=>{
+    const i=$('#f-'+id,el);if(!i)return;i.onchange=async e=>{const fs=[...e.target.files];e.target.value='';if(fs.length){if(S.repl===id){S.files[id]=[];delete S.fileWarn[id]}S.repl='';await addFiles(el,id,fs)}};
+    const d=$('#d-'+id,el),db=$(`button[data-dir=${id}]`,el),box=$('#fb-'+id,el);
+    if(d&&db){db.onclick=()=>d.click();d.onchange=async e=>{const fs=[...e.target.files];e.target.value='';if(fs.length)await addFiles(el,id,fs)}}
+    if(box){
+      box.ondragover=e=>{e.preventDefault();box.classList.add('drag')};box.ondragleave=()=>box.classList.remove('drag');
+      box.ondrop=async e=>{e.preventDefault();box.classList.remove('drag');
+        const its=[...(e.dataTransfer.items||[])].map(x=>x.webkitGetAsEntry&&x.webkitGetAsEntry()).filter(Boolean),out=[];
+        try{if(its.length){for(const en of its)await readEntry(en,'',out)}else out.push(...e.dataTransfer.files)}catch(err){out.push(...e.dataTransfer.files)}
+        if(out.length)await addFiles(el,id,out)}}});
+  const tg=(id,sec,key)=>{$(id,el).onclick=()=>{S[key]=!S[key];$(sec,el).hidden=!S[key];const b=$(id,el);b.setAttribute('aria-expanded',S[key]);b.textContent=b.textContent.replace(/[▴▾]$/,S[key]?'▴':'▾')}};
+  tg('#t-cmp','#sec-cmp','showCmp');
+  $('#f-bieu',el).onchange=async e=>{const f=e.target.files[0];if(!f)return;const c=$('#chk-bieu',el);
+    try{S.bieu=await E.parseBieu(f);const b=$('#fb-bieu',el);b.classList.add('ok');$('.nm',b).textContent='Đã nạp: '+f.name;
+      $('#cmpbox',el).hidden=false;$('#bd',el).textContent=S.bieu.ngay||'?';if(S.bieu.tinhNsnn)$('#t-nsnn',el).value=fmt(S.bieu.tinhNsnn);
+      c.textContent='Đã đọc biểu '+S.bieu.n+' xã, phường.';c.style.color=''}catch(err){c.textContent=err.message;c.style.color='var(--bad)'}};
+  $('#i-nam',el).onchange=async()=>{const v=+$('#i-nam',el).value;if(!v)return;S.namUser=true;S.info.nam=v;S.U.forEach(u=>{W(u).info.nam=v});await reRoute(el,v);S.info.nam=v;S.U.forEach(u=>{W(u).info.nam=v;loadSavedFor(W(u))});fillInfo(el);renderUnits(el)};
+  $('#o-lv',el).onclick=()=>runAll(el);
+  const opc=$('#o-pc',el);if(opc)opc.onclick=()=>{S.tdOpen=!tdOpen();const p=$('#tpick',el),b=opc;p.hidden=!S.tdOpen;b.classList.toggle('on',S.tdOpen);b.setAttribute('aria-expanded',S.tdOpen);if(S.tdOpen){tdPickBox(el);p.scrollIntoView({behavior:'smooth',block:'start'})}};
+  const psy=$('#pc-sync',el);if(psy)psy.onclick=async()=>{const old=psy.textContent;psy.disabled=true;psy.textContent='Đang đồng bộ…';
+    const ok=!TC.srv.on||(await TC.srv.flush()&&await TC.srv.pull(false,true));psy.disabled=false;psy.textContent=old;
+    if(!ok)return TC.toast('Chưa đồng bộ được, kiểm tra mạng rồi thử lại.',1);
+    pcChanged(el);TC.toast(TC.store.get('pc:'+(S.info.nam+1),null)||pcFiles(S.info.nam+1).length?'Đã đồng bộ số mới nhất':'Chưa có số để đồng bộ: app Tỷ lệ phân cấp chưa gửi số nào lên máy chủ')};
+  const pgo=$('#pc-goi',el);if(pgo)pgo.onclick=()=>pcGoi(el);
+  const pci=$('#f-pc',el);if(pci)pci.onchange=async e=>{const fs=[...e.target.files];e.target.value='';if(!fs.length)return;
+    const st=$('#pc-st',el),y=S.info.nam+1;st.textContent='Đang đọc…';st.style.color='';
+    const cur=pcFiles(y),errs=[];let added=0;
+    for(const f of fs){
+      try{const r=await TC.parsePhanCap(f),i=cur.findIndex(x=>x.name===r.name);
+        if(i>=0){cur[i]=r;added++}else if(cur.length>=PCMAX)errs.push(f.name+': đã đủ '+PCMAX+' tệp, bỏ bớt tệp cũ rồi chọn lại');else{cur.push(r);added++}}
+      catch(err){errs.push(f.name+': '+err.message)}}
+    TC.store.set('pcf:'+y,cur);pcChanged(el);if(added)TC.log('Nạp tỷ lệ phân cấp','năm '+y+' · '+added+' tệp');
+    if(errs.length){st.innerHTML=errs.map(x=>'• '+esc(x)).join('<br>');st.style.color='var(--bad)';TC.toast(errs[0],1)}
+    else TC.toast('Đã nạp '+added+' tệp Tỷ lệ phân cấp')};
+}
+
+/* tạo nội dung báo cáo cho một đơn vị; trả về chuỗi lỗi nếu chưa đủ dữ liệu */
+function genUnit(u,el){
+  const w=W(u);u.gen=false;
+  if(!w.thu||!w.chi)return 'thiếu số liệu '+(!w.thu&&!w.chi?'thu và chi':!w.thu?'thu':'chi');
+  const d=E.deriveDt(w.tables||{});
+  const dt={thu:{},chi:d.chi&&d.chi.tong?d.chi:{tong:0,dtpt:0,tx:0}};
+  KEYS.forEach(k=>{dt.thu[k]=(d.thu&&d.thu[k])||{nsnn:0,nsdp:0}});
+  if(!dt.thu.tong.nsnn||!dt.chi.tong)return 'chưa có dự toán năm '+w.info.nam+' (bấm mũi tên ở cột Dự toán để nhập)';
+  if(!w.info.xa||!w.info.ngay||!w.info.thang)return 'thiếu tên đơn vị, ngày số liệu hoặc kỳ báo cáo';
+  w.dt=dt;
+  let cmp=null;
+  if(S.bieu&&$('#c-use',el)&&$('#c-use',el).checked){
+    cmp=E.compare(S.bieu,w.info.xa.replace(/^xã/i,'Xã').replace(/^phường/i,'Phường'),null);
+    if(cmp){cmp.nc=S.bieu.chi.length;cmp.ngay=S.bieu.ngay;cmp.tinh={nsnn:TC.numVal($('#t-nsnn',el).value),nsdp:TC.numVal($('#t-nsdp',el).value),chi:TC.numVal($('#t-chi',el).value)}}
+  }
+  w.paras=E.gen({thu:w.thu,chi:w.chi,dt:w.dt,thang:w.info.thang,nam:w.info.nam,xaName:xaTitle(w.info.xa),ngayStr:w.info.ngay,cmp});
+  w.hide=null;const k=repKeyOf(w);w.rep=TC.store.get(k,null)?k:'';w.dirty=true;u.gen=true;
+  return '';
+}
+function runAll(el){
+  readInfo(el);stash();
+  const skipped=[];
+  S.U.forEach(u=>{const e=(S.kind==='td'?genTd:genUnit)(u,el);if(e)skipped.push(`${canon(W(u).info.xa||u.xa)||'Đơn vị chưa rõ tên'}: ${e}`)});
+  const ok=genUnits();
+  S.runWarn=S.U.length?skipped:[S.kind==='td'?'Chưa chọn địa bàn nào. Bấm ô Tạo bảng thảo luận thu không cần dữ liệu thực hiện ở mục 2 để tích xã, phường cần xuất, hoặc chọn tệp ở mục 1.':'Chưa có file thu và file chi. Chọn tệp ở mục 1 (Nhập dữ liệu).'];
+  renderWarn1(el);
+  if(!ok.length){
+    renderUnits(el);renderDt(el);const o=$('#out',el);if(o)o.innerHTML='';
+    const w=$('#warn1',el);if(w)w.scrollIntoView({behavior:'smooth',block:'center'});
+    return TC.toast('Chưa đủ dữ liệu, xem chữ đỏ ở mục 1 Nhập dữ liệu',1)}
+  if(!ok.find(u=>u.key===S.cur))activate(ok[0].key);
+  S.skipped=skipped;
+  if(!S.gOnUser){const hp=ok.some(u=>{const w=W(u);return w.prev.thu||w.prev.chi});S.gOn.ck=S.gOn.tc=hp?1:0}
+  fillInfo(el);renderUnits(el);renderDt(el);
+  showOut(el);S.dirty=true;repStat();
+  if(skipped.length){TC.toast(`Đã tạo ${ok.length} đơn vị, còn ${skipped.length} đơn vị chưa đủ dữ liệu (xem chữ đỏ ở mục 1)`,1)}
+}
+/* ---- xem trước và xuất báo cáo làm việc xã phường ---- */
+const eff=()=>{const f={};Object.keys(S.cols).forEach(k=>{f[k]=S.cols[k]&&S.gOn[k.slice(0,2)]?1:0});return f};
+const emptyRow=r=>!r.b&&['dt','th','ck'].every(g=>!r[g]||(!r[g].nsnn&&!r[g].nsdp));
+const ctxW=(w,noHide)=>({thu:w.thu,chi:w.chi,tables:w.tables,info:w.info,dt:w.dt,prev:(w.prev.thu||w.prev.chi)?w.prev:null,ck:w.ck,flags:eff(),hide:noHide?new Set():hideOf(w)});
+const ctxOf=()=>ctxW(S);
+function hideOf(w){
+  if(!w.hide){w.hide=new Set();const ctx=ctxW(w,1);[...TC.modelThu(ctx),...TC.modelChi(ctx)].forEach(r=>{if(emptyRow(r))w.hide.add(r.id)})}
+  return w.hide;
+}
+function summaryRows(){
+  const t=S.thu,c=S.chi,d=S.dt,pt=S.prev.thu,pc=S.prev.chi,tb=S.info.thang/12;
+  const rows=[],add=(stt,name,b,dtv,thv,ckv,only)=>rows.push({id:'s'+rows.length,stt,name,b,i:0,dt:dtv,th:thv,ck:ckv||null,nsdpOnly:only});
+  add('1','Tổng thu NSNN trên địa bàn',1,d.thu.tong,t.total,pt&&pt.total);
+  add('2','Thu trừ tiền sử dụng đất, XSKT',1,{nsnn:d.thu.tong.nsnn-d.thu.tsdd.nsnn,nsdp:d.thu.tong.nsdp-d.thu.tsdd.nsdp},t.ex,pt&&pt.ex);
+  add('3','Thu tiền sử dụng đất',0,d.thu.tsdd,t.tsdd,pt&&pt.tsdd);
+  const low=E.lowItems(t,d,tb);
+  rows.push({id:'s'+rows.length,stt:'4',name:`Các khoản thu chưa đạt ${S.info.thang>=12?'dự toán':'tiến độ bình quân ('+Math.round(tb*100)+'%)'}`,b:1,i:0,dt:null,th:{},ck:null,head:1});
+  low.forEach((x,i)=>{const pm=pt?E.itemMap(pt)[x.k]:null;add(String.fromCharCode(97+i),E.NAMES[x.k].replace(/^./,m=>m.toUpperCase()),0,x.dt,x.th,pm)});
+  add('5','Tổng chi NSĐP',1,{nsdp:d.chi.tong},{nsdp:c.total},pc&&{nsdp:pc.total},1);
+  add('','Chi đầu tư phát triển',0,{nsdp:d.chi.dtpt},{nsdp:c.dtpt},pc&&{nsdp:pc.dtpt},1);
+  add('','Chi thường xuyên',0,{nsdp:d.chi.tx},{nsdp:c.tx},pc&&{nsdp:pc.tx},1);
+  rows.forEach(r=>applyCk(r));
+  return rows;
+}
+function applyCk(r){
+  ['nsnn','nsdp'].forEach(sub=>{const k=r.id+sub;if(k in S.ck){const v=S.ck[k];r.ck=Object.assign({},r.ck||{});r.ck[sub]=v}});
+}
+const pcs=v=>v==null?'':v===0?'-':(Math.round(v*10000)/100).toFixed(2).replace('.',',')+'%';
+const fz=v=>v==null?'':v===0?'-':fmt(v);
+/* ba cột đầu (Xuất, STT, Nội dung) và các dòng tiêu đề dính cố định khi kéo bảng */
+function tblHtml(rows,only){
+  const cols=TC.colsOf(eff(),!!only),info=S.info;
+  const gs=TC.GROUPS.map(([g])=>({g,n:cols.filter(c=>c.g===g).length})).filter(x=>x.n);
+  const ths=`<tr><th rowspan="${only?1:2}" class="sx sx1">Xuất</th><th rowspan="${only?1:2}" class="sx sx2">STT</th><th rowspan="${only?1:2}" class="sx sx3">Nội dung</th>${gs.map(x=>`<th colspan="${x.n}">${esc(TC.gLabel(x.g,info))}</th>`).join('')}</tr>${only?'':`<tr class="h2">${cols.map(c=>`<th>${c.sub==='nsnn'?'NSNN':'NSĐP'}</th>`).join('')}</tr>`}`;
+  const body=rows.map(r=>{
+    const off=S.hide.has(r.id);
+    const tds=cols.map(c=>{
+      const v=TC.cellVal(r,c.g,c.sub),isP=c.g==='tl'||c.g==='tc';
+      if(r.head)return '<td></td>';
+      if(r.nsdpOnly&&c.sub==='nsnn')return '<td></td>';
+      if(c.g==='ck'&&!r.head)return `<td class="n"><input class="ni ck" inputmode="numeric" data-id="${r.id}" data-sub="${c.sub}" value="${fz(v)}"></td>`;
+      return `<td>${isP?pcs(v):fz(v)}</td>`;
+    }).join('');
+    return `<tr class="${r.b?'rb':''}${r.i?' ri':''}${off?' off':''}"><td class="c sx sx1"><input type="checkbox" data-r="${r.id}" ${off?'':'checked'} aria-label="Xuất dòng ${esc(r.name)}"></td><td class="c sx sx2">${esc(r.stt)}</td><td class="sx sx3" style="text-align:left">${esc(r.name)}</td>${tds}</tr>`;
+  }).join('');
+  return `<table class="t dtab prev">${ths}${body}</table>`;
+}
+/* dòng tiêu đề thứ hai dính ngay dưới dòng thứ nhất: đo chiều cao thật rồi đặt top */
+function fixHead(o){o.querySelectorAll('table.prev').forEach(t=>{const r=t.rows;if(r.length<2||!r[1].classList.contains('h2'))return;const h=r[0].offsetHeight;r[1].querySelectorAll('th').forEach(th=>th.style.top=h+'px')})}
+const fitTa=a=>{a.style.height='auto';a.style.height=(a.scrollHeight+2)+'px'};
+/* tự co chữ để bảng tổng hợp vừa khung lần đầu hiển thị; bấm − + thì bỏ tự co, bấm "Vừa khung" để co lại */
+function fitS(o){
+  const box=$('#pv-s',o),t=box&&box.querySelector('table.prev');if(!t||!box.clientWidth)return;
+  let f=13;const meas=()=>{box.style.fontSize=f+'px';t.style.minWidth='0';t.style.width='max-content';const w=t.offsetWidth;t.style.minWidth='';t.style.width='';return w};
+  for(let k=0;k<3;k++){const w=meas(),c=box.clientWidth-3;if(Math.abs(w-c)<=2&&w<=c)break;f=Math.max(8,Math.min(14,f*c/w))}
+  while(f>8&&meas()>box.clientWidth-3)f-=.25;
+  box.style.fontSize=f+'px';S.z.S=Math.round(f/14*100);const v=$('#zv-S',o);if(v)v.textContent=S.z.S+'%';fixHead(o);
+}
+function applyZ(o){
+  o.querySelectorAll('.zbox').forEach(x=>{if(!(x.dataset.z==='S'&&S.fitS))x.style.fontSize=(14*S.z[x.dataset.z]/100)+'px'});
+  ['S','W','D','T'].forEach(k=>{const v=$('#zv-'+k,o);if(v)v.textContent=S.z[k]+'%'});
+  if(S.fitS)fitS(o);
+  fixHead(o);o.querySelectorAll('textarea[data-p]').forEach(fitTa);
+}
+const zbar=k=>`<span class="zbar">${k==='S'?'<button class="btn sm" id="z-fit">Vừa khung</button>':''} Cỡ bảng <button class="btn sm" data-zm="${k}" aria-label="Thu nhỏ">−</button><b id="zv-${k}">${S.z[k]}%</b><button class="btn sm" data-zp="${k}" aria-label="Phóng to">+</button></span>`;
+function drawPrev(o){
+  S.dirty=true;repStat();
+  const ctx=ctxOf();
+  const thuR=TC.modelThu(ctx),chiR=TC.modelChi(ctx),sumR=summaryRows();
+  S._m={thuR,chiR,sumR};
+  const box=$('#pv',o);
+  $('#pv-s',o).innerHTML=tblHtml(sumR);
+  $('#pv-tabs',o).innerHTML=[['thu','Thu'],['chi','Chi']].map(([k,n])=>`<button data-d="${k}" aria-selected="${S.dsub===k}">${n}</button>`).join('');
+  $('#pv-d',o).innerHTML=tblHtml(S.dsub==='thu'?thuR:chiR,S.dsub==='chi');
+  box.querySelectorAll('.subtabs button').forEach(b=>b.onclick=()=>{S.dsub=b.dataset.d;drawPrev(o)});
+  box.querySelectorAll('input[type=checkbox][data-r]').forEach(c=>c.onchange=()=>{c.checked?S.hide.delete(c.dataset.r):S.hide.add(c.dataset.r);drawPrev(o)});
+  box.querySelectorAll('input.ck').forEach(i=>i.onchange=()=>{const v=i.value.trim();S.ck[i.dataset.id+i.dataset.sub]=v===''?null:TC.numVal(v);if(v==='')delete S.ck[i.dataset.id+i.dataset.sub];drawPrev(o)});
+  fixHead(o);if(S.fitS)fitS(o);
+}
+/* khung nội dung Word: phần thu chỉ hiện đoạn (1), bấm "Hiện thêm" để mở các đoạn còn lại */
+function drawWord(o){
+  const P=S.paras,iChi=P.findIndex(p=>/^\(2\)\s+Về chi/i.test(p.text)),thu=[],cmp=[];
+  P.forEach((p,i)=>{if(i===0)return;if(i<iChi)thu.push(i);else if(i>iChi)cmp.push(i)});
+  const ta=i=>`<textarea data-p="${i}" rows="${Math.max(2,Math.ceil(P[i].text.length/60))}" style="${P[i].h?'font-weight:700':''}">${esc(P[i].text)}</textarea>`;
+  const pbox=(title,idx,extra)=>idx.length?`<div class="pbox"><div class="pt">${title}</div>${idx.map(ta).join('')}${extra||''}</div>`:'';
+  const more=thu.length>1?`<button class="btn sm" id="w-more" aria-expanded="${S.thuMore}">${S.thuMore?'Thu gọn ▴':`Hiện thêm (${thu.length-1} đoạn) ▾`}</button>`:'';
+  $('#pv-w',o).innerHTML=pbox('Tiêu đề',[0])+pbox('Phần thu',S.thuMore?thu:thu.slice(0,1),more)+pbox('Phần chi',iChi>=0?[iChi]:[])+pbox('Phần so sánh với tỉnh và 96 xã, phường',cmp);
+  const m=$('#w-more',o);if(m)m.onclick=()=>{S.thuMore=!S.thuMore;drawWord(o)};
+  o.querySelectorAll('textarea[data-p]').forEach(a=>{fitTa(a);a.oninput=()=>{S.paras[+a.dataset.p].text=a.value;fitTa(a);S.dirty=true;repStat()}});
+}
+function showOut(el,quiet){return S.kind==='td'?showTd(el,quiet):showOutD(el,quiet)}
+function showOutD(el,quiet){
+  const o=$('#out',el),t=S.thu,c=S.chi,d=S.dt,tb=S.info.thang/12;
+  if(!t||!c||!d||!S.paras.length){o.innerHTML='';return}
+  if(!S.cols)S.cols=TC.defaultCols();
+  hideOf(S);
+  const gu=genUnits();
+  /* không có số cùng kỳ (tệp năm trước hay số gõ tay) thì mặc định ẩn hai nhóm cột cùng kỳ, trừ khi người dùng tự tích lại */
+  if(!S.gOnUser){const hp=gu.some(u=>{const w=W(u);return w.prev.thu||w.prev.chi||Object.values(w.ck||{}).some(v=>v!=null)});S.gOn.ck=S.gOn.tc=hp?1:0}
+  const bars=[['Tổng thu NSNN',t.total.nsnn,d.thu.tong.nsnn],['Tổng thu NSNN trừ đất',t.ex.nsnn,d.thu.tong.nsnn-d.thu.tsdd.nsnn],['Tổng thu NSĐP trừ đất',t.ex.nsdp,d.thu.tong.nsdp-d.thu.tsdd.nsdp],['Tiền sử dụng đất (NSNN)',t.tsdd.nsnn,d.thu.tsdd.nsnn],['Tiền sử dụng đất (NSĐP)',t.tsdd.nsdp,d.thu.tsdd.nsdp],['Tổng chi NSĐP',c.total,d.chi.tong],['Chi đầu tư phát triển',c.dtpt,d.chi.dtpt],['Chi thường xuyên',c.tx,d.chi.tx]];
+  const warns=[];
+  [['thu',t],['chi',c]].forEach(([k,x])=>{if(x.chk&&Math.abs(x.chk.target-x.chk.sum)>3)warns.push(chkMsg(x.chk,`Tệp ${k}: `))});
+  if((S.skipped||[]).length)warns.push(`Còn ${S.skipped.length} đơn vị chưa đủ dữ liệu nên chưa có báo cáo. Xem chữ đỏ ở mục 1 Nhập dữ liệu.`);
+  const colChk=['dt','th','tl','ck','tc'].map(g=>`<div class="cgrp"><label class="ck"><input type="checkbox" data-g="${g}" ${S.gOn[g]?'checked':''}><b>${{dt:'Dự toán',th:'Thực hiện',tl:'Tỷ lệ TH/DT',ck:'Cùng kỳ',tc:'So cùng kỳ'}[g]}</b></label> ${['N','D'].map(s=>`<label class="ck"><input type="checkbox" data-c="${g+s}" ${S.cols[g+s]?'checked':''} ${S.gOn[g]?'':'disabled'}>${s==='N'?'NSNN':'NSĐP'}</label>`).join('')}</div>`).join('');
+  const tabs=gu.length>1?`<div class="subtabs utabs" role="tablist" aria-label="Chọn đơn vị để xem trước">${gu.map(u=>`<button role="tab" data-u="${esc(u.key)}" aria-selected="${u.key===S.cur}">${esc(canon(W(u).info.xa))}${W(u).dirty?' •':''}</button>`).join('')}</div>`:'';
+  const mode=(name,key,lab,sepT,mergeT)=>`<span class="xmode" style="margin-left:0"><b>${lab}:</b><label class="ck"><input type="radio" name="${name}" value="sep" ${S[key]!=='merge'?'checked':''}> ${sepT}</label><label class="ck"><input type="radio" name="${name}" value="merge" ${S[key]==='merge'?'checked':''}> ${mergeT}</label></span>`;
+  const expo=`<div class="xpanel"><button class="btn ok" id="x-word">Xuất báo cáo Word</button><button class="btn pri" id="x-xls">Xuất bảng thu chi Excel</button><button class="btn pri" id="x-both">Xuất cả Word và Excel</button>${gu.length>1?TC.tip(`Có ${gu.length} đơn vị. Chọn cách xuất cho từng loại. Một lần xuất ra nhiều tệp thì web nén thành <b>một tệp .zip</b> để tải một lần. Chung: một tệp Excel nhiều sheet (Thu-A, Chi-A, Thu-B, Chi-B).`):''}${gu.length>1?`<div class="xmodes">${mode('ew','expW','Word',`Riêng, nén .zip (${gu.length} tệp)`,'Chung, một tệp')}${mode('ex','expX','Excel',`Riêng, nén .zip (${gu.length} tệp)`,'Chung, một tệp nhiều sheet')}</div>`:''}</div>`;
+  o.innerHTML=`<div class="card"><div class="step"><b>✓</b><h2 style="margin:0">Báo cáo thu chi hàng ngày</h2></div>
+  ${tabs}
+  ${warns.map(w=>`<div class="warn">${esc(w)}</div>`).join('')}
+  <div class="muted" style="display:flex;align-items:center">${TC.tip(`Vạch đỏ là ${S.info.thang>=12?'mức 100% dự toán':'tiến độ bình quân '+Math.round(tb*100)+'% ('+S.info.thang+'/12 tháng)'}. Thanh dài tối đa 150% dự toán.`)}Tỷ lệ thực hiện so với dự toán</div>
+  <div class="bars">${bars.map(([n,a,b])=>{const r=b?a/b:0;return `<div class="bar"><span>${n}</span><span class="tr"><i style="width:${Math.min(100,r*100/1.5)}%"></i><s style="left:${Math.min(100,tb*100/1.5)}%"></s></span><b>${pct(r)}%</b></div>`}).join('')}</div>
+  <h3>Chọn cột sẽ hiển thị và xuất <span class="muted" style="font-weight:400">(đơn vị triệu đồng)</span></h3>
+  <div class="colsel">${colChk}</div>
+  <div class="row" style="margin:8px 0"><button class="btn sm" id="r-all">Hiện tất cả dòng</button><button class="btn sm" id="r-emp">Ẩn dòng không có số liệu</button>${TC.tip('Bỏ tích ở đầu dòng để không xuất dòng đó. Ô cùng kỳ gõ được.')}</div>
+  <div class="row viewctl"><span>Chia khung <input type="range" id="sp-r" min="25" max="75" step="5" value="${S.split}" style="width:130px" aria-label="Tỷ lệ chiều rộng của bảng tổng hợp so với nội dung Word"> <b id="sp-v">${S.split}% | ${100-S.split}%</b></span>
+   ${TC.tip('Mỗi khung có thanh cuộn và nút cỡ bảng riêng. Ba cột đầu của bảng giữ cố định khi kéo ngang.')}</div>
+  <div id="pv">
+   <div class="split" style="grid-template-columns:minmax(0,${S.split}fr) minmax(0,${100-S.split}fr)">
+    <div class="pane"><div class="phead"><h3 style="margin:0">Bảng tổng hợp (như nội dung Word)</h3>${zbar('S')}</div><div id="pv-s" class="wscroll zbox" data-z="S"></div>
+     <div class="row" style="margin-top:8px"><button class="btn" id="x-chk">Kiểm tra số liệu Word với bảng Excel</button></div><div id="chkres"></div></div>
+    <div class="pane"><div class="phead"><h3 style="margin:0">Nội dung báo cáo Word <span class="muted" style="font-weight:400">(sửa trực tiếp được)</span></h3>${zbar('W')}</div><div id="pv-w" class="wscroll zbox" data-z="W"></div></div></div>
+   <div class="phead" style="margin-top:14px"><h3 style="margin:0">Bảng thu chi chi tiết (theo mẫu Excel)</h3>${zbar('D')}</div>
+   <div class="subtabs" id="pv-tabs"></div><div id="pv-d" class="wscroll zbox" data-z="D"></div></div>
+  <div class="warn">Làm tròn từng khoản về triệu đồng rồi cộng lại, nên tổng có thể lệch 1 triệu so với bảng tay. Hãy rà lại các số trước khi gửi.</div>
+  ${expo}
+  <div class="xpanel save"><button class="btn pri" id="x-fin">Lưu báo cáo thu chi hàng ngày</button>${TC.tip('Mỗi đơn vị lưu một báo cáo riêng. Mở lại thì tích chọn nhiều báo cáo, rồi chọn xuất riêng hay chung.')}</div>
+  <div id="dlres" style="margin-top:8px"></div><div id="repstat" style="margin-top:8px"></div></div>`;
+  S.fitS=1;drawPrev(o);drawWord(o);applyZ(o);S.dirty=false;repStat();
+  o.querySelectorAll('.utabs button').forEach(b=>b.onclick=()=>{const y=window.scrollY;activate(b.dataset.u);fillInfo(el);renderUnits(el);renderDt(el);showOut(el,1);window.scrollTo(0,y)});
+  o.querySelectorAll('input[name=ew]').forEach(r=>r.onchange=()=>{S.expW=r.value});
+  o.querySelectorAll('input[name=ex]').forEach(r=>r.onchange=()=>{S.expX=r.value});
+  o.querySelectorAll('[data-zm]').forEach(b=>b.onclick=()=>{if(b.dataset.zm==='S')S.fitS=0;S.z[b.dataset.zm]=Math.max(50,S.z[b.dataset.zm]-10);applyZ(o)});
+  o.querySelectorAll('[data-zp]').forEach(b=>b.onclick=()=>{if(b.dataset.zp==='S')S.fitS=0;S.z[b.dataset.zp]=Math.min(160,S.z[b.dataset.zp]+10);applyZ(o)});
+  $('#sp-r',o).oninput=e=>{S.split=+e.target.value;$('.split',o).style.gridTemplateColumns=`minmax(0,${S.split}fr) minmax(0,${100-S.split}fr)`;$('#sp-v',o).textContent=`${S.split}% | ${100-S.split}%`;if(S.fitS)fitS(o);fixHead(o);o.querySelectorAll('textarea[data-p]').forEach(fitTa)};
+  $('#z-fit',o).onclick=()=>{S.fitS=1;fitS(o)};
+  $('#x-fin',o).onclick=()=>{if(!TC.auth.can('edit'))return TC.toast('Tài khoản này chỉ được xem, không lưu được',1);const n=saveRep();TC.toast(n>1?`Đã lưu ${n} báo cáo, có sửa thêm thì bấm lại để cập nhật`:'Đã lưu báo cáo, có sửa thêm thì bấm lại để cập nhật')};
+  $('#x-chk',o).onclick=()=>checkWord(o);
+  o.querySelectorAll('input[data-c]').forEach(i=>i.onchange=()=>{S.cols[i.dataset.c]=i.checked?1:0;drawPrev(o)});
+  o.querySelectorAll('input[data-g]').forEach(i=>i.onchange=()=>{S.gOnUser=1;S.gOn[i.dataset.g]=i.checked?1:0;o.querySelectorAll(`input[data-c^="${i.dataset.g}"]`).forEach(c=>c.disabled=!i.checked);drawPrev(o)});
+  $('#r-all',o).onclick=()=>{S.hide=new Set();drawPrev(o)};
+  $('#r-emp',o).onclick=()=>{S.hide=new Set();[...S._m.thuR,...S._m.chiR].forEach(r=>{if(emptyRow(r))S.hide.add(r.id)});drawPrev(o)};
+  const dtag=w=>String(w.info.ngay||'').replace(/\//g,'.');
+  const nm=(ext,w)=>`${ext==='docx'?'Bao cao thu chi ngan sach':'Thu-Chi'} ${w.info.xa} ${dtag(w)}.${ext}`;
+  const nmAll=ext=>`${ext==='docx'?'Bao cao thu chi ngan sach':'Thu-Chi'} ${gu.length} don vi ${dtag(W(gu[0]))}.${ext}`;
+  const mkWord=async()=>{
+    if(gu.length>1&&S.expW==='merge')return [{name:nmAll('docx'),blob:await TC.buildDocx(gu.flatMap(u=>W(u).paras))}];
+    const r=[];for(const u of gu){const w=W(u);r.push({name:nm('docx',w),blob:await TC.buildDocx(w.paras)})}return r};
+  const mkXls=async()=>{
+    if(gu.length>1&&S.expX==='merge')return [{name:nmAll('xlsx'),blob:await TC.buildXlsx(gu.map(u=>ctxW(W(u))))}];
+    const r=[];for(const u of gu){const w=W(u);r.push({name:nm('xlsx',w),blob:await TC.buildXlsx(ctxW(w))})}return r};
+  const showDl=(files,pack)=>dlPanel($('#dlres',o),files,pack);
+  /* mỗi lần bấm chỉ lưu đúng một tệp (nhiều tệp thì nén zip): trình duyệt chỉ cho một lần tải cho mỗi lần bấm */
+  const run=async(kinds,msg)=>{try{
+    stash();let files=[];
+    if(kinds.includes('w'))files.push(...await mkWord());
+    if(kinds.includes('x'))files.push(...await mkXls());
+    let pack=files[0];
+    if(files.length>1){const z=new JSZip(),seen=new Set();files.forEach((f,i)=>{if(seen.has(f.name.toLowerCase()))f.name=f.name.replace(/(\.xlsx)$/i,` (${i+1})$1`);seen.add(f.name.toLowerCase());z.file(f.name,f.blob)});pack={name:`Bao cao thu chi ${gu.length>1?gu.length+' don vi ':''}${dtag(W(gu[0]))}.zip`,blob:await z.generateAsync({type:'blob',compression:'DEFLATE'})}}
+    showDl(files,pack);
+    const r=await TC.download(pack.blob,pack.name);
+    if(r==='rejected')TC.toast('Không lưu được tệp nén ở đây, bấm tải từng tệp ở dưới nút xuất',1);
+    if(r!==false&&r!=='rejected')TC.log('Xuất báo cáo ngày',(kinds.includes('w')?'Word':'')+(kinds.includes('w')&&kinds.includes('x')?' + ':'')+(kinds.includes('x')?'Excel':'')+' · '+unitDesc());
+    saveRep(1);if(r!==false&&r!=='rejected')TC.toast(msg)}catch(e){TC.toast('Lỗi xuất: '+e.message,1)}};
+  $('#x-word',o).onclick=()=>run('w','Đã xuất Word');
+  $('#x-xls',o).onclick=()=>run('x','Đã xuất Excel');
+  $('#x-both',o).onclick=()=>run('wx','Đã xuất Word và Excel');
+  if(!quiet)o.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+/* ---- kho số liệu TABMIS: mỗi lần đọc tệp thu, chi thì lưu số đã đọc theo từng xã và từng ngày số liệu; dùng chung cho cả hai loại báo cáo ---- */
+const tbKey=(xa,m)=>`tb:${nrm(xa).toLowerCase()}:${m.nam}-${String(m.thang).padStart(2,'0')}-${String(m.ngay).padStart(2,'0')}`;
+function tbSave(kind,it){
+  try{
+    const m=it.m,k=tbKey(it.xa,m),old=TC.store.get(k,null)||{xa:canon(it.xa),ngay:dmy(m),thang:m.thang,nam:m.nam};
+    old[kind]=it.res;old[kind+'File']=it.name;old.savedAt=new Date().toLocaleString('vi-VN');old.ts=Date.now();
+    TC.store.set(k,old);
+  }catch(e){}
+}
+/* tìm mốc đã lưu của xã trong tháng thang năm nam, đúng ngày hoặc trước đó không quá tol ngày */
+function tbFind(xa,nam,thang,ngay,tol){
+  if(!xa||!nam||!thang||!ngay)return null;
+  const pre=`tb:${nrm(xa).toLowerCase()}:${nam}-${String(thang).padStart(2,'0')}-`;let best=null,bd=-1;
+  keysOf(pre).forEach(k=>{const d=+k.slice(pre.length);if(d<=ngay&&ngay-d<=tol&&d>bd){bd=d;best=k}});
+  return best?TC.store.get(best,null):null;
+}
+/* số năm trước tự lấy từ kho: báo cáo hàng ngày lấy cùng ngày tháng năm trước (lệch tối đa 3 ngày), bảng thảo luận lấy số cả năm (31/12) */
+function autoPrev(u,w){
+  if(u.opened&&!u.kho)return;
+  ['thu','chi'].forEach(k=>{
+    if(u['p'+k+'G'].length)return;
+    let r=null;
+    if(S.kind==='td')r=tbFind(w.info.xa,w.info.nam-1,12,31,0);
+    else{const m=String(w.info.ngay||'').match(/^(\d{1,2})\//);if(m&&w.info.thang)r=tbFind(w.info.xa,w.info.nam-1,+w.info.thang,+m[1],3)}
+    w.prev[k]=r&&r[k]?r[k]:null;
+    if(r&&r[k])w.prevKho=true;
+  });
+  if(!w.prev.thu&&!w.prev.chi)w.prevKho=false;
+}
+function tbList(){
+  const m=new Map();
+  keysOf('tb:').forEach(k=>{const v=TC.store.get(k,null);if(!v||!v.xa)return;const g=m.get(v.xa)||[];g.push({k,v});m.set(v.xa,g)});
+  m.forEach(g=>g.sort((a,b)=>b.k.localeCompare(a.k)));
+  return [...m.entries()].sort((a,b)=>(stt96(a[0])||999)-(stt96(b[0])||999)||a[0].localeCompare(b[0],'vi'));
+}
+function khoPanel(el){
+  const box=$('#kho',el),L=tbList(),q=(S.kq||'').toLowerCase();
+  const rows=L.filter(([xa])=>!q||xa.toLowerCase().includes(q));
+  box.innerHTML=!L.length?'<div class="muted" style="padding:6px 0">Kho chưa có số liệu. Mỗi lần bạn chọn tệp thu, chi, web tự lưu số vào kho.</div>':`<div class="card" style="background:var(--bg);box-shadow:none"><div class="row" style="margin-bottom:6px"><input type="text" id="k-q" placeholder="Tìm tên đơn vị" value="${esc(S.kq||'')}" style="max-width:220px"><label class="ck"><input type="checkbox" id="k-all" style="width:auto;min-height:0"> Tích tất cả</label><button class="btn sm pri" id="k-add">Thêm các đơn vị đã tích</button></div>
+   <div class="tw"><table class="t"><tr><th></th><th style="text-align:left">Đơn vị</th><th style="text-align:left">Mốc ngày số liệu</th></tr>${rows.map(([xa,g],i)=>`<tr><td><input type="checkbox" class="k-ck" data-i="${i}" style="width:auto;min-height:0" aria-label="Chọn ${esc(xa)}"></td><td style="text-align:left"><b>${esc(xa)}</b></td><td style="text-align:left"><select class="k-sel" data-i="${i}">${g.map(x=>`<option value="${esc(x.k)}">${esc(x.v.ngay)} (${[x.v.thu?'thu':'',x.v.chi?'chi':''].filter(Boolean).join(', ')})</option>`).join('')}</select></td></tr>`).join('')}</table></div></div>`;
+  if(!L.length)return;
+  $('#k-q',box).oninput=e=>{S.kq=e.target.value;const p=e.target.selectionStart;khoPanel(el);const i=$('#k-q',el);i.focus();i.setSelectionRange(p,p)};
+  $('#k-all',box).onchange=e=>box.querySelectorAll('.k-ck').forEach(c=>c.checked=e.target.checked);
+  $('#k-add',box).onclick=()=>{
+    const ks=[...box.querySelectorAll('.k-ck:checked')].map(c=>box.querySelector(`.k-sel[data-i="${c.dataset.i}"]`).value);
+    if(!ks.length)return TC.toast('Tích chọn ít nhất một đơn vị',1);
+    addFromKho(el,ks);TC.toast(`Đã thêm ${ks.length} đơn vị từ kho`)};
+}
+function addFromKho(el,keys){
+  stash();
+  const first=!S.U.length;
+  keys.forEach(k=>{
+    const v=TC.store.get(k,null);if(!v)return;
+    const key=keyOf(v.xa);let u=S.U.find(x=>x.key===key);
+    if(!u){u=newU(key,canon(v.xa));S.U.push(u)}
+    u.opened=true;u.kho=true;u.gen=false;
+    const w=W(u);
+    if(v.thu&&!u.thuG.length)w.thu=v.thu;
+    if(v.chi&&!u.chiG.length)w.chi=v.chi;
+    if(!u.thuG.length&&!u.chiG.length){w.info.xa=canon(v.xa);w.info.ngay=v.ngay;w.info.thang=v.thang;w.info.nam=v.nam;w.auto={}}
+  });
+  S.U.sort((a,b)=>(stt96(a.xa)||999)-(stt96(b.xa)||999)||a.xa.localeCompare(b.xa,'vi'));
+  if(first&&!S.namUser){const w0=S.U[0]&&W(S.U[0]).info;if(w0&&w0.nam)S.info.nam=w0.nam}
+  if(!S.cur&&S.U.length)pull(S.U[0]);
+  S.U.forEach(u=>{const w=W(u);w.info.nam=w.info.nam||S.info.nam;syncUnit(u)});
+  fillInfo(el);renderUnits(el);renderWarn1(el);
+  if(genUnits().length)showOut(el,1);
+}
+/* ---- màn Lưu trữ: dung lượng và xóa bớt ---- */
+const CATS=[['dt','Dự toán đầu năm (phụ lục V, VI, VII)'],['rep','Báo cáo hàng ngày đã lưu'],['td','Bảng thảo luận dự toán đã lưu'],['tb','Số liệu TABMIS (kho số liệu từng xã, từng ngày)'],['pc','Bảng Tỷ lệ phân cấp (bảng gốc từ tab Tỷ lệ phân cấp)'],['pcf','Tệp Tỷ lệ phân cấp nạp thêm (tối đa 5 tệp mỗi năm)']];
+const QUOTA_KB=5120;
+const fmtKb=x=>x>=1024?(x/1024).toFixed(1).replace('.',',')+' MB':Math.round(x)+' KB';
+function storeStats(){
+  const cat={};CATS.forEach(([c])=>cat[c]={n:0,kb:0,items:[]});let other=0,total=0;
+  try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(!k||!k.startsWith('tc_'))continue;
+    const sz=(k.length+(localStorage.getItem(k)||'').length)/1024;total+=sz;const kk=k.slice(3),c=kk.split(':')[0];
+    if(cat[c]){cat[c].n++;cat[c].kb+=sz;cat[c].items.push({k:kk,kb:sz})}else other+=sz}}catch(e){}
+  return {cat,other,total};
+}
+function itemLabel(c,k){
+  const v=TC.store.get(k,{})||{},p=k.split(':');
+  if(c==='dt')return [xaTitle(v.xa||p[1]),'năm '+(v.nam||p[2]),Object.keys(v.tables||{}).map(x=>({thu:'V',chi:'VI',cd:'VII'}[x]||x)).join(', ')?'phụ lục '+Object.keys(v.tables||{}).map(x=>({thu:'V',chi:'VI',cd:'VII'}[x]||x)).join(', '):'',v.savedAt];
+  if(c==='rep')return [xaTitle((v.info||{}).xa||p[1]),'đến '+((v.info||{}).ngay||p[2]),'',v.savedAt];
+  if(c==='td')return [xaTitle((v.info||{}).xa||p[1]),'dự toán '+(((v.info||{}).nam||0)+1),'',v.savedAt];
+  if(c==='tb')return [v.xa?xaTitle(v.xa):p[1],'đến '+(v.ngay||p[2]),[v.thu?'thu':'',v.chi?'chi':''].filter(Boolean).join(', '),v.savedAt];
+  if(c==='pcf')return ['Tệp phân cấp nạp thêm','năm '+p[1]+': '+(Array.isArray(v)?v.map(f=>f.name).join('; '):''),'',Array.isArray(v)&&v.length?new Date(v[v.length-1].ts).toLocaleString('vi-VN'):''];
+  if(c==='pc')return ['Bảng phân cấp',(v.name||'')+' ('+(v.n||'?')+' xã)','năm '+p[1],v.ts?new Date(v.ts).toLocaleString('vi-VN'):''];
+  return [k,'','',''];
+}
+const storeLvl=pc=>pc>=90?'crit':pc>=70?'warnq':'';
+const fmtBytes=b=>b>=1073741824?(b/1073741824).toFixed(1).replace('.',',')+' GB':b>=1048576?(b/1048576).toFixed(1).replace('.',',')+' MB':Math.round(b/1024)+' KB';
+/* chạy trên script: số liệu nằm ở Google Sheet trong Drive của chủ script, hỏi máy chủ dung lượng Drive (nhớ 60 giây) */
+function driveStat(){if(!TC.srv.on)return;const now=Date.now();if(S.driveBusy||(S.driveAt&&now-S.driveAt<60000))return;S.driveBusy=true;
+  TC.srv.call('stat').then(r=>{S.driveBusy=false;S.driveAt=Date.now();S.drive=r&&r.ok?r:{err:(r&&r.msg)||'chưa lấy được'};if(S.storeOpen&&!S.mode&&!S.collapsed&&S.el&&S.el.isConnected)startView(S.el)})}
+function storeBodySrv(st){
+  driveStat();const d=S.drive,ok=d&&!d.err&&d.driveLimit,pc=ok?Math.min(100,Math.max(1,Math.round(d.driveUsed/d.driveLimit*100))):0,lvl=storeLvl(pc);
+  return `<p style="margin:0 0 8px"><span class="chip ok">✓ Đang lưu trên Google Drive của bạn</span> <span class="chip no">Dùng chung mọi tài khoản</span></p>
+   <p style="margin:0 0 8px">Kho dữ liệu dùng chung (Google Sheet): <b>${fmtKb(st.total)}</b>${ok?` · Drive của bạn: <b>${fmtBytes(d.driveUsed)} / ${fmtBytes(d.driveLimit)}</b> (${pc}%)`:d&&d.err?' · Drive: chưa lấy được dung lượng':' · đang lấy dung lượng Drive…'}
+   ${TC.tip('Số liệu lưu ở Google Sheet trong Drive của bạn, còn nhiều chỗ trống. Mức 5 MB cũ chỉ là bộ nhớ đệm tạm của trình duyệt trên từng máy, web tự dọn, không ảnh hưởng dữ liệu thật.')}</p>
+   ${ok?`<div class="bars"><div class="bar"><span>Drive</span><span class="tr"><i style="width:${pc}%;${lvl==='crit'?'background:var(--bad)':lvl?'background:#d97706':''}"></i></span><b>${pc}%</b></div></div>`:''}`;
+}
+function storeBody(st){
+  if(TC.srv.on)return storeBodySrv(st)+storeTable(st)+'<div id="drv-box"></div>';
+  return storeBodyLocal(st)}
+function storeBodyLocal(st){
+  const pc=Math.min(100,Math.round(st.total/QUOTA_KB*100)),open=S.stOpen||'',lvl=storeLvl(pc);
+  return `<p style="margin:0 0 8px">Đã dùng <b>${fmtKb(st.total)} / ${fmtKb(QUOTA_KB)}</b> (${pc}%) trong bộ nhớ của trình duyệt. ${lvl==='crit'?'<b style="color:var(--bad)">Gần hết dung lượng, số liệu mới có thể không lưu được. Xóa bớt phần cũ ngay.</b>':lvl?'<b style="color:#b45309">Đã dùng nhiều, nên xóa bớt phần cũ.</b>':'Còn nhiều chỗ trống.'} Mức tối đa 5 MB là ước tính theo trình duyệt.</p>
+   <div class="bars"><div class="bar"><span>Dung lượng</span><span class="tr"><i style="width:${pc}%;${lvl==='crit'?'background:var(--bad)':lvl?'background:#d97706':''}"></i></span><b>${pc}%</b></div></div>`+storeTable(st);
+}
+function storeTable(st){
+  const open=S.stOpen||'';
+  return `
+   <div class="tw" style="margin-top:10px"><table class="t"><tr><th style="text-align:left">Loại dữ liệu</th><th>Số mục</th><th>Dung lượng</th><th></th></tr>
+   ${CATS.map(([c,n])=>`<tr><td style="text-align:left">${n}</td><td class="c">${st.cat[c].n}</td><td class="c">${fmtKb(st.cat[c].kb)}</td><td><button class="btn sm" data-sc="${c}" aria-expanded="${open===c}">${open===c?'Đóng ▴':'Xem, xóa ▾'}</button></td></tr>${open===c?`<tr class="dtrow"><td colspan="4" style="text-align:left" id="st-box"></td></tr>`:''}`).join('')}
+   <tr><td style="text-align:left">Khác (quy tắc, tài khoản, nhật ký, mã đơn vị)</td><td class="c">–</td><td class="c">${fmtKb(st.other)}</td><td></td></tr></table></div>
+   <p class="muted" style="margin:10px 0 0">Mẹo: xóa số liệu TABMIS cũ trước, mỗi xã chỉ cần giữ vài mốc ngày gần nhất. Trước khi xóa nhiều, bấm "Tải bản sao lưu" ở mục Báo cáo đã lưu để giữ một bản.</p>`;
+}
+function storeList(el,c,cat){
+  const box=$('#st-box',el);if(!box)return;
+  const kb=x=>x>=1024?(x/1024).toFixed(1).replace('.',',')+' MB':Math.round(x)+' KB';
+  const items=cat.items.map(x=>({...x,l:itemLabel(c,x.k)})).sort((a,b)=>a.l[0].localeCompare(b.l[0],'vi')||b.k.localeCompare(a.k));
+  box.innerHTML=`<div class="row" style="margin-bottom:6px"><label class="ck"><input type="checkbox" id="st-all" style="width:auto;min-height:0"> Tích tất cả</label><button class="btn sm pri" id="st-del">Xóa các mục đã tích</button>
+   ${c==='tb'?'<button class="btn sm" id="st-old">Tích mốc cũ (giữ 3 mốc mới nhất mỗi xã)</button>':''}</div>
+   <div class="tw" style="max-height:340px;overflow:auto"><table class="t"><tr><th></th><th style="text-align:left">Đơn vị</th><th style="text-align:left">Nội dung</th><th>Dung lượng</th><th>Lưu lúc</th></tr>
+   ${items.map(x=>`<tr><td><input type="checkbox" class="st-ck" value="${esc(x.k)}" style="width:auto;min-height:0" aria-label="Chọn ${esc(x.l[0])}"></td><td style="text-align:left">${esc(x.l[0])}</td><td style="text-align:left">${esc([x.l[1],x.l[2]].filter(Boolean).join(' · '))}</td><td class="c">${kb(x.kb)}</td><td class="c">${esc(x.l[3]||'')}</td></tr>`).join('')||'<tr><td colspan="5" class="muted">Không có mục nào.</td></tr>'}</table></div>`;
+  $('#st-all',box).onchange=e=>box.querySelectorAll('.st-ck').forEach(x=>x.checked=e.target.checked);
+  const old=$('#st-old',box);if(old)old.onclick=()=>{const seen={};box.querySelectorAll('.st-ck').forEach(x=>{const xa=x.value.split(':')[1];seen[xa]=(seen[xa]||0)+1;x.checked=seen[xa]>3})};
+  $('#st-del',box).onclick=async()=>{
+    const ks=[...box.querySelectorAll('.st-ck:checked')].map(x=>x.value);
+    if(!ks.length)return TC.toast('Tích chọn ít nhất một mục để xóa',1);
+    if(!TC.auth.can('edit'))return TC.toast('Tài khoản này chỉ được xem, không xóa được',1);
+    if(!await TC.dialog('Xóa dữ liệu đã lưu',`<p style="margin:0">Xóa <b>${ks.length}</b> mục? Không hoàn lại được (trừ khi bạn đã tải bản sao lưu).</p>`,'Xóa'))return;
+    ks.forEach(k=>TC.store.del(k));
+    TC.log('Xóa dữ liệu trong kho',ks.length+' mục');
+    TC.toast(`Đã xóa ${ks.length} mục`);startView(S.el);
+  };
+}
+/* khung báo đã tạo tệp + nút tải lại / tải từng tệp */
+function dlPanel(d,files,pack){
+  if(!d)return;
+  const kb=b=>Math.max(1,Math.round(b.size/1024))+' KB';
+  d.innerHTML=`<div class="ok-note">Đã tạo <b>${esc(pack.name)}</b> (${kb(pack.blob)}${files.length>1?', gồm '+files.length+' tệp':''}). Nếu chưa thấy tệp tải xuống, bấm tải lại: <button class="btn sm pri" data-dl="-1">Tải ${files.length>1?'tệp nén':'tệp'}</button>${files.length>1?' hoặc tải từng tệp: '+files.map((f,i)=>`<button class="btn sm" data-dl="${i}">${esc(f.name)}</button>`).join(' '):''}${TC.srv.on&&TC.auth.can('edit')?' <button class="btn sm" data-dd="1" title="Lưu bản này vào thư mục Drive của app, trùng tên thì ghi đè">Lưu vào Drive</button>':''}</div>`;
+  const dd=d.querySelector('button[data-dd]');if(dd)dd.onclick=async()=>{dd.disabled=true;const t=dd.textContent;dd.textContent='Đang lưu lên Drive…';await driveSave(pack.blob,pack.name);dd.disabled=false;dd.textContent=t};
+  d.querySelectorAll('button[data-dl]').forEach(b=>b.onclick=()=>{const f=+b.dataset.dl<0?pack:files[+b.dataset.dl];TC.download(f.blob,f.name,{gesture:1})})}
+/* kiểm tra từng số trong nội dung Word có đúng là số trong bảng (Excel) không */
+function checkWord(o){
+  const m=S._m,rows=[...m.sumR,...m.thuR,...m.chiR],amt=new Set(),pc=new Set([String(Math.round(S.info.thang/12*100))]);
+  const add=v=>{if(v!=null&&isFinite(v))amt.add(String(Math.round(Math.abs(v))))};
+  rows.forEach(r=>{['dt','th','ck'].forEach(g=>['nsnn','nsdp'].forEach(sub=>{const v=TC.cellVal(r,g,sub);add(v)}));
+    ['tl','tc'].forEach(g=>['nsnn','nsdp'].forEach(sub=>{const v=TC.cellVal(r,g,sub);if(v!=null&&isFinite(v))pc.add(pct(v))}))});
+  const bad=[];let n=0;const toks=t=>{
+    const x=t.replace(/^\s*\(\d\)/,' ').replace(/\d{1,2}\/\d{1,2}\/\d{4}/g,' ').replace(/\bnăm\s+\d{4}/gi,' ').replace(/\d+\s+tháng/gi,' ');
+    const out=[];x.replace(/(\d+(?:,\d+)?)\s*%/g,(a,b)=>{out.push(['p',b]);return ' '}).replace(/(?<![\d,.])(\d{1,3}(?:\.\d{3})+|\d+)(?![\d,])(?=\s*(?:triệu|\/|\)))|(?<=\/)(\d{1,3}(?:\.\d{3})+|\d+)/g,(a,b,c)=>{out.push(['a',(b||c).replace(/\./g,'')]);return a});return out};
+  S.paras.forEach((p,i)=>{if(/so sánh|xếp hạng|toàn tỉnh|96 xã/i.test(p.text)&&i>0&&S.paras.findIndex(q=>/^\(2\)\s+Về chi/i.test(q.text))<i)return;
+    toks(p.text).forEach(([k,v])=>{n++;if(!(k==='p'?pc.has(v):amt.has(v)))bad.push(`"${v}${k==='p'?'%':''}" ở đoạn: ${p.text.slice(0,50)}…`)})});
+  $('#chkres',o).innerHTML=bad.length?`<div class="warn"><b>${bad.length} số trong Word chưa thấy trong bảng Excel</b> (trên ${n} số đã kiểm). Bạn rà lại các số sau, có thể do sửa tay hoặc số làm tròn:<br>${bad.slice(0,12).map(x=>esc(x)).join('<br>')}</div>`:`<div class="ok-note">Đã kiểm ${n} số trong nội dung Word, tất cả khớp với bảng Excel. Phần so sánh với tỉnh và 96 xã, phường không đối chiếu ở đây.</div>`;
+}
+
+/* ---- báo cáo đã lưu: màn đầu, lưu một bản mới nhất, sao lưu ---- */
+const keysOf=pre=>{const o=[];try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('tc_'+pre))o.push(k.slice(3))}}catch(e){}return o.sort()};
+const repKeyOf=w=>`rep:${nrm(w.info.xa).toLowerCase()}:${w.info.ngay}`;
+/* lưu mọi đơn vị đã tạo báo cáo (mỗi đơn vị một bản, ghi đè bản cũ); trả về số báo cáo đã lưu */
+const unitDesc=()=>{const n=genUnits().map(u=>W(u).info.xa).filter(Boolean);return n.length>3?n.length+' đơn vị':n.join(', ')||'-'};
+function saveRep(q){
+  let n=0;
+  try{
+    stash();
+    genUnits().filter(u=>u.pick!==false).forEach(u=>{
+      const w=W(u);if(!w.thu||!w.chi||!w.paras.length||!w.info.xa)return;
+      const key=repKeyOf(w),at=new Date().toLocaleString('vi-VN');
+      TC.store.set(key,{savedAt:at,ts:Date.now(),rule:RULE,info:w.info,thu:w.thu,chi:w.chi,dt:w.dt,tables:w.tables,prev:w.prev,paras:w.paras,ck:w.ck,hide:w.hide?[...w.hide]:null,cols:S.cols,gOn:S.gOn});
+      w.rep=key;w.dirty=false;n++;
+    });
+    repStat();
+  }catch(e){}
+  if(n&&!q)TC.log('Lưu báo cáo ngày',unitDesc());
+  if(n)drawTabs();
+  return n;
+}
+function repStat(){
+  const b=S.el&&$('#repstat',S.el);if(!b)return;
+  const td=S.kind==='td',bt=td?'Lưu báo cáo thảo luận thu':'Lưu báo cáo thu chi hàng ngày',hn=m=>TC.tip(m);
+  const r=S.rep?TC.store.get(S.rep,null):null,pend=genUnits().filter(u=>W(u).dirty).length;
+  b.innerHTML=!r?`<span class="badge draft">Chưa lưu</span> ${hn(`Sửa xong trên bản xem trước thì bấm ${bt}${td?' ở dưới bảng':' ở cuối trang'}.`)}`
+   :pend?`<span class="badge draft">Có thay đổi chưa lưu${pend>1?' ('+pend+' đơn vị)':''}</span> ${hn(`Lần lưu gần nhất ${esc(r.savedAt)}. Bấm ${bt} để cập nhật.`)}`
+   :`<span class="badge fin">Đã lưu</span> ${hn(`Lúc ${esc(r.savedAt)}. Có sửa thêm thì bấm ${bt}, bản mới ghi đè bản cũ.`)}`;
+}
+/* ---- Báo cáo thảo luận dự toán (thu): bảng theo mẫu, ô nền xanh gõ tay, xuất Excel đúng mẫu ---- */
+/* các dòng đã bỏ tích ở lần trước được nhớ trên máy, bảng của đơn vị mới tạo tự áp dụng */
+const tdHideSaved=()=>{let a=[];try{a=TC.store.get('tdhide',[])}catch(e){}return Array.isArray(a)?a:[]};
+const tdHideSave=T=>{try{TC.store.set('tdhide',[...T.hide])}catch(e){}};
+const tdW=w=>{if(!w.td)w.td={inp:{},hide:new Set(tdHideSaved())};if(!(w.td.hide instanceof Set))w.td.hide=new Set(w.td.hide||[]);return w.td};
+const TD_NO_THU={total:{nsnn:0,nsdp:0},ex:{nsnn:0,nsdp:0},hd:{nsnn:0,nsdp:0},leaves:[]};
+const ctxTd=w=>({thu:w.thu||TD_NO_THU,chi:w.chi,tables:w.tables,info:w.info,dt:w.dt,prev:(w.prev.thu||w.prev.chi)?w.prev:null,ck:w.ck||{},flags:{},hide:new Set()});
+/* bảng Tỷ lệ phân cấp đang dùng = bảng gốc (tab Tỷ lệ phân cấp / Google Sheet) + tối đa 5 tệp .xlsx nạp thêm; tệp nạp sau ghi đè xã trùng */
+const PCMAX=5;
+/* Đồng bộ DT năm sau (H duyệt 09/11/2026): Quản trị bấm, máy chủ đọc gói số app Tỷ lệ phân cấp gửi KK01 (phương án mặc định), xem trước rồi mới ghi pc:{năm} dùng chung */
+const pcGoiOk=()=>TC.srv.on&&TC.auth.can('admin')&&S.info.nam+1===2027;
+const pcT7=(pc,i)=>{let t=0,c=0;Object.values((pc&&pc.xa)||{}).forEach(r=>{const v=r&&r[7]&&r[7][i];if(typeof v==='number'){t+=v;c++}});return c?t:null};
+const pcSame=(a,b)=>JSON.stringify(a||null)===JSON.stringify(b||null);
+async function pcGoi(el){
+  const btn=$('#pc-goi',el),y=S.info.nam+1,old=btn.textContent;btn.disabled=true;btn.textContent='Đang lấy số…';
+  let r=null;try{r=await TC.srv.call('pcGoi',{nam:y})}catch(e){}
+  btn.disabled=false;btn.textContent=old;
+  if(!r||!r.ok)return TC.toast((r&&r.msg)||'Chưa lấy được gói số, bạn thử lại.',1);
+  let d;try{d=JSON.parse(r.v)}catch(e){d=null}
+  if(!d||!d.xa||!d.names||typeof d.xa!=='object'||!Object.keys(d.xa).length)return TC.toast('Gói số từ app Tỷ lệ phân cấp không đúng định dạng, báo KK02 kiểm lại.',1);
+  const cur=TC.store.get('pc:'+y,null),keys=new Set([...Object.keys(d.xa),...Object.keys((cur&&cur.xa)||{})]);
+  let doi=0,moi=0,bo=0;keys.forEach(k=>{const a=cur&&cur.xa&&cur.xa[k],b=d.xa[k];if(!a&&b)moi++;else if(a&&!b)bo++;else if(!pcSame(a,b))doi++});
+  const f=v=>v==null?'—':TC.fmt?TC.fmt(v):Number(v).toLocaleString('vi-VN'),tn=pcT7(d,5),to=pcT7(cur,5),tg=d.tong||{};
+  const when=t=>t?new Date(t).toLocaleString('vi-VN'):'—',same=cur&&!doi&&!moi&&!bo;
+  const html=`<div style="font-size:14px;line-height:1.6">
+   <p style="margin:0 0 8px"><b>Phương án mặc định:</b> ${esc(d.pa||d.name||'?')}${d.ma?' · mã '+esc(d.ma):''}<br><span class="muted">App Tỷ lệ phân cấp ghi gói lúc ${esc(when(r.at||d.ts))}</span></p>
+   ${tg.nsdp!=null?`<p style="margin:0 0 8px"><b>DT ${y} NSĐP:</b> ${f(tg.nsdp)} (tỉnh ${f(tg.tinh)}, xã ${f(tg.xa)})</p>`:''}
+   <table class="tbl" style="width:100%;font-size:13.5px"><tr><th style="text-align:left"></th><th>Đang dùng</th><th>Số mới</th></tr>
+    <tr><td style="text-align:left">Nguồn</td><td>${cur?esc(cur.pa||cur.name||''):'(chưa có)'}</td><td>${esc(d.pa||d.name||'')}</td></tr>
+    <tr><td style="text-align:left">Số xã, phường</td><td>${cur?cur.n||Object.keys(cur.xa||{}).length:0}</td><td>${d.n||Object.keys(d.xa).length}</td></tr>
+    <tr><td style="text-align:left">Cộng DT ${y} NSĐP các xã (dòng tổng thu)</td><td>${f(to)}</td><td>${f(tn)}</td></tr></table>
+   <p style="margin:8px 0 0">${!cur?`Hiện chưa có số DT ${y}, sẽ nạp mới ${moi} xã, phường.`:same?'<b>Số mới giống hệt số đang dùng.</b>':`So với số đang dùng: <b>${doi}</b> xã đổi số${moi?', '+moi+' xã mới':''}${bo?', '+bo+' xã không còn trong gói':''}${tn!=null&&to!=null?', chênh '+f(tn-to):''}.`}</p>
+   <p class="muted" style="margin:6px 0 0;font-size:12.5px">Bấm Đồng bộ thì mọi máy dùng chung số mới, bảng thảo luận tự lấy số khi mở lại. Có nút Hoàn tác về số cũ.</p></div>`;
+  const ok=await TC.dialog('Đồng bộ DT '+y+' từ app Tỷ lệ phân cấp',html,'Đồng bộ');if(!ok)return;
+  TC.store.set('pcprev:'+y,cur?{v:cur}:{v:null});
+  const nv=Object.assign({},d,{ts:Date.now(),dongbo:{at:Date.now(),by:TC.user.username,fileAt:r.at||null,fileId:r.id||''}});
+  TC.store.set('pc:'+y,nv);TC.log('Đồng bộ DT '+y,(d.pa||d.name||'')+(d.ma?' · mã '+d.ma:'')+' · '+doi+' xã đổi');
+  pcChanged(el);
+  const sent=await TC.srv.flush().catch(()=>false);
+  TC.toast(sent===false?'Đã ghi trên máy này, chưa gửi lên máy chủ được; app tự gửi lại khi có mạng.':'Đã đồng bộ DT '+y+' theo '+(d.pa||'phương án mặc định'),sent===false?1:0)}
+async function pcUndo(el){
+  const y=S.info.nam+1,pv=TC.store.get('pcprev:'+y,null);if(!pv)return;
+  const ok=await TC.dialog('Hoàn tác đồng bộ DT '+y,`<p style="margin:0">Trả số DT ${y} về ${pv.v?'<b>'+esc(pv.v.pa||pv.v.name||'số trước')+'</b>, dùng từ '+esc(new Date(pv.v.ts).toLocaleString('vi-VN')):'trạng thái chưa có số'}?</p>`,'Hoàn tác');if(!ok)return;
+  if(pv.v)TC.store.set('pc:'+y,pv.v);else TC.store.del('pc:'+y);TC.store.del('pcprev:'+y);
+  TC.log('Hoàn tác đồng bộ DT '+y,pv.v?(pv.v.pa||pv.v.name||''):'về chưa có số');pcChanged(el);await TC.srv.flush().catch(()=>{});TC.toast('Đã trả về số trước')}
+const pcFiles=y=>{const a=TC.store.get('pcf:'+y,[]);return Array.isArray(a)?a:[]};
+/* bảng phân cấp thiếu danh sách tên (do app khác gửi lên) thì dựng tên từ danh sách 96 xã phường theo khóa, để khung chọn địa bàn không hỏng */
+function pcNames(o){if(!o||typeof o!=='object')return o;const nm=Object.assign({},o.names),ref={};(window.TC_XA96||[]).forEach(x=>{ref[TC.normXa(x)]=x});
+  Object.keys(o.xa||{}).forEach(k=>{if(!nm[k])nm[k]=ref[k]||k});o.names=nm;return o}
+function pcGet(w){
+  const y=w.info.nam+1,base=pcNames(TC.store.get('pc:'+y,null)),fs=pcFiles(y);
+  if(!fs.length)return base;
+  const xa=Object.assign({},base&&base.xa),names=Object.assign({},base&&base.names);
+  fs.forEach(f=>{Object.assign(xa,f.xa);Object.assign(names,f.names)});
+  const last=fs[fs.length-1];
+  return {ts:last.ts,name:(base?'bảng gốc + ':'')+fs.length+' tệp nạp thêm',n:Object.keys(xa).length,sheet:last.sheet,xa,names};
+}
+/* số đang dùng: nền lấy từ bảng Tỷ lệ phân cấp (nếu đã nạp), số người dùng gõ đè lên */
+function tdInp(w){
+  const T=tdW(w),pc=pcGet(w),b=pc?TC.tdBase(pc,w.info.xa,TC.modelThuTD(ctxTd(w))):(T.base||null);
+  if(pc)T.base=b;
+  if(!b)return T.inp;
+  const o={};new Set([...Object.keys(b),...Object.keys(T.inp)]).forEach(id=>{o[id]=Object.assign({},b[id],T.inp[id])});return o;
+}
+const tdRows=w=>{const rows=TC.modelThuTD(ctxTd(w)),inp=tdInp(w);rows.forEach(r=>{const n=inp[r.id]&&inp[r.id].name;if(r.manual&&n!=null)r.name=n});return TC.tdAddTw(rows,inp)};
+const plOf=w=>({info:w.info,tables:{thu:TC.tdToPL(tdRows(w),tdInp(w),w.info)}});
+const tdExp=w=>({rows:tdRows(w),info:w.info,inp:tdInp(w),hide:tdW(w).hide,mode:TC.tdModeOf(w)});
+const tdKey=w=>`td:${nrm(w.info.xa).toLowerCase()}:${w.info.nam}`;
+function genTd(u){
+  const w=W(u);u.gen=false;
+  if(!w.thu&&!w.chi&&!tdPcOk(w))return 'chưa có số liệu thu hoặc chi, và không có trong bảng Tỷ lệ phân cấp';
+  if(!w.info.xa||(w.thu&&(!w.info.ngay||!w.info.thang)))return 'thiếu tên đơn vị, ngày số liệu hoặc kỳ báo cáo';
+  const d=E.deriveDt(w.tables||{});
+  const dt={thu:{},chi:d.chi&&d.chi.tong?d.chi:{tong:0,dtpt:0,tx:0}};
+  KEYS.forEach(k=>{dt.thu[k]=(d.thu&&d.thu[k])||{nsnn:0,nsdp:0}});
+  if(w.thu&&!dt.thu.tong.nsnn&&!w.chi)return 'chưa có dự toán năm '+w.info.nam+' (bấm mũi tên ở cột Dự toán để nhập)';
+  w.dt=dt;tdW(w);
+  const k=tdKey(w);w.rep=TC.store.get(k,null)?k:'';w.dirty=true;u.gen=true;
+  return '';
+}
+const tdPcOk=w=>{const pc=pcGet(w);return !!(pc&&w.info.xa&&pc.xa[TC.normXa(w.info.xa)])};
+/* đơn vị có tệp thu thì dùng dự toán tính từ tệp; đơn vị chỉ có bảng Tỷ lệ phân cấp (pcOnly) thì đủ điều kiện xuất */
+const tdHasThu=w=>!!(w.dt&&(w.thu?w.dt.thu.tong.nsnn:(w.pcOnly&&tdPcOk(w))));
+/* thu NSNN luôn >= thu NSĐP: tìm các cặp (NSNN, NSĐP) bị ngược trong một dòng */
+const TD_PAIRS=[['cN','cD',0],['eN','eD',1],['gN','gD',2],['uN','uD',3],['oN','oD',6],['qN','qD',7]];
+const tdBadKeys=(r,I)=>{const c={};TC.tdRow(r,I).forEach(x=>c[x.k]=x.v);const s=new Set();TD_PAIRS.forEach(([a,d])=>{if(c[a]!=null&&c[d]!=null&&c[d]>c[a]+0.5){s.add(a);s.add(d)}});return s};
+/* kiểm tra số liệu bảng thảo luận: thứ tự NSNN >= NSĐP, cộng các khoản, đối chiếu bảng Tỷ lệ phân cấp */
+function tdCheck(w){
+  const rows=tdRows(w),I=tdInp(w),pc=pcGet(w),G=TC.tdGroups(w.info),out=[],sums=[],nm=r=>(r.stt&&r.stt!=='-'?r.stt+' ':'')+(r.name||'(dòng mới)');
+  const val=r=>{const c={};TC.tdRow(r,I).forEach(x=>c[x.k]=x.v);return c};
+  const bad=[];rows.forEach(r=>{const c=val(r);TD_PAIRS.forEach(([a,d,g])=>{if(c[a]!=null&&c[d]!=null&&c[d]>c[a]+0.5)bad.push(`${nm(r)} - ${G[g]}: thu NSNN ${fmt(c[a])} thấp hơn thu NSĐP ${fmt(c[d])}`)})});
+  out.push(bad.length?{ok:0,t:`Thu NSNN phải lớn hơn hoặc bằng thu NSĐP: có ${bad.length} ô bị ngược (đã tô đỏ trong bảng)`,d:bad}:{ok:1,t:'Thu NSNN ≥ thu NSĐP ở mọi dòng, mọi cột'});
+  /* cộng các khoản: tổng các mục 1..20 = Thu nội địa; Thu nội địa trừ TSDĐ, XSKT = Thu nội địa - mục 12 - mục 14 */
+  const i0=rows.findIndex(r=>r.id==='t3'),i1=rows.findIndex(r=>r.stt==='II'&&!r.manual),top=rows.slice(i0,i1<0?undefined:i1).filter(r=>!r.manual&&/^\d+$/.test(r.stt));
+  const noi=rows.find(r=>r.id==='t1'),tru=rows.find(r=>r.id==='t2'),dsum=[],dtru=[];
+  if(noi&&top.length)[['cN',0],['cD',0],['eN',1],['eD',1],['gN',2],['gD',2],['uN',3],['uD',3],['oN',6],['oD',6]].forEach(([k,g])=>{
+    const nv=val(noi)[k];if(nv==null)return;let sm=0;top.forEach(r=>{sm+=val(r)[k]||0});
+    if(Math.abs(sm-nv)>3)dsum.push(`${G[g]} (${k.endsWith('N')?'NSNN':'NSĐP'}): cộng các mục 1 đến 20 = ${fmt(sm)}, dòng Thu nội địa = ${fmt(nv)}, lệch ${fmt(sm-nv)}`);
+    const tv=tru&&val(tru)[k],ts=top.find(r=>r.stt==='12'),xs=top.find(r=>r.stt==='14');
+    if(tv!=null&&Math.abs(nv-(ts?val(ts)[k]||0:0)-(xs?val(xs)[k]||0:0)-tv)>3)dtru.push(`${G[g]} (${k.endsWith('N')?'NSNN':'NSĐP'}): Thu nội địa - TSDĐ, XSKT = ${fmt(tv)}, còn tính lại ${fmt(nv-(ts?val(ts)[k]||0:0)-(xs?val(xs)[k]||0:0))}`)});
+  out.push(dsum.length?{ok:0,t:`Cộng các mục 1 đến 20 chưa bằng Thu nội địa ở ${dsum.length} cột (lệch quá 3 triệu)`,d:dsum}:{ok:1,t:'Cộng các mục 1 đến 20 bằng dòng Thu nội địa (cho phép lệch làm tròn 3 triệu)'});
+  out.push(dtru.length?{ok:0,t:`Dòng Thu nội địa trừ TSDĐ, XSKT chưa khớp ở ${dtru.length} cột`,d:dtru}:{ok:1,t:'Dòng Thu nội địa trừ TSDĐ, XSKT khớp'});
+  /* đối chiếu bảng Tỷ lệ phân cấp: Thu nội địa, Phân chia, Thu NS hưởng 100% */
+  const rec=pc&&pc.xa[TC.normXa(w.info.xa)];
+  if(!rec)out.push({ok:null,t:pc?`Bảng Tỷ lệ phân cấp không có ${canon(w.info.xa)} nên chưa đối chiếu được`:'Chưa nạp bảng Tỷ lệ phân cấp nên chưa đối chiếu được'});
+  else{
+    const g=(row,j)=>rec[row]&&rec[row][j]!=null?rec[row][j]:null,blk=TC.tdBlock(rows,I),h100=blk[0].v,sh=blk[1].v,det=[];
+    const rowOf=stt=>{const r=rows.find(x=>x.stt===stt&&!x.manual);return r&&TC.TD_PC_MAP[r.id]};
+    const miss=TC.TD_SHARE_STT.filter(x=>!rowOf(x));
+    [['ƯTH '+w.info.nam,2,6,'u'],['Dự toán '+(w.info.nam+1),4,12,'o']].forEach(([lb,j,i,k])=>{
+      const nd=g(8,j);let s=0,has=false;TC.TD_SHARE_STT.forEach(x=>{const rw=rowOf(x);if(rw&&g(rw,j)!=null){s+=g(rw,j);has=true}});
+      const tN=val(noi)[k+'N'];
+      if(nd!=null&&tN!=null)sums.push(`Thu nội địa ${lb}: bảng ${fmt(tN)} · phân cấp ${fmt(nd)}`);
+      if(has&&sh[i]!=null)sums.push(`Phân chia ${lb}: bảng ${fmt(sh[i])} · phân cấp ${fmt(s)}`);
+      if(has&&nd!=null&&h100[i]!=null)sums.push(`Thu NS hưởng 100% ${lb}: bảng ${fmt(h100[i])} · phân cấp ${fmt(nd-s)}`);
+      if(nd!=null&&tN!=null&&Math.abs(tN-nd)>0.5)det.push(`${lb}: dòng Thu nội địa trong bảng là ${fmt(tN)}, bảng Tỷ lệ phân cấp là ${fmt(nd)} (có thể do bạn gõ đè)`);
+      if(has&&sh[i]!=null&&Math.abs(sh[i]-s)>0.5)det.push(`${lb}: Phân chia trong bảng là ${fmt(sh[i])}, tính từ bảng Tỷ lệ phân cấp là ${fmt(s)}`);
+      if(has&&nd!=null&&h100[i]!=null&&Math.abs(h100[i]-(nd-s))>0.5)det.push(`${lb}: Thu NS hưởng 100% trong bảng là ${fmt(h100[i])}, tính từ bảng Tỷ lệ phân cấp là ${fmt(nd-s)}`)});
+    if(miss.length)det.push('Khoản phân chia chưa gắn được dòng bảng phân cấp: '+miss.join(', '));
+    out.push(det.length?{ok:0,t:`Chưa khớp bảng Tỷ lệ phân cấp ở ${det.length} chỗ`,d:det}:{ok:1,t:'Thu nội địa, Phân chia, Thu NS hưởng 100% khớp bảng Tỷ lệ phân cấp (cột ước thực hiện và dự toán năm sau)'});
+  }
+  return {items:out,sums};
+}
+/* nút Kiểm tra số liệu: xanh ✓ khi đúng hết, đỏ ✗ khi còn lỗi; bấm vào hiện thông báo chi tiết */
+function ckStale(o){const b=$('#td-ck',o);if(b&&/good|bad/.test(b.className)){b.className='btn sm pri';b.textContent='Kiểm tra số liệu';const p=$('#td-ckp',o);if(p)p.hidden=true}}
+function ckPanel(r){
+  const n=r.items.filter(x=>x.ok===0).length,ok=!n;
+  const li=x=>x.d?'<ul style="margin:6px 0 0 18px">'+x.d.slice(0,30).map(y=>'<li>'+esc(y)+'</li>').join('')+(x.d.length>30?'<li>… và '+(x.d.length-30)+' mục nữa</li>':'')+'</ul>':'';
+  return `<h4 class="ckh">Kiểm tra số liệu</h4>${r.sums.map(l=>`<div class="cks">${esc(l)}</div>`).join('')}
+  ${ok?'<div class="ok-note">Số liệu khớp, không phát hiện lỗi.</div>':''}
+  ${r.items.map(x=>x.ok===0?`<div class="bad-note"><b>✗ ${esc(x.t)}</b>${li(x)}</div>`:x.ok==null?`<div class="warn">${esc(x.t)}</div>`:ok?`<div class="cks ck-ok">✓ ${esc(x.t)}</div>`:'').join('')}
+  <button class="btn sm" id="td-ckre">Đọc lại bảng phân cấp và kiểm tra lại</button>`;
+}
+/* ô tích ẩn hiện từng nhóm cột của bảng xem trước, bảng Excel xuất ra đúng theo các cột đang hiện */
+let tdColOpen=false;
+function tdColChips(info){
+  const G=TC.tdGroups(info),on=g=>TC.TD_VIS.includes(g),chip=(g,t,cls)=>`<label class="chip ${cls}${on(g)?' on':''}"><input type="checkbox" data-tg="${g}" ${on(g)?'checked':''}> ${esc(t)}</label>`;
+  const A=TC.TD_MODE==='a';
+  return `<div class="tdpanel"><div class="tdcols"><b>Số liệu</b>${A?chip(0,G[0],''):''}${chip(1,G[1],'')}${A?chip(2,G[2],''):''}${chip(3,G[3],'')}${chip(6,G[6],'')}${A?chip(7,G[7],''):''}</div>
+  <div class="tdcols"><b>So sánh</b>${A?chip(4,G[4]+' (%)','rel'):''}${chip(10,G[10],'')}${chip(5,G[5],'rel')}${chip(8,G[8],'')}${chip(9,G[9],'rel')}${TC.tip('Tuyệt đối = số sau trừ số trước, tỷ lệ = số sau chia số trước.')}</div>
+  <div class="tdcols"><b>Cột hiện</b><label class="chip${TC.TD_SIDE.includes('N')?' on':''}"><input type="checkbox" data-ts="N" ${TC.TD_SIDE.includes('N')?'checked':''}> Thu NSNN</label><label class="chip${TC.TD_SIDE.includes('D')?' on':''}"><input type="checkbox" data-ts="D" ${TC.TD_SIDE.includes('D')?'checked':''}> Thu NSĐP</label>${TC.tip('Bảng xem trước và file Excel xuất ra đều đúng theo các cột đang hiện.')}</div>
+  <div class="tdcols"><b>Đoạn dưới</b><label class="chip${TC.TD_BLK?' on':''}"><input type="checkbox" data-tb="1" ${TC.TD_BLK?'checked':''}> Thu NS hưởng 100%, Phân chia, Thu NSĐP, Trừ TSDĐ, Tăng thu, ...</label>${TC.tip('Bỏ tích thì bảng và Excel kết thúc ở dòng cuối cùng của các khoản thu.')}</div></div>`}
+/* tên tệp xuất do người dùng sửa. Ô 1 = tên chung: là tên tệp .zip hoặc tệp gộp, và là phần đầu tên từng tệp trong zip (nối thêm tên xã).
+   Ô 2 (có thể để trống) = tên riêng cho từng tệp trong zip; trống thì lấy tên chung + tên xã. Dùng {xa} {nam} {n} để chèn tên xã, năm, số đơn vị. Lưu trên máy. */
+let tnOpen=false;
+const TDN_DEF={xls:['Thao luan du toan thu {nam}',''],pl:['Phu luc du toan thu {nam}',''],xlc:['Thao luan du toan chi {nam}',''],plc:['Phu luc du toan chi {nam}',''],cd:['Phu luc can doi du toan {nam}','']};
+const tdnGet=()=>{let v=null;try{v=TC.store.get('tdnames2',null);
+  if(!v){const o=TC.store.get('tdnames',null);if(o){const m=k=>{const q=o[k];if(!q)return null;const dz=k==='xls'?'Thao luan du toan thu {n} don vi {nam}':'Phu luc V du toan thu {n} don vi {nam}';const di=k==='xls'?'Thao luan du toan thu {xa} {nam}':'Phu luc V du toan thu {xa} {nam}';return [q[1]&&q[1]!==dz?q[1]:TDN_DEF[k][0],q[0]&&q[0]!==di?q[0]:'']};v={xls:m('xls'),pl:m('pl')}}}}catch(e){}
+  if(v&&v.pl&&v.pl[0]==='Phu luc V du toan thu {nam}')v.pl[0]=TDN_DEF.pl[0];
+  return {xls:(v&&v.xls)||TDN_DEF.xls.slice(),pl:(v&&v.pl)||TDN_DEF.pl.slice(),xlc:(v&&v.xlc)||TDN_DEF.xlc.slice(),plc:(v&&v.plc)||TDN_DEF.plc.slice(),cd:(v&&v.cd)||TDN_DEF.cd.slice()}};
+const tdnClean=t=>String(t).replace(/[\\/:*?"<>|]/g,'').replace(/\s+/g,' ').trim();
+const tdnFill=(t,xa,nam,n)=>tdnClean(String(t).replace(/\{xa\}/gi,xa||'').replace(/\{nam\}/gi,nam).replace(/\{n\}/gi,n))||'Bao cao';
+/* tên chung (zip hoặc tệp gộp) */
+const tdnBase=(k,nam,n)=>tdnFill(tdnGet()[k][0],'',nam,n);
+/* tên tệp của một xã */
+const tdnOne=(k,xa,nam,n)=>{const v=tdnGet()[k],own=tdnClean(v[1]||'');
+  if(own)return tdnFill(v[1],xa,nam,n);
+  if(/\{xa\}/i.test(v[0]))return tdnFill(v[0],xa,nam,n);
+  return tdnFill(v[0],'',nam,n)+' '+tdnClean(xa)};
+function tdNameBox(nam,kd){
+  kd=kd||'';const K=kd==='p'?['cd','pl','plc']:kd?['xlc']:['xls'],LB=kd==='p'?['Đặt tên Phụ lục cân đối','Đặt tên Phụ lục dự toán thu','Đặt tên Phụ lục dự toán chi']:kd?['Đặt tên báo cáo thảo luận chi']:['Đặt tên báo cáo thảo luận thu'];
+  const v=tdnGet(),row=(k,lab)=>`<div class="tdnm"><b>${lab}</b><label>Tên chung (tên tệp .zip hoặc tệp gộp) <input type="text" data-tn="${k}" data-i="0" value="${esc(v[k][0])}"></label><label>Tên riêng mỗi xã trong zip (trống thì là tên chung + tên xã) <input type="text" data-tn="${k}" data-i="1" value="${esc(v[k][1])}"></label></div>`;
+  return `<div class="tdnames${tnOpen?'':' shut'}"><div class="tdnh"><button class="btn sm" id="tn-tg${kd}" aria-expanded="${tnOpen}">Tên tệp khi xuất ${tnOpen?'▴':'▾'}</button>${TC.tip(`Tên tệp khi xuất. Ví dụ tên chung "Dự thảo_DT ${nam+1}" thì tệp zip là "Dự thảo_DT ${nam+1}.zip" và bên trong là "Dự thảo_DT ${nam+1} Xã Bến Lức.xlsx", ... Có thể dùng <b>{xa}</b> (tên xã), <b>{nam}</b> (năm ${nam+1}), <b>{n}</b> (số đơn vị).`)}</div><div id="tn-body${kd}" ${tnOpen?'':'hidden'}>${K.map((k,i)=>row(k,LB[i])).join('')}<button class="btn sm" id="tn-def${kd}">Khôi phục tên mặc định</button></div></div>`}
+function bindTdName(o,nam,kd){
+  kd=kd||'';
+  const tg=$('#tn-tg'+kd,o);if(tg)tg.onclick=()=>{tnOpen=!tnOpen;o.querySelectorAll('.tdnames').forEach(x=>x.classList.toggle('shut',!tnOpen));o.querySelectorAll('[id^=tn-body]').forEach(x=>x.hidden=!tnOpen);o.querySelectorAll('[id^=tn-tg]').forEach(x=>{x.setAttribute('aria-expanded',tnOpen);x.textContent='Tên tệp khi xuất '+(tnOpen?'▴':'▾')})};
+  const box=$('#tn-box'+kd,o);
+  box.querySelectorAll('[data-tn]').forEach(i=>i.onchange=()=>{const v=tdnGet();v[i.dataset.tn][+i.dataset.i]=i.value;try{TC.store.set('tdnames2',v)}catch(e){}});
+  const d=$('#tn-def'+kd,o);if(d)d.onclick=()=>{try{TC.store.set('tdnames2',{xls:TDN_DEF.xls.slice(),pl:TDN_DEF.pl.slice(),xlc:TDN_DEF.xlc.slice(),plc:TDN_DEF.plc.slice(),cd:TDN_DEF.cd.slice()})}catch(e){}box.innerHTML=tdNameBox(nam,kd);bindTdName(o,nam,kd)}}
+function bindTdCols(o,w){
+  const cb=$('#td-colbtn',o);if(cb&&!cb._b){cb._b=1;cb.onclick=()=>{tdColOpen=!tdColOpen;$('#td-cols',o).hidden=!tdColOpen;cb.setAttribute('aria-expanded',tdColOpen);cb.textContent='Hiển thị cột '+(tdColOpen?'▴':'▾')}}
+  o.querySelectorAll('#td-cols [data-tg]').forEach(c=>c.onchange=()=>{const g=+c.dataset.tg,a=TC.TD_VIS.filter(x=>x!==g);if(c.checked)a.push(g);if(!a.length){c.checked=true;TC.toast('Phải giữ ít nhất một nhóm cột',1);return}
+    TC.tdSetVis(a);$('#td-cols',o).innerHTML=tdColChips(w.info);bindTdCols(o,w);drawTd(o)});
+  o.querySelectorAll('#td-cols [data-tb]').forEach(c=>c.onchange=()=>{TC.tdSetBlk(c.checked);$('#td-cols',o).innerHTML=tdColChips(w.info);bindTdCols(o,w);drawTd(o)});
+  o.querySelectorAll('#td-cols [data-ts]').forEach(c=>c.onchange=()=>{const x=c.dataset.ts,a=TC.TD_SIDE.filter(y=>y!==x);if(c.checked)a.push(x);if(!a.length){c.checked=true;TC.toast('Phải giữ ít nhất một cột NSNN hoặc NSĐP',1);return}
+    TC.tdSetVis(TC.TD_VIS,a);$('#td-cols',o).innerHTML=tdColChips(w.info);bindTdCols(o,w);drawTd(o)})}
+function tdTbl(w){
+  const rows=tdRows(w),T=tdW(w),I=tdInp(w),G=TC.tdGroups(w.info),V=TC.tdVisCols,sub=['Tổng thu NSNN','Thu NSĐP'];
+  const HD=TC.tdHdr(w.info),hr=[...Array(HD.n)].map((_,r)=>HD.cells.filter(x=>x.r===r).map(x=>`<th${x.cs>1?` colspan="${x.cs}"`:''}${x.rs>1?` rowspan="${x.rs}"`:''}>${esc(x.t)}</th>`).join(''));
+  const body=rows.map(r=>{
+    const off=T.hide.has(r.id);
+    const bk=tdBadKeys(r,I);
+    const rw=TC.tdRow(r,I),tds=V.map(i=>rw[i]).map(c=>c.inp?`<td class="n${bk.has(c.k)?' tdbad':''}" data-k="${c.k}"><input class="ni tdi" inputmode="numeric" data-id="${r.id}" data-k="${c.k}" value="${c.v==null?'':fmt(c.v)}" aria-label="${esc(r.name||'dòng mới')}"></td>`:`<td data-k="${c.k}"${bk.has(c.k)?' class="tdbad"':''}>${c.t==='p'?pcs(c.v):fz(c.v)}</td>`).join('');
+    const nm=r.manual?`<input type="text" class="tdn" data-id="${r.id}" value="${esc(r.name)}" placeholder="Gõ tên khoản thu" aria-label="Tên dòng mới">`:esc(r.name);
+    return `<tr data-r="${r.id}" class="${r.b?'rb':''}${r.i?' ri':''}${r.manual?' man':''}${off?' off':''}"><td class="c sx sx1"><input type="checkbox" data-r="${r.id}" ${off?'':'checked'} aria-label="Xuất dòng ${esc(r.name)}"></td><td class="c sx sx2">${esc(r.stt)}</td><td class="sx sx3" style="text-align:left">${nm}</td>${tds}</tr>`}).join('');
+  const blk=!TC.TD_BLK?'':TC.tdBlock(rows,I).map((b,bi)=>{const off=T.hide.has('bk'+bi);return `<tr class="blk${off?' off':''}" data-r="bk${bi}"><td class="c sx sx1"><input type="checkbox" data-r="bk${bi}" ${off?'':'checked'} aria-label="Xuất dòng ${esc(b.name)}"></td><td class="sx sx2"></td><td class="sx sx3" style="text-align:left"><b>${esc(b.name)}</b></td>${V.map(i=>`<td data-b="${bi}" data-i="${i}">${b.v&&b.v[i]!=null?(TC.TD_COLS[i].t==='p'?pcs(b.v[i]):fz(b.v[i])):''}</td>`).join('')}</tr>`}).join('');
+  return `<table class="t dtab prev tdt"><tr><th rowspan="${HD.n}" class="sx sx1">Xuất</th><th rowspan="${HD.n}" class="sx sx2">STT</th><th rowspan="${HD.n}" class="sx sx3">Nội dung</th>${hr[0]}</tr>${hr.slice(1).map(x=>`<tr class="h2">${x}</tr>`).join('')}${body}${blk}</table>`;
+}
+/* sửa một ô thì chỉ tính lại dòng đó và khối cuối bảng, không vẽ lại cả bảng (giữ chỗ đang gõ) */
+function tdUpd(o,w,id){
+  const rows=tdRows(w),I=tdInp(w),box=$('#pv-t',o);
+  if(box&&box.dataset.sig!==rows.map(r=>r.id).join(',')){drawTd(o);return} /* số dòng "trích về NSTW" đổi theo dự toán nên vẽ lại */
+  rows.forEach(r=>{const tr=o.querySelector(`tr[data-r="${r.id}"]`);if(!tr)return;const bk=tdBadKeys(r,I);
+    TC.tdRow(r,I).forEach(c=>{const td=tr.querySelector(`td[data-k="${c.k}"]`);if(!td)return;td.classList.toggle('tdbad',bk.has(c.k));
+      if(c.inp){const i=td.querySelector('input');if(i&&i!==document.activeElement)i.value=c.v==null?'':fmt(c.v);return}
+      td.textContent=c.t==='p'?pcs(c.v):fz(c.v)})});
+  TC.tdBlock(rows,I).forEach((b,bi)=>o.querySelectorAll(`td[data-b="${bi}"]`).forEach(td=>{const v=b.v&&b.v[+td.dataset.i];td.textContent=v!=null?(TC.TD_COLS[+td.dataset.i].t==='p'?pcs(v):fz(v)):''}));
+  w.dirty=true;repStat();ckStale(o);
+}
+function drawTd(o){
+  const box=$('#pv-t',o),w=S,T=tdW(w),sx=box.scrollLeft,sy=box.scrollTop;TC.tdMode(TC.tdModeOf(S));
+  box.innerHTML=tdTbl(w);box.dataset.sig=tdRows(w).map(r=>r.id).join(',');applyZ(o);box.scrollLeft=sx;box.scrollTop=sy;
+  box.querySelectorAll('input[type=checkbox][data-r]').forEach(c=>c.onchange=()=>{const id=c.dataset.r;S.U.forEach(u=>{const x=W(u),t=tdW(x);c.checked?t.hide.delete(id):t.hide.add(id);x.dirty=true}); /* bỏ tích hay tích lại một dòng thì áp cho mọi đơn vị, để xuất nhiều xã đều giống nhau */
+    tdHideSave(T);w.dirty=true;repStat();c.closest('tr').classList.toggle('off',!c.checked)});
+  box.querySelectorAll('input.tdi').forEach(i=>i.onchange=()=>{
+    const v=i.value.trim(),inp=T.inp[i.dataset.id]=T.inp[i.dataset.id]||{};
+    if(v===''){delete inp[i.dataset.k];if(T.base&&T.base[i.dataset.id]&&T.base[i.dataset.id][i.dataset.k]!=null){drawTd(o);return}}else{const n=TC.numVal(v);if(n==null||!isFinite(n)){TC.toast('Ô này chỉ nhận số',1);i.value='';delete inp[i.dataset.k]}else{inp[i.dataset.k]=n;i.value=fmt(n)}}
+    tdUpd(o,w,i.dataset.id)});
+  box.querySelectorAll('input.tdn').forEach(i=>i.onchange=()=>{const inp=T.inp[i.dataset.id]=T.inp[i.dataset.id]||{};inp.name=i.value;w.dirty=true;repStat()});
+}
+/* báo cáo thảo luận: danh sách địa bàn lấy từ bảng Tỷ lệ phân cấp, tích chọn để xuất một lần; không cần tệp thực hiện */
+let tdPickEl=null;
+document.addEventListener('tc-cq',()=>{if(tdPickEl&&tdPickEl.isConnected&&tdPickEl.querySelector('#tpick'))tdPickBox(tdPickEl)});
+function tdPickBox(el){
+  const b=$('#tpick',el);if(!b)return;
+  const pc=pcGet(S);
+  if(!pc){b.innerHTML='<div class="warn">Chưa nạp bảng Tỷ lệ phân cấp nên chưa có danh sách địa bàn. Nạp ở mục 1 trước.</div>';return}
+  const all=Object.keys(pc.names||{}).sort((x,y)=>TC.xaCmp(pc.names[x],pc.names[y])),sc=($('.tpgrid',b)||{}).scrollTop||0;
+  const mine=(TC.cqMine?TC.cqMine():[]).map(TC.normXa).filter(k=>(pc.names||{})[k]);
+  const tab=S.tpTab==='mine'?'mine':'all',keys=tab==='mine'?all.filter(k=>mine.includes(k)):all;
+  const on=k=>{const u=S.U.find(x=>TC.normXa(W(x).info.xa||x.xa)===k);return !!u&&u.pick!==false};
+  b.innerHTML=`<div class="tdnh"><h3 style="margin:0">Chọn địa bàn cần xuất</h3>${TC.tip('Số liệu lấy từ bảng Tỷ lệ phân cấp, không cần tệp thực hiện. Tích nhiều xã, phường rồi bấm Tạo bảng thảo luận để xuất một lần (nhiều địa bàn thì tải một tệp .zip).')}</div>
+    <div class="subtabs" id="tp-tabs" role="tablist" aria-label="Cách chọn địa bàn"><button role="tab" data-tt="all" aria-selected="${tab==='all'}">Tất cả địa bàn (${all.length})</button><button role="tab" data-tt="mine" aria-selected="${tab==='mine'}">Chuyên quản phụ trách (${mine.length})</button></div>
+    <div class="row" style="margin:6px 0">${keys.length?`<button class="btn sm" id="tp-all">Chọn tất cả${tab==='mine'?' địa bàn tôi phụ trách':''}</button><button class="btn sm" id="tp-none">Bỏ chọn${tab==='mine'?' các địa bàn này':' tất cả'}</button>`:''}${tab==='mine'?'<button class="btn sm pri" id="tp-edit">Sửa danh sách phụ trách</button>':''}<span class="muted">Đã chọn ${all.filter(on).length}/${all.length} địa bàn${tab==='mine'&&keys.length?`, trong đó ${keys.filter(on).length}/${keys.length} thuộc phần bạn phụ trách`:''}</span></div>
+    ${tab==='mine'&&!keys.length?'<div class="warn">Bạn chưa chọn địa bàn phụ trách nào. Bấm Sửa danh sách phụ trách để tích hoặc gõ tên các xã, phường của bạn (cũng mở được ở menu tài khoản, mục Chuyên quản phụ trách).</div>':`<div class="tpgrid">${keys.map(k=>`<label class="ck"><input type="checkbox" data-tp="${esc(k)}" ${on(k)?'checked':''}> <span class="muted">${TC.xaNo(pc.names[k])||''}</span> ${esc(pc.names[k])}</label>`).join('')}</div>`}
+    <div class="row" style="margin-top:10px"><button class="btn pri" id="tp-go">Tạo bảng thảo luận</button></div>`;
+  b.querySelectorAll('[data-tt]').forEach(x=>x.onclick=()=>{S.tpTab=x.dataset.tt;tdPickBox(el)});
+  const safe=f=>()=>{try{f()}catch(e){TC.errs.push('chọn địa bàn',e);TC.toast('Lỗi: '+(e&&e.message||e)+'. Mở menu avatar > Chẩn đoán để gửi quản trị.',1);tdPickBox(el)}};
+  b.querySelectorAll('[data-tp]').forEach(c=>c.onchange=safe(()=>{tdPick(el,c.dataset.tp,c.checked);tdPickBox(el)}));
+  const ba=$('#tp-all',b),bn=$('#tp-none',b),be=$('#tp-edit',b);
+  if(ba)ba.onclick=safe(()=>{if(S.tpReset)tdPickReset(keys);keys.forEach(k=>tdPick(el,k,true,true));tdPickDone(el);tdPickBox(el)});
+  if(bn)bn.onclick=safe(()=>{keys.forEach(k=>tdPick(el,k,false,true));tdPickDone(el);tdPickBox(el)});
+  if(be)be.onclick=()=>TC.cqModal();
+  $('#tp-go',b).onclick=safe(()=>runAll(el));
+  const g=$('.tpgrid',b);if(g)g.scrollTop=sc;
+}
+/* tích hoặc bỏ một địa bàn: đơn vị chưa có thì tạo từ bảng Tỷ lệ phân cấp (pcOnly) rồi tính bảng luôn */
+/* bỏ các địa bàn chỉ lấy từ bảng phân cấp (của bản nháp cũ), trừ địa bàn đang chọn */
+function tdPickReset(keep){S.tpReset=false;S.U=S.U.filter(u=>!u.pcOnly||keep.includes(TC.normXa(W(u).info.xa||u.xa)));if(S.cur&&!S.U.some(u=>u.key===S.cur))S.cur=null}
+function tdPick(el,key,on,quiet){
+  const pc=pcGet(S),name=pc&&pc.names[key];if(!name)return;
+  if(on&&S.tpReset)tdPickReset([key]);
+  let u=S.U.find(x=>TC.normXa(W(x).info.xa||x.xa)===key);
+  if(!u&&on){u=newU('pc:'+key,name);u.pcOnly=true;u.w.pcOnly=true;u.w.info.xa=name;u.w.info.nam=S.info.nam;S.U.push(u);S.U.sort((a,b)=>(TC.xaNo(a.xa)||999)-(TC.xaNo(b.xa)||999))}
+  if(!u)return;
+  if(!on&&u.pcOnly){S.U.splice(S.U.indexOf(u),1);if(S.cur===u.key)S.cur=null;if(!quiet)tdPickDone(el);return} /* bỏ tích địa bàn chỉ lấy từ bảng phân cấp thì bỏ hẳn đơn vị, không để sót trên thanh đơn vị */
+  u.pick=on;
+  if(on&&!u.gen){const e=genTd(u);if(e)TC.toast(`${name}: ${e}`,1);else if(!quiet&&!S.tpHint){S.tpHint=1;TC.toast('Đã tạo bảng cho '+name+'. Bấm Tạo bảng thảo luận để xem bảng bên dưới.')}}
+  if(!quiet)tdPickDone(el);
+}
+function tdPickDone(el){
+  const g=genUnits();
+  if(!S.cur&&g.length)activate(g[0].key);
+  fillInfo(el);renderUnits(el);showOut(el,1);
+}
+function showTd(el,quiet){
+  const o=$('#out',el),gu=genUnits();
+  if(!gu.length||!S.dt){o.innerHTML='';return}
+  TC.tdMode(TC.tdModeOf(S));S.tdTab=S.itab==='chi'?'chi':'thu'; /* thảo luận thu và thảo luận chi đã là hai thẻ lớn riêng: trong thẻ nào chỉ hiện bảng của thẻ đó */
+  const w=S,nam=w.info.nam,hp=!!(w.prev.thu||w.prev.chi),hasThu=tdHasThu(w),hasChi=!!w.chi,guT=gu.filter(u=>u.pick!==false&&tdHasThu(W(u)));
+  const tabs=gu.length>1?`<div class="subtabs utabs" role="tablist" aria-label="Chọn đơn vị">${gu.map(u=>`<button role="tab" data-u="${esc(u.key)}" aria-selected="${u.key===S.cur}">${esc(canon(W(u).info.xa))}${W(u).dirty?' •':''}</button>`).join('')}</div>`:'';
+  const warns=[];
+  if((S.skipped||[]).length)warns.push(`Còn ${S.skipped.length} đơn vị chưa đủ dữ liệu nên chưa có bảng. Xem chữ đỏ ở mục 1 Nhập dữ liệu.`);
+  const pc=pcGet(w);
+  if(!hasThu){}else if(!pc)warns.push(`Chưa nạp bảng Tỷ lệ phân cấp nên cột ước thực hiện ${nam} và dự toán ${nam+1} chưa có số. Nạp ở mục 1 hoặc gõ tay.`);
+  else{const r=pc.xa[TC.normXa(w.info.xa)];
+    if(!r)warns.push(`Bảng Tỷ lệ phân cấp không có ${canon(w.info.xa)}, nên đơn vị này chưa có ước thực hiện và dự toán ${nam+1}.`);
+    else if(r[7]&&r[7][0]!=null&&Math.abs(r[7][0]-w.dt.thu.tong.nsnn)>0.5)warns.push(`Dự toán ${nam} tổng thu NSNN trong bảng phân cấp là ${fmt(r[7][0])}, còn dự toán đã lưu trong kho là ${fmt(w.dt.thu.tong.nsnn)}. Cột Dự toán ${nam} của bảng này lấy theo kho.`)}
+  const exo=guT.length>1?`<span class="xmode"><b>Nhiều đơn vị:</b><label class="ck"><input type="radio" name="et" value="sep" ${S.expT!=='merge'?'checked':''}> Riêng, nén .zip (${guT.length} tệp)</label><label class="ck"><input type="radio" name="et" value="merge" ${S.expT==='merge'?'checked':''}> Chung, một tệp nhiều sheet</label></span>`:'';
+  o.innerHTML=`<div class="card"><div class="step"><b>✓</b><h2 style="margin:0">Báo cáo thảo luận dự toán ${S.tdTab==='chi'?'chi':'thu'} ${nam+1}</h2></div>
+  ${tabs}${warns.map(x=>`<div class="warn">${esc(x)}</div>`).join('')}
+  <div id="td-thu" ${S.tdTab==='chi'?'hidden':''}>${hasThu?`<p class="muted" style="margin:6px 0 2px">${TC.tip(TC.TD_MODE==='a'?`Mẫu có số thực hiện: thực hiện ${nam-1} lấy từ tệp thu cả năm ${nam-1}, thực hiện ${w.info.thang} tháng ${nam} lấy từ tệp thu năm nay, dự toán ${nam} lấy từ kho dự toán. Ô <span class="tdi-demo">nền xanh</span> là ô gõ tay (ước thực hiện ${nam}, dự toán ${nam+1}, thống nhất); ước thực hiện và dự toán ${nam+1} được điền sẵn từ bảng Tỷ lệ phân cấp, gõ đè được, xóa ô thì lấy lại số từ bảng. Các nhóm so sánh (số tuyệt đối, tỷ lệ %) tự tính từ số trên cùng dòng. Dòng mẫu thêm mới có nền vàng nhạt, gõ được cả tên và số. Bỏ tích ở đầu dòng để không xuất dòng đó. Bấm Hiển thị cột để ẩn bớt nhóm cột.`:`Ô <span class="tdi-demo">nền xanh</span> là ô gõ tay (ước thực hiện cả năm, dự toán ${nam+1}); dự toán ${nam} và ước thực hiện ${nam} và dự toán ${nam+1} được điền sẵn từ bảng Tỷ lệ phân cấp, gõ đè được, xóa ô thì lấy lại số từ bảng. Bảng không có số thực hiện. Các nhóm so sánh (số tuyệt đối, tỷ lệ %) tự tính từ số trên cùng dòng. Dòng mẫu thêm mới có nền vàng nhạt, gõ được cả tên và số. Bỏ tích ở đầu dòng để không xuất dòng đó.`)}Đơn vị triệu đồng.</p>
+   <div class="phead"><div class="row"><button class="btn sm" id="td-colbtn" aria-expanded="${tdColOpen}">Hiển thị cột ${tdColOpen?'▴':'▾'}</button><button class="btn sm" id="td-all">Hiện tất cả dòng</button><button class="btn sm" id="td-emp">Ẩn dòng chưa có số liệu</button><span class="ckwrap"><button class="btn sm pri" id="td-ck" aria-expanded="false">Kiểm tra số liệu</button><div class="ckpop" id="td-ckp" hidden></div></span></div>${zbar('T')}</div>
+   <div id="td-cols" ${tdColOpen?'':'hidden'}>${tdColChips(w.info)}</div>
+   <div id="pv-t" class="wscroll zbox" data-z="T"></div>
+   <div id="tn-box">${tdNameBox(nam)}</div>
+   <div class="xpanel"><button class="btn pri" id="td-xls">Xuất Excel đang hiển thị (bảng thu thảo luận)</button>${exo}</div>
+`:`<div class="warn">Đơn vị này chưa có số liệu thu hoặc dự toán thu nên chưa lập được bảng thu. Chọn tệp thu ở mục 1 rồi bấm tạo lại.</div>`}
+  <div class="xpanel save"><button class="btn pri" id="td-save">Lưu báo cáo thảo luận thu</button>${hasThu?`<button class="btn" id="td-kho">Lưu phụ lục dự toán thu vào kho dự toán</button>`:''}${TC.tip(`Lưu báo cáo thảo luận thu: mỗi đơn vị lưu một bản cho mỗi năm, bấm lại để cập nhật, mở lại ở màn đầu, mục Báo cáo đã lưu.${hasThu?` Lưu phụ lục dự toán thu vào kho dự toán: lấy số thống nhất (chưa có thì dự toán ${nam+1}) và đưa vào kho Dự toán đầu năm ${nam+1} để năm sau báo cáo tự lấy dự toán.`:''}`)}</div>
+  </div>
+  <div id="td-chi" ${S.tdTab==='chi'?'':'hidden'}>
+   <p class="muted" style="margin:6px 0 2px">${TC.tip('Mẫu bảng chi thảo luận dự toán chờ bạn gửi file Excel mẫu chi. Có mẫu là bảng chi, nút xuất Excel chi và phụ lục dự toán chi hiện ra ngay ở đây, làm xong bảng nào thì xuất bảng đó, không phải chờ bảng kia.')}Đơn vị triệu đồng.</p>
+   ${hasChi?`<div class="ok-note">Đã có số liệu chi đến ${esc(w.info.ngay)}: tổng chi NSĐP ${fmt(w.chi.total)}, chi đầu tư phát triển ${fmt(w.chi.dtpt)}, chi thường xuyên ${fmt(w.chi.tx)} (triệu đồng).</div>`:`<div class="warn">Đơn vị này chưa có số liệu chi. Chọn tệp chi ở mục 1 rồi bấm tạo lại.</div>`}
+   <div class="tdwait">Bảng chi thảo luận dự toán ${nam+1}: chờ file Excel mẫu chi</div>
+   <div id="tn-boxc">${tdNameBox(nam,'c')}</div>
+   <div class="xpanel"><button class="btn pri" id="td-xc" disabled title="Chờ file mẫu chi">Xuất Excel bảng chi thảo luận</button>${TC.tip('Nút xuất Excel chi đang chờ file Excel mẫu chi. Phụ lục dự toán chi được xuất trong mục Phụ lục cân đối.')}</div>
+   <div class="xpanel save"><button class="btn pri" id="td-save-c">Lưu báo cáo thảo luận chi</button>${TC.tip('Lưu báo cáo thảo luận chi: mỗi đơn vị lưu một bản cho mỗi năm, bấm lại để cập nhật, mở lại ở màn đầu, mục Báo cáo đã lưu.')}</div>
+  </div>
+  <div id="dlres" style="margin-top:8px"></div><div id="repstat" style="margin-top:8px"></div></div>`;
+  if(hasThu)drawTd(o);repStat();
+  if(hasThu){bindTdCols(o,w);bindTdName(o,nam)}bindTdName(o,nam,'c');
+  o.querySelectorAll('.utabs button').forEach(b=>b.onclick=()=>{const y=window.scrollY;activate(b.dataset.u);fillInfo(el);renderUnits(el);renderDt(el);showOut(el,1);window.scrollTo(0,y)});
+  const ckb=$('#td-ck',o),ckp=$('#td-ckp',o);
+  if(ckb){
+    const run=()=>{stash();const r=tdCheck(S),n=r.items.filter(x=>x.ok===0).length;ckb.className='btn sm '+(n?'bad':'good');ckb.textContent=n?`Kiểm tra số liệu ✗ (${n})`:'Kiểm tra số liệu ✓';ckp.innerHTML=ckPanel(r);ckp.hidden=false;ckb.setAttribute('aria-expanded','true');$('#td-ckre',ckp).onclick=run};
+    ckb.onclick=e=>{e.stopPropagation();if(!ckp.hidden){ckp.hidden=true;ckb.setAttribute('aria-expanded','false')}else run()};
+    document.addEventListener('click',e=>{if(ckp.isConnected&&!ckp.hidden&&!ckp.contains(e.target)){ckp.hidden=true;ckb.setAttribute('aria-expanded','false')}});
+  }
+  const doSave=()=>{if(!TC.auth.can('edit'))return TC.toast('Tài khoản này chỉ được xem, không lưu được',1);const n=saveTd(),lo=S.tdTab==='chi'?'chi':'thu';TC.toast(n>1?`Đã lưu ${n} báo cáo thảo luận ${lo}`:`Đã lưu báo cáo thảo luận ${lo}, có sửa thêm thì bấm lại để cập nhật`)};
+  $('#td-save',o).onclick=doSave;$('#td-save-c',o).onclick=doSave;
+  if(hasThu){
+  o.querySelectorAll('[data-zm]').forEach(b=>b.onclick=()=>{S.z[b.dataset.zm]=Math.max(50,S.z[b.dataset.zm]-10);applyZ(o)});
+  o.querySelectorAll('[data-zp]').forEach(b=>b.onclick=()=>{S.z[b.dataset.zp]=Math.min(160,S.z[b.dataset.zp]+10);applyZ(o)});
+  o.querySelectorAll('input[name=et]').forEach(r=>r.onchange=()=>{S.expT=r.value});
+  $('#td-all',o).onclick=()=>{S.U.forEach(u=>{const x=W(u);tdW(x).hide=new Set();x.dirty=true});tdHideSave(tdW(S));S.dirty=true;drawTd(o)};
+  $('#td-emp',o).onclick=()=>{const T=tdW(S),inp=tdInp(S);T.hide=new Set();tdRows(S).forEach(r=>{if(!r.manual&&TC.tdRow(r,inp).every(c=>c.v==null||c.v===0))T.hide.add(r.id)});S.dirty=true;drawTd(o)};
+  const exp=async(mk,zipName,msg)=>{try{
+    stash();
+    const files=await mk();let pack=files[0];
+    if(files.length>1){const z=new JSZip();files.forEach(f=>z.file(f.name,f.blob));pack={name:zipName(files.length),blob:await z.generateAsync({type:'blob',compression:'DEFLATE'})}}
+    dlPanel($('#dlres',o),files,pack);
+    const r=await TC.download(pack.blob,pack.name);
+    if(r==='rejected')TC.toast('Không lưu được tệp ở đây, bấm tải lại ở dưới nút xuất',1);
+    else if(r!==false){TC.log('Xuất bảng thảo luận',msg.replace(/^Đã xuất\s*/,'')+' · '+unitDesc());saveTd(1,guT);TC.toast(msg)}}catch(e){TC.toast('Lỗi xuất: '+e.message,1)}};
+  const merged=()=>guT.length>1&&S.expT==='merge';
+  $('#td-xls',o).onclick=()=>exp(async()=>{
+    if(merged())return [{name:tdnBase('xls',nam+1,guT.length)+'.xlsx',blob:await TC.buildXlsxTD(guT.map(u=>tdExp(W(u))))}];
+    const r=[];for(const u of guT){const x=W(u);r.push({name:tdnOne('xls',x.info.xa,x.info.nam+1,guT.length)+'.xlsx',blob:await TC.buildXlsxTD(tdExp(x))})}return r},
+    n=>tdnBase('xls',nam+1,n)+'.zip','Đã xuất Excel bảng thảo luận');
+  $('#td-kho',o).onclick=async()=>{
+    if(!TC.auth.can('edit'))return TC.toast('Tài khoản này chỉ được xem, không lưu được',1);
+    stash();
+    const ex=guT.filter(u=>{const x=W(u),old=TC.store.get(TC.dt.key(x.info.xa,x.info.nam+1),null);return old&&old.tables&&old.tables.thu&&old.tables.thu.rows.some(r=>r.v.some(v=>v!=null))});
+    if(ex.length&&!await TC.dialog('Ghi đè dự toán thu trong kho',`<p style="margin:0">Kho Dự toán đầu năm đã có phụ lục dự toán thu năm ${nam+1} của ${ex.length>3?ex.length+' đơn vị':ex.map(u=>esc(canon(W(u).info.xa))).join(', ')}. Ghi đè bằng số thống nhất trong bảng thảo luận?</p>`,'Ghi đè'))return;
+    let n=0;guT.forEach(u=>{const x=W(u),k=TC.dt.key(x.info.xa,x.info.nam+1),old=TC.store.get(k,null);
+      TC.store.set(k,{tables:Object.assign({},old&&old.tables||{},{thu:plOf(x).tables.thu}),savedAt:new Date().toLocaleString('vi-VN'),xa:TC.dt.xaTitle(x.info.xa),nam:x.info.nam+1});n++});
+    TC.toast(`Đã lưu phụ lục dự toán thu năm ${nam+1} của ${n} đơn vị vào kho dự toán`)};
+  }
+  if(!quiet)o.scrollIntoView({behavior:'smooth',block:'start'});
+}
+/* chỉ lưu các đơn vị đang được chọn (hoặc đúng các đơn vị vừa xuất), không lưu tràn cả danh sách */
+function saveTd(q,only){
+  let n=0;
+  try{
+    stash();
+    (only||genUnits().filter(u=>u.pick!==false)).forEach(u=>{
+      const w=W(u);if((!w.thu&&!w.chi&&!w.pcOnly)||!w.dt||!w.info.xa)return;
+      const key=tdKey(w),T=tdW(w),at=new Date().toLocaleString('vi-VN');
+      TC.store.set(key,{savedAt:at,ts:Date.now(),rule:RULE,pcOnly:!!w.pcOnly,info:w.info,thu:w.thu,chi:w.chi,dt:w.dt,tables:w.tables,prev:w.prev,td:{inp:T.inp,hide:[...T.hide],base:T.base||null}});
+      w.rep=key;w.dirty=false;n++;
+    });
+    repStat();
+  }catch(e){}
+  if(n&&!q)TC.log('Lưu bảng thảo luận',unitDesc());
+  if(n)drawTabs();
+  return n;
+}
+function openTd(keys){
+  const us=keys.map(k=>{const v=TC.store.get(k,null);if(!v)return null;
+    const w={info:v.info,auto:{},thu:v.thu,chi:v.chi||null,prev:v.prev||{thu:null,chi:null},src:{thu:[],chi:[]},tables:v.tables||null,dtSrc:'',savedAt:'',dt:v.dt,paras:[],ck:{},hide:null,rep:k,dirty:false,pcOnly:!!v.pcOnly,td:{inp:(v.td&&v.td.inp)||{},hide:new Set((v.td&&v.td.hide)||[]),base:(v.td&&v.td.base)||null}};
+    const u=newU(keyOf(v.info.xa),v.info.xa,w);u.opened=true;u.gen=true;return u}).filter(Boolean);
+  if(!us.length)return;
+  Object.assign(S,{kind:'td',mode:'open',editInfo:false,showPrev:true,showCmp:false,namUser:true,U:us,cur:'',bieu:null,skipped:[],runWarn:[],dtOpen:{},fileWarn:{},files:{thu:[],chi:[],pthu:[],pchi:[]},info:Object.assign({},us[0].w.info)});
+  pull(us[0]);render(S.el);
+}
+/* ---- Phụ lục cân đối: xuất bộ ba phụ lục cân đối, thu, chi dự toán năm sau từ các báo cáo thảo luận đã lưu. Thu lấy từ báo cáo thảo luận thu đã lưu; chi chờ mẫu chi; số cân đối còn lại do người dùng nhập ---- */
+const CD_SUM={0:[1,4,15,16],1:[2,3],4:[5,8],5:[6,7],8:[9,10],10:[11,12],12:[13,14]};  /* dòng tổng = tổng các dòng con (theo thứ tự dòng của khung Phụ lục VII) */
+const cdKeyOf=v=>`cdv:${nrm(v.info.xa).toLowerCase()}:${v.info.nam}`;
+const cdWOf=(k)=>{const v=TC.store.get(k,null);if(!v)return null;
+  const w={info:v.info,auto:{},thu:v.thu,chi:v.chi||null,prev:v.prev||{thu:null,chi:null},src:{thu:[],chi:[]},tables:v.tables||null,dtSrc:'',savedAt:'',dt:v.dt,paras:[],ck:{},hide:null,rep:k,dirty:false,pcOnly:!!v.pcOnly,td:{inp:(v.td&&v.td.inp)||{},hide:new Set((v.td&&v.td.hide)||[]),base:(v.td&&v.td.base)||null}};
+  return w};
+function cdVals(k){
+  const v=TC.store.get(k,null);if(!v)return null;
+  const mk=cdKeyOf(v),man=TC.store.get(mk,{})||{},vals=[];
+  for(let i=0;i<44;i++)vals[i]=man[i]!=null?man[i]:null;
+  let sy=null;
+  try{const w=cdWOf(k);if(w&&w.dt){const o=S.kind;sy=TC.tdSync(tdRows(w),tdInp(w))}}catch(e){sy=null}
+  if(sy){vals[2]=sy.h100;vals[3]=sy.chia}
+  const tot=i=>{const a=CD_SUM[i];if(!a)return vals[i];const xs=a.map(tot).filter(x=>x!=null);vals[i]=xs.length?xs.reduce((p,q)=>p+q,0):null;return vals[i]};
+  Object.keys(CD_SUM).map(Number).sort((a,b)=>b-a).forEach(tot);
+  return {v,vals,man,mk,sy};
+}
+function cdView(el){
+  const keys=keysOf('td:').filter(k=>{const v=TC.store.get(k,null);return v&&v.info&&v.info.xa}).sort((a,b)=>(TC.xaNo(TC.store.get(a,{}).info.xa)||999)-(TC.xaNo(TC.store.get(b,{}).info.xa)||999));
+  const sel=new Set((S.cdSel||[]).filter(k=>keys.includes(k)));S.cdSel=[...sel];
+  if(!S.cdCur||!keys.includes(S.cdCur))S.cdCur=S.cdSel[0]||keys[0]||'';
+  const nm=k=>xaTitle(TC.store.get(k,{}).info.xa);
+  const rowOf=k=>{const v=TC.store.get(k,{}),man=TC.store.get(cdKeyOf(v),{})||{},nman=Object.keys(man).filter(x=>man[x]!=null).length;
+    return `<tr data-k="${esc(k)}" class="${k===S.cdCur?'sel':''}"><td><input type="checkbox" class="cd-ck" value="${esc(k)}" ${sel.has(k)?'checked':''} aria-label="Chọn ${esc(nm(k))}" style="width:auto;min-height:0"></td><td class="nm"><b>${esc(nm(k))}</b><small>dự toán năm ${v.info.nam+1}</small></td>
+     <td>${v.thu||v.pcOnly?`<span class="chip ok"><span class="cdot"></span>Đã lưu</span> <small class="muted">${esc(v.savedAt||'')}</small>`:'<span class="chip wn"><span class="cdot"></span>Chưa có thu</span>'}</td>
+     <td><span class="chip no"><span class="cdot"></span>Chờ mẫu chi</span></td>
+     <td>${nman?`<span class="chip ok"><span class="cdot"></span>Đã nhập ${nman} ô</span>`:'<span class="chip no"><span class="cdot"></span>Chưa nhập</span>'}</td><td class="ra"><button class="btn sm" data-ed="${esc(k)}">Nhập số cân đối</button></td></tr>`};
+  const cur=S.cdCur?cdVals(S.cdCur):null,sk=window.TC_DT_SKEL.cd;
+  const edit=cur?`<div class="card" style="margin-top:12px"><div class="step hdp"><b>2</b><h2 style="margin:0">Số cân đối: ${esc(nm(S.cdCur))}</h2>${TC.tip(`Thu NSĐP hưởng 100% và hưởng từ khoản phân chia tự đồng bộ từ báo cáo thảo luận thu đã lưu (nền xám). Các dòng tổng tự cộng. Số còn lại bạn nhập tay, đơn vị triệu đồng. Phần chi chờ mẫu chi nên chưa đồng bộ.`)}</div>
+   ${cur.sy&&cur.sy.diff!=null&&Math.abs(cur.sy.diff)>0.5?`<div class="warn">Các khoản ngoài danh sách phân chia có thu NSNN ${fmt(cur.sy.h100N)}, nhưng phần NSĐP hưởng chỉ ${fmt(cur.sy.h100)} (chênh ${fmt(cur.sy.diff)}, là phần NSTW hưởng ở các khoản đó). Mình lấy số NSĐP để hai khoản cộng đúng bằng thu NSĐP nội địa ${fmt(cur.sy.noidiaD)}. Bạn xác nhận giúp mình cách này.</div>`:''}
+   ${cur.v.thu||cur.v.pcOnly||cur.sy?'':'<div class="warn">Báo cáo thảo luận thu của đơn vị này chưa có số liệu để đồng bộ.</div>'}
+   <div class="wrap"><table class="itab cdt"><tr><th style="width:60px">STT</th><th>Nội dung</th><th style="width:200px;text-align:right">Dự toán năm ${cur.v.info.nam+1}</th></tr>
+   ${sk.rows.map((r,i)=>{const auto=i===2||i===3||CD_SUM[i],val=cur.vals[i];
+     return `<tr class="${r.b?'rb':''}"><td class="c">${esc(r.stt)}</td><td style="text-align:left;padding-left:${8+((/^(I|II|III|IV|A|B|C)$/.test(r.stt||''))?0:/^\d+$|^B\.\d$/.test(r.stt||'')?14:28)}px">${esc(r.name)}${(i===2||i===3)?' <span class="chip no" style="font-size:11px">đồng bộ</span>':''}</td><td style="text-align:right">${auto?`<span class="cdv${r.b?' b':''}">${val==null?'':fmt(val)}</span>`:`<input type="text" class="ni cdi" inputmode="numeric" data-i="${i}" value="${val==null?'':fmt(val)}" style="text-align:right;max-width:160px">`}</td></tr>`}).join('')}</table></div></div>`:'';
+  el.innerHTML=`<div class="card"><div class="step hdp"><b>1</b><h2 style="margin:0">Chọn đơn vị xuất phụ lục</h2>${TC.tip('Danh sách lấy từ các báo cáo thảo luận đã lưu. Muốn thêm đơn vị thì làm báo cáo thảo luận thu của đơn vị đó và bấm Lưu báo cáo thảo luận thu. Sau khi lưu lại, phụ lục thu và chi tự cập nhật theo.')}<span class="sp"></span><div class="prog"><span>Đã chọn <strong>${sel.size}/${keys.length}</strong> đơn vị</span></div></div>
+   ${keys.length?`<div class="wrap"><table class="itab"><tr><th style="width:36px"><input type="checkbox" id="cd-all" aria-label="Chọn tất cả" style="width:auto;min-height:0" ${sel.size===keys.length?'checked':''}></th><th>Đơn vị</th><th>Báo cáo thảo luận thu</th><th>Báo cáo thảo luận chi</th><th>Số cân đối</th><th style="width:150px"></th></tr>${keys.map(rowOf).join('')}</table></div>`:'<div class="warn">Chưa có báo cáo thảo luận nào được lưu. Vào Báo cáo thảo luận dự toán thu, tạo bảng và bấm Lưu báo cáo thảo luận thu trước.</div>'}</div>
+  ${edit}
+  <div class="card" style="margin-top:12px"><div class="step hdp"><b>${cur?3:2}</b><h2 style="margin:0">Xuất bộ ba phụ lục</h2></div>
+   <div id="tn-boxp">${tdNameBox(S.info.nam,'p')}</div>
+   <div class="xpanel"><button class="btn pri" id="cd-go" ${sel.size?'':'disabled'}>Xuất 3 phụ lục: cân đối, thu, chi (${sel.size} đơn vị)</button>${TC.tip('Mỗi đơn vị xuất ba tệp Excel: Phụ lục cân đối, Phụ lục dự toán thu, Phụ lục dự toán chi. Tất cả nén vào một tệp .zip để tải một lần. Phụ lục chi hiện để trống chờ mẫu chi.')}</div><div id="dlres" style="margin-top:8px"></div></div>`;
+  bindTdName(el,S.info.nam,'p');
+  const redraw=()=>cdView(el);
+  el.querySelectorAll('.cd-ck').forEach(c=>c.onchange=()=>{const a=new Set(S.cdSel);c.checked?a.add(c.value):a.delete(c.value);S.cdSel=[...a];redraw()});
+  const ca=$('#cd-all',el);if(ca)ca.onchange=()=>{S.cdSel=ca.checked?keys.slice():[];redraw()};
+  el.querySelectorAll('[data-ed]').forEach(b=>b.onclick=()=>{S.cdCur=b.dataset.ed;redraw();const e=el.querySelectorAll('.card')[1];if(e)e.scrollIntoView({behavior:'smooth',block:'start'})});
+  el.querySelectorAll('input.cdi').forEach(i=>{TC.bindNum&&0;i.onchange=()=>{if(!TC.auth.can('edit')){TC.toast('Tài khoản này chỉ được xem, không lưu được',1);return redraw()}
+    const man=Object.assign({},cur.man),v=i.value.trim();
+    if(v==='')delete man[i.dataset.i];else{const n=TC.numVal(v);if(n==null||!isFinite(n)){TC.toast('Ô này chỉ nhận số',1);return redraw()}man[i.dataset.i]=n}
+    TC.store.set(cur.mk,man);const y=window.scrollY;redraw();window.scrollTo(0,y)}});
+  const go=$('#cd-go',el);
+  if(go)go.onclick=async()=>{try{
+    const files=[],n=S.cdSel.length;
+    for(const k of S.cdSel){const c=cdVals(k),w=cdWOf(k);if(!c||!w)continue;const info=c.v.info,y=info.nam+1;
+      const a={info,tables:{cd:TC.skelTable('cd',info,c.vals)}};
+      files.push({name:tdnOne('cd',info.xa,y,n)+'.xlsx',blob:await TC.buildXlsxPL(a,'cd')});
+      if(w.dt){files.push({name:tdnOne('pl',info.xa,y,n)+'.xlsx',blob:await TC.buildXlsxPL(plOf(w),'thu')})}
+      files.push({name:tdnOne('plc',info.xa,y,n)+'.xlsx',blob:await TC.buildXlsxPL({info,tables:{chi:TC.skelTable('chi',info,null)}},'chi')})}
+    if(!files.length)return TC.toast('Chưa có tệp nào để xuất',1);
+    const z=new JSZip();files.forEach(f=>z.file(f.name,f.blob));
+    const zip={name:tdnBase('cd',S.info.nam+1,n)+'.zip',blob:await z.generateAsync({type:'blob',compression:'DEFLATE'})};
+    dlPanel($('#dlres',el),files,zip);
+    const r=await TC.download(zip.blob,zip.name);
+    if(r==='rejected')TC.toast('Không lưu được tệp ở đây, bấm tải lại ở dưới nút xuất',1);
+    else if(r!==false){TC.log('Xuất phụ lục cân đối',n+' đơn vị');TC.toast(`Đã xuất ${files.length} tệp phụ lục của ${n} đơn vị`)}
+  }catch(e){TC.toast('Lỗi xuất: '+e.message,1)}};
+}
+function startView(el){
+  const all=[...keysOf('rep:'),...keysOf('td:')].map(k=>({k,v:TC.store.get(k,{}),td:k.startsWith('td:')})).filter(x=>x.v&&x.v.info).sort((a,b)=>(b.v.ts||0)-(a.v.ts||0));
+  const q=(S.fq||'').toLowerCase();
+  const reps=all.filter(x=>!q||(x.v.info.xa||'').toLowerCase().includes(q));
+  const nd=keysOf('dt:').length,st=storeStats(),spc=Math.min(100,Math.round(st.total/QUOTA_KB*100)),slv=storeLvl(spc);
+  if(!S.listOpen&&!S.storeOpen)S.listOpen=true;
+  el.innerHTML=`<div class="card hlist" id="s-list" ${S.listOpen?'':'hidden'}><div id="s-body"><div class="row" style="margin-bottom:8px"><span class="muted" style="flex-basis:100%">Bấm Mở để sửa, xuất lại mà không phải chọn tệp từ đầu. Tích nhiều đơn vị rồi bấm "Mở các báo cáo đã tích" để xuất chung.</span>
+   <input type="text" id="s-q" placeholder="Tìm tên đơn vị" value="${esc(S.fq||'')}" style="max-width:220px">${TC.srv.on?`<button type="button" class="btn sm" id="s-sync" title="Lấy ngay báo cáo mới do các tài khoản khác vừa lưu">⟳ Cập nhật</button>${TC.tip('Danh sách tự cập nhật mỗi 30 giây. Bấm Cập nhật để đồng bộ ngay: gửi báo cáo của bạn lên và lấy báo cáo mới của các tài khoản khác về.')}`:''}</div>
+   ${reps.length?`<div class="tw"><table class="t"><tr><th><input type="checkbox" id="s-all" aria-label="Chọn tất cả" style="width:auto;min-height:0"></th><th style="text-align:left">Đơn vị</th><th>Loại</th><th>Số liệu đến</th><th>Lưu lúc</th><th></th></tr>
+   ${reps.map(x=>`<tr><td><input type="checkbox" class="s-ck" value="${esc(x.k)}" aria-label="Chọn báo cáo ${esc(xaTitle(x.v.info.xa))}" style="width:auto;min-height:0"></td><td style="text-align:left">${esc(xaTitle(x.v.info.xa))}</td><td>${x.td?'Thảo luận dự toán '+(x.v.info.nam+1):'Hàng ngày'}</td><td>${esc(x.v.info.ngay||'')}</td><td>${esc(x.v.savedAt||'')}</td><td style="text-align:right"><button class="btn sm pri" data-o="${esc(x.k)}">Mở</button> <button class="btn sm" data-d="${esc(x.k)}">Xóa</button></td></tr>`).join('')}</table></div>`:'<p class="muted">Chưa có báo cáo nào. Báo cáo được lưu khi bạn bấm Lưu báo cáo (hoặc khi xuất Word, Excel).</p>'}
+   ${reps.length?'<div class="row" style="margin-top:8px"><button class="btn pri" id="s-multi">Mở các báo cáo đã tích</button><span class="muted">Tích nhiều đơn vị để mở cùng lúc, rồi chọn xuất Word, Excel riêng hay chung ở cuối trang.</span></div>':''}
+   <div class="row" style="margin-top:6px"><button class="btn sm" id="sv-bk">Tải bản sao lưu</button><label class="btn sm" style="cursor:pointer">Khôi phục từ bản sao lưu<input type="file" id="sv-rs" accept=".json" style="display:none"></label>${TC.srv.on?'<button class="btn sm" id="sv-dbk">Lưu bản sao lưu lên Drive</button><button class="btn sm" id="sv-drs">Khôi phục từ Drive</button>':''}<span class="muted">Lưu báo cáo là đã có trong bản sao lưu. Bản sao lưu gồm toàn bộ dự toán và các báo cáo đã lưu.</span></div></div></div>
+  <div class="card hlist" id="s-store" ${S.storeOpen?'':'hidden'}><h2 style="margin-bottom:8px">Bộ nhớ lưu trữ</h2>${storeBody(st)}</div>`;
+  el.querySelectorAll('button[data-sc]').forEach(b=>b.onclick=()=>{S.stOpen=S.stOpen===b.dataset.sc?'':b.dataset.sc;S.storeOpen=true;startView(el)});
+  if(S.stOpen&&st.cat[S.stOpen])storeList(el,S.stOpen,st.cat[S.stOpen]);
+  $('#s-q',el).oninput=e=>{S.listOpen=true;S.fq=e.target.value;const p=e.target.selectionStart;startView(el);const i=$('#s-q',el);i.focus();i.setSelectionRange(p,p)};
+  el.querySelectorAll('button[data-d]').forEach(x=>x.onclick=async()=>{if(await TC.dialog('Xóa báo cáo đã lưu','<p style="margin:0">Xóa báo cáo này? Không hoàn lại được.</p>','Xóa')){TC.store.del(x.dataset.d);TC.log('Xóa báo cáo đã lưu',x.dataset.d);startView(el)}});
+  const openKeys=keys=>{
+    if(keys.length&&keys.every(k=>k.startsWith('td:')))return openTd(keys);
+    if(keys.some(k=>k.startsWith('td:')))return TC.toast('Báo cáo hàng ngày và bảng thảo luận mở riêng, đừng tích lẫn hai loại',1);
+    const us=keys.map(k=>{const v=TC.store.get(k,null);if(!v)return null;
+      const w={info:v.info,auto:{},thu:v.thu,chi:v.chi,prev:v.prev||{thu:null,chi:null},src:{thu:[],chi:[]},tables:v.tables||null,dtSrc:'',savedAt:'',dt:v.dt,paras:v.paras,ck:v.ck||{},hide:v.hide?new Set(v.hide):null,rep:k,dirty:false};
+      const u=newU(keyOf(v.info.xa),v.info.xa,w);u.opened=true;u.gen=true;u.v=v;return u}).filter(Boolean);
+    if(!us.length)return;
+    const v=us[0].v;
+    Object.assign(S,{kind:'daily',mode:'open',editInfo:false,showPrev:false,showCmp:false,namUser:true,U:us,cur:'',cols:v.cols||S.cols||null,gOn:{dt:1,th:1,tl:1,ck:1,tc:1},gOnUser:0,bieu:null,dsub:'thu',skipped:[],runWarn:[],dtOpen:{},fileWarn:{},files:{thu:[],chi:[],pthu:[],pchi:[]},info:Object.assign({},v.info)});
+    pull(us[0]);render(el);
+  };
+  el.querySelectorAll('button[data-o]').forEach(x=>x.onclick=()=>openKeys([x.dataset.o]));
+  const sy=$('#s-sync',el);if(sy)sy.onclick=async()=>{sy.disabled=true;sy.textContent='Đang cập nhật…';
+    const ok=await TC.srv.flush()&&await TC.srv.pull(false,true);sy.disabled=false;sy.textContent='⟳ Cập nhật';
+    if(!ok)return TC.toast('Chưa cập nhật được, kiểm tra mạng rồi thử lại.',1);startView(el);TC.toast('Đã cập nhật')};
+  const sa=$('#s-all',el);if(sa)sa.onchange=()=>el.querySelectorAll('.s-ck').forEach(c=>c.checked=sa.checked);
+  const mu=$('#s-multi',el);if(mu)mu.onclick=()=>{const ks=[...el.querySelectorAll('.s-ck:checked')].map(c=>c.value);if(!ks.length)return TC.toast('Tích chọn ít nhất một báo cáo ở cột đầu',1);openKeys(ks)};
+  $('#sv-bk',el).onclick=()=>TC.download(backupBlob(),BK_NAME,{gesture:1});
+  const restoreText=text=>{try{const o=JSON.parse(text);let n=0;Object.entries(o).forEach(([k,v])=>{if((/^(dt|rep|td|tb|pc|pcf):/.test(k)||k==='rules')&&v){TC.store.set(k,v);n++}});TC.toast('Đã khôi phục '+n+' mục');startView(el)}catch(err){TC.toast('Tệp sao lưu không đọc được',1)}};
+  $('#sv-rs',el).onchange=async e=>{const f=e.target.files[0];if(!f)return;restoreText(await f.text())};
+  const dbk=$('#sv-dbk',el);if(dbk)dbk.onclick=async()=>{dbk.disabled=true;dbk.textContent='Đang lưu lên Drive…';await driveSave(backupBlob(),BK_NAME,'application/json');dbk.disabled=false;dbk.textContent='Lưu bản sao lưu lên Drive';if(S.storeOpen)driveBox(el)};
+  const drs=$('#sv-drs',el);if(drs)drs.onclick=async()=>{
+    const fl=await driveFiles();if(fl===null)return;const js=fl.filter(f=>/\.json$/i.test(f.name));
+    if(!js.length)return TC.toast('Chưa có bản sao lưu (.json) nào trong thư mục Drive',1);
+    const d=await TC.dialog('Khôi phục từ Drive',`<label>Chọn bản sao lưu</label><select name="f">${js.map(f=>`<option value="${esc(f.id)}">${esc(f.name)} · ${esc(whenVN(f.mtime))}</option>`).join('')}</select><p class="muted" style="margin:8px 0 0">Dữ liệu trong bản sao lưu sẽ ghi đè mục trùng tên đang có.</p>`,'Khôi phục');
+    if(!d)return;const r=await TC.srv.call('fGet',{id:d.f});
+    if(!r||r.ok===false)return TC.toast((r&&r.msg)||'Không tải được tệp từ Drive',1);
+    restoreText(new TextDecoder().decode(Uint8Array.from(atob(r.b64),c=>c.charCodeAt(0))));TC.log('Khôi phục từ Drive',r.name||'')};
+  if(TC.srv.on&&S.storeOpen)driveBox(el);
+}
+const BK_NAME='APP TAI CHINH sao luu du lieu.json';
+function backupBlob(){const o={};['dt:','rep:','td:','tb:','pc:','pcf:'].forEach(pre=>keysOf(pre).forEach(k=>o[k]=TC.store.get(k,null)));o.rules=TC.store.get('rules',{});return new Blob([JSON.stringify(o)],{type:'application/json'})}
+/* ---- thư mục lưu trên Drive (chạy trên script): lưu bản sao lưu và tệp vừa xuất, trùng tên thì ghi đè bản mới, xóa là chuyển vào thùng rác Drive ---- */
+const whenVN=t=>{const d=new Date(t);return isNaN(d)?'':d.toLocaleString('vi-VN',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})};
+const blobB64=b=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(',')[1]||'');r.onerror=()=>rej(r.error);r.readAsDataURL(b)});
+async function driveFiles(){const r=await TC.srv.call('fList');if(!r||r.ok===false){TC.toast((r&&r.msg)||'Chưa lấy được danh sách trên Drive',1);return null}return r.files||[]}
+async function driveSave(blob,name,mime){
+  if(!TC.auth.can('edit')){TC.toast('Tài khoản này chỉ được xem, không lưu lên Drive',1);return false}
+  const fl=await driveFiles();if(fl===null)return false;
+  if(fl.some(f=>f.name===name)&&!await TC.dialog('Ghi đè trên Drive',`<p style="margin:0">Thư mục Drive đã có tệp <b>${esc(name)}</b>. Thay bằng bản mới này? Bản cũ được chuyển vào thùng rác Drive.</p>`,'Ghi đè'))return false;
+  const r=await TC.srv.call('fPut',{name,mime:mime||blob.type||'application/octet-stream',b64:await blobB64(blob)});
+  if(!r||r.ok===false){TC.toast((r&&r.msg)||'Không lưu lên Drive được',1);return false}
+  TC.log('Lưu lên Drive',name);TC.toast(r.replaced?'Đã ghi đè '+name+' trên Drive':'Đã lưu '+name+' lên Drive');return true}
+async function driveBox(el){
+  const box=$('#drv-box',el);if(!box)return;box.innerHTML='<p class="muted" style="margin:8px 0 0">Đang lấy danh sách tệp trên Drive…</p>';
+  const fl=await driveFiles();if(!box.isConnected)return;
+  const head=`<div class="row" style="margin:12px 0 6px"><b>Thư mục lưu trên Drive</b>${TC.tip('Nơi lưu bản sao lưu và các tệp báo cáo bạn đã xuất (Word, Excel, zip). Lưu tệp trùng tên sẽ ghi đè bản mới; Xóa là chuyển vào thùng rác Drive, còn khôi phục được trong 30 ngày.')}<button type="button" class="btn sm" id="drv-rf">⟳ Cập nhật</button></div>`;
+  if(fl===null){box.innerHTML=head+'<p class="muted" style="margin:0">Chưa lấy được danh sách (máy chủ chưa hỗ trợ hoặc mất mạng).</p>';$('#drv-rf',box).onclick=()=>driveBox(el);return}
+  const can=TC.auth.can('edit');
+  box.innerHTML=head+(fl.length?`<div class="tw"><table class="t"><tr><th style="text-align:left">Tệp</th><th>Dung lượng</th><th>Lưu lúc</th><th></th></tr>${fl.map(f=>`<tr><td style="text-align:left">${esc(f.name)}</td><td class="c">${fmtBytes(f.size||0)}</td><td class="c">${esc(whenVN(f.mtime))}</td><td style="white-space:nowrap;text-align:right"><button type="button" class="btn sm" data-df="${esc(f.id)}">Tải về</button>${can?` <button type="button" class="btn sm" data-dx="${esc(f.id)}" data-n="${esc(f.name)}">Xóa</button>`:''}</td></tr>`).join('')}</table></div>`:'<p class="muted" style="margin:0">Chưa có tệp nào. Bấm "Lưu bản sao lưu lên Drive" ở mục Báo cáo đã lưu, hoặc "Lưu vào Drive" sau khi xuất báo cáo.</p>');
+  $('#drv-rf',box).onclick=()=>driveBox(el);
+  box.querySelectorAll('[data-df]').forEach(b=>b.onclick=async()=>{b.disabled=true;const r=await TC.srv.call('fGet',{id:b.dataset.df});b.disabled=false;
+    if(!r||r.ok===false)return TC.toast((r&&r.msg)||'Không tải được tệp',1);
+    TC.download(new Blob([Uint8Array.from(atob(r.b64),c=>c.charCodeAt(0))],{type:r.mime||'application/octet-stream'}),r.name||'tep',{gesture:1})});
+  box.querySelectorAll('[data-dx]').forEach(b=>b.onclick=async()=>{
+    if(!await TC.dialog('Xóa tệp trên Drive',`<p style="margin:0">Chuyển tệp <b>${esc(b.dataset.n)}</b> vào thùng rác Drive?</p>`,'Xóa'))return;
+    const r=await TC.srv.call('fDel',{id:b.dataset.dx});if(!r||r.ok===false)return TC.toast((r&&r.msg)||'Không xóa được',1);
+    TC.log('Xóa tệp trên Drive',b.dataset.n);TC.toast('Đã chuyển vào thùng rác Drive');driveBox(el)})}
+/* thanh tab nổi ở đầu trang: bốn báo cáo, nút ghim nhỏ (ghim thì thanh dính đầu trang khi cuộn, mặc định tắt), bên dưới là các nút nhỏ (báo cáo đã lưu, dự toán, quy tắc, bộ nhớ) */
+const pinned=()=>!!TC.store.get('rpin',false);
+function tabsHtml(){
+  const k=S.kind,inRep=S.mode==='new'||S.mode==='open'||((S.mode==='dt'||S.mode==='rules')&&(S.back==='new'||S.back==='open')),on=inRep&&!S.collapsed?(k==='daily'?0:k==='cd'?3:(S.itab==='chi'?2:1)):-1;
+  const chip=(c,t)=>`<span class="chip ${c}">${t}</span>`,ncd=keysOf('td:').length,pcOk=!!pcGet(S);
+  let dm='';try{const q=reqState().daily.filter(x=>!x[1]).map(x=>x[0]);dm=k==='daily'&&S.U.length?chip('no',S.U.length+' đơn vị')+(q.length?' '+chip('wn','Thiếu: '+esc(q.join(', '))):' '+chip('ok','✓ Đủ dữ liệu')):''}catch(e){}
+  const T=[['#1d4ed8','📊','Báo cáo thu chi hàng ngày','Thu, chi, xuất Word và Excel',dm],
+   ['#0f766e','📝','Thảo luận dự toán thu','Điền sẵn từ Tỷ lệ phân cấp',(pcOk?chip('ok','✓ Đã đồng bộ'):chip('no','✕ Chưa đồng bộ'))+' '+chip('no',ncd+' đã lưu')],
+   ['#b45309','🧾','Thảo luận dự toán chi','Bảng chi dự toán năm sau',chip('wn','Chờ mẫu chi')],
+   ['#6d28d9','⚖️','Phụ lục cân đối','Xuất 3 phụ lục năm sau',ncd?chip('ok','✓ '+ncd+' báo cáo đã lưu'):chip('no','Chưa có báo cáo thảo luận')]];
+  const pin=pinned();
+  return `<div class="rtabs" role="tablist">${T.map((t,i)=>`<button type="button" role="tab" class="rtb${i===on?' on':''}${i===2?' soon':''}" data-rt="${i}" aria-selected="${i===on}" style="--c:${t[0]}"><span class="ico">${t[1]}</span><span class="rtx"><b>${t[2]}</b><small>${t[3]}</small><span class="chips">${t[4]}</span></span></button>`).join('')}<button type="button" class="pinb${pin?' on':''}" id="r-pin" title="${pin?'Đang ghim thanh tab, bấm để bỏ ghim':'Ghim thanh tab ở đầu trang'}" aria-pressed="${pin}" aria-label="Ghim thanh tab"><svg viewBox="0 0 24 24" width="14" height="14" fill="${pin?'currentColor':'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 17v5"/><path d="M9 3h6l-1 6 3 3v2H7v-2l3-3z"/></svg></button></div>`;
+}
+function utilHtml(){
+  const nd=keysOf('dt:').length,n=[...keysOf('rep:'),...keysOf('td:')].length,st=storeStats(),spc=Math.min(100,Math.round(st.total/QUOTA_KB*100));
+  return `<div class="util rutil"><button class="btn sm" id="u-sv" aria-expanded="${!S.collapsed&&!S.mode&&!!S.listOpen}">Báo cáo đã lưu <span class="cnt">${n}</span></button><button class="btn sm" id="u-dt">Dự toán đầu năm <span class="cnt">${nd} đơn vị</span></button><button class="btn sm" id="u-ru">Quy tắc tính <span class="cnt">${RULE}</span></button><button class="btn sm ${storeLvl(spc)}" id="u-st" aria-expanded="${!S.collapsed&&!S.mode&&!!S.storeOpen}">Bộ nhớ <span class="cnt">${TC.srv.on?fmtKb(st.total):spc+'%'}</span></button></div>`;
+}
+function drawTabs(){
+  const bar=S.bar;if(!bar)return;
+  bar.classList.toggle('pinned',pinned());
+  const sub=S.mode==='dt'||S.mode==='rules';bar.hidden=sub;if(S.ubar)S.ubar.hidden=sub;bar.parentNode.classList.toggle('subpg',sub);
+  bar.innerHTML=tabsHtml();if(S.ubar)S.ubar.innerHTML=utilHtml();
+  const ub=S.ubar||bar;
+  const go=async(kind,itab)=>{
+    const same=S.mode&&(S.mode==='new'||S.mode==='open')&&S.kind===kind&&(kind!=='td'||S.itab===itab);
+    if(same){if(S.collapsed){S.collapsed=false;render(S.el);askDraft(S.el)}else collapse();return}
+    S.collapsed=false;
+    if((S.mode==='new'||S.mode==='open')&&S.kind!=='cd'&&S.U.some(u=>{const w=W(u);return w.dirty||(!w.rep&&!u.gen&&(w.thu||w.chi||w.dt))})&&!await TC.dialog('Chuyển sang báo cáo khác','<p style="margin:0">Dữ liệu đang làm ở báo cáo hiện tại, nếu chưa bấm Lưu, sẽ mất. Vẫn chuyển?</p>','Chuyển'))return;
+    S.hub=false;S.listOpen=false;S.storeOpen=false;
+    if(kind==='td'){S.itab=itab;S.tdTab=itab}
+    newReport(S.el,kind);askDraft(S.el);
+  };
+  bar.querySelectorAll('[data-rt]').forEach(b=>b.onclick=()=>{const i=+b.dataset.rt;i===0?go('daily'):i===1?go('td','thu'):i===2?go('td','chi'):go('cd')});
+  $('#r-pin',bar).onclick=()=>{TC.store.set('rpin',!pinned());drawTabs()};
+  const hub=f=>{if((S.mode==='new'||S.mode==='open')&&S.U.length)stash();S.back='';S.hub=true;S.mode='';S.collapsed=false;f();render(S.el)};
+  /* bấm một nút đang mở thì thu gọn, bấm lúc đang thu gọn hoặc đang mở mục khác thì mở */
+  const tog=(on,f)=>()=>{if(!S.collapsed&&!S.noToggle&&S.mode===''&&on())collapse();else hub(f)};
+  $('#u-sv',ub).onclick=tog(()=>S.listOpen,()=>{S.listOpen=true;S.storeOpen=false});
+  $('#u-st',ub).onclick=tog(()=>S.storeOpen,()=>{S.storeOpen=true;S.listOpen=false});
+  $('#u-dt',ub).onclick=goDt;
+  $('#u-ru',ub).onclick=goRules;
+  S.go=go;drawFab();
+}
+/* nút nổi góc trên bên trái chạy theo trang: màn Dự toán, Quy tắc là "← Quay lại"; màn báo cáo là "Chuyển báo cáo" (hiện khi thanh tab đã cuộn khuất và chưa ghim) */
+function drawFab(){
+  const f=S.fab;if(!f)return;
+  const back=S.mode==='dt'||S.mode==='rules';
+  if(back){f.hidden=false;f.innerHTML='<button type="button" class="btn rfab fabx" id="fab-back" title="Quay lại" aria-label="Quay lại"><span class="fi" aria-hidden="true">←</span><span class="fl">Quay lại</span></button>';$('#fab-back',f).onclick=()=>{const b=S.el.querySelector('#b-back');if(b)b.click()};return}
+  const names=['Báo cáo thu chi hàng ngày','Thảo luận dự toán thu','Thảo luận dự toán chi','Phụ lục cân đối'],cur=(S.mode==='new'||S.mode==='open')?(S.kind==='daily'?0:S.kind==='cd'?3:(S.itab==='chi'?2:1)):-1;
+  f.innerHTML=`<button type="button" class="btn rfab fabx" id="fab-go" aria-expanded="false" title="Chuyển báo cáo" aria-label="Chuyển báo cáo"><span class="fi" aria-hidden="true">⇄</span><span class="fl">Chuyển báo cáo</span></button><div class="rmenu" id="fab-menu" hidden>${names.map((n,i)=>`<button type="button" class="${i===cur?'on':''}" data-fi="${i}">${n}</button>`).join('')}<button type="button" data-fi="h">Báo cáo đã lưu</button></div>`;
+  const m=$('#fab-menu',f),g=$('#fab-go',f);
+  g.onclick=e=>{e.stopPropagation();m.hidden=!m.hidden;g.setAttribute('aria-expanded',!m.hidden)};
+  m.onclick=e=>{const b=e.target.closest('[data-fi]');if(!b)return;m.hidden=true;const i=b.dataset.fi,go=S.go;i==='h'?(S.noToggle=true,$('#u-sv',S.ubar).click(),S.noToggle=false):+i===0?go('daily'):+i===1?go('td','thu'):+i===2?go('td','chi'):go('cd')};
+  fabVis();setTimeout(fabVis,120);
+  if(!f._o){f._o=1;
+    document.addEventListener('click',e=>{const mm=document.getElementById('fab-menu');if(mm&&!mm.hidden&&!mm.parentNode.contains(e.target)){mm.hidden=true;const gg=document.getElementById('fab-go');if(gg)gg.setAttribute('aria-expanded','false')}});
+    document.addEventListener('keydown',e=>{if(e.key==='Escape'){const mm=document.getElementById('fab-menu');if(mm&&!mm.hidden){mm.hidden=true;const gg=document.getElementById('fab-go');if(gg){gg.setAttribute('aria-expanded','false');gg.focus()}}}});
+    document.addEventListener('scroll',()=>{const mm=document.getElementById('fab-menu');if(mm&&!mm.hidden){mm.hidden=true}},{passive:true,capture:false});
+  }
+}
+function fabVis(){
+  const f=S.fab;if(!f)return;
+  if(S.collapsed){f.hidden=true;return}
+  if(S.mode==='dt'||S.mode==='rules'){f.hidden=false;return}
+  if(!S.bar||!S.bar.isConnected){f.hidden=true;return}
+  const r=S.bar.getBoundingClientRect(),gone=r.bottom<70;
+  f.hidden=!(gone&&!pinned());
+  if(f.hidden){const mm=f.querySelector('#fab-menu');if(mm)mm.hidden=true}
+}
+/* ---- tự lưu nháp: mỗi 5 giây nếu có việc chưa lưu; mở lại tab thì hỏi tiếp tục hay làm mới; lưu hoặc xuất xong thì xóa nháp ---- */
+const draftKey=()=>'draft:'+((TC.user&&TC.user.username)||'');
+const SETJ=(k,v)=>v instanceof Set?{__set:[...v]}:v,GETJ=(k,v)=>v&&typeof v==='object'&&v.__set?new Set(v.__set):v;
+let lastDraft='';
+function autosave(){
+  if(!TC.user||!S.el||!S.el.isConnected)return;
+  const live=(S.mode==='new')&&(S.kind==='daily'||S.kind==='td')&&S.U.length;
+  const need=live&&S.U.some(u=>{const w=W(u);return(w.thu||w.chi||w.pcOnly||u.gen)&&(w.dirty||!w.rep)});
+  if(!need){if(live||lastDraft){lastDraft='';TC.store.set(draftKey(),null)}return}
+  stash();
+  const str=JSON.stringify({kind:S.kind,itab:S.itab,tdTab:S.tdTab,info:S.info,cols:S.cols,gOn:S.gOn,U:S.U.map(u=>({key:u.key,xa:u.xa,unknown:u.unknown,ma:u.ma,pcOnly:u.pcOnly,opened:u.opened,gen:u.gen,thuG:u.thuG,chiG:u.chiG,pthuG:u.pthuG,pchiG:u.pchiG,w:u.w}))},SETJ);
+  if(str===lastDraft)return;
+  lastDraft=str;TC.store.set(draftKey(),{ts:Date.now(),kind:S.kind,itab:S.itab,n:S.U.length,names:S.U.map(u=>canon(W(u).info.xa||u.xa)).filter(Boolean).slice(0,4),str});
+}
+window.TC_saveDraft=autosave;
+function restoreDraft(el,d){
+  const x=JSON.parse(d.str,GETJ);
+  Object.assign(S,{kind:x.kind,itab:x.itab||S.itab,tdTab:x.tdTab||S.tdTab,mode:'new',rep:'',files:{thu:[],chi:[],pthu:[],pchi:[]},fileWarn:{},runWarn:[],dtOpen:{},U:x.U,cur:'',info:x.info,cols:x.cols||null,gOn:x.gOn||S.gOn,showPrev:x.kind==='td',namUser:true,editInfo:false});
+  if(S.U.length)pull(S.U[0]);
+  S.U.forEach(u=>{u.w.dirty=true});S.dirty=true;S.tpReset=S.U.some(u=>u.pcOnly); /* lần chọn địa bàn kế tiếp thay hẳn danh sách địa bàn của bản nháp */
+  render(el);TC.toast('Đã khôi phục việc dang dở');
+}
+async function askDraft(rv){
+  const d=TC.store.get(draftKey(),null);
+  if(!d||!d.str||S.askedDraft)return;S.askedDraft=true;
+  const when=new Date(d.ts).toLocaleString('vi-VN'),what=d.kind==='td'?(d.itab==='chi'?'Thảo luận dự toán chi':'Thảo luận dự toán thu'):'Báo cáo thu chi hàng ngày';
+  const r=await TC.dialog('Còn việc dang dở',`<p style="margin:0 0 8px">Lần trước bạn đang làm <b>${esc(what)}</b> (${d.n} đơn vị${d.names&&d.names.length?': '+esc(d.names.join(', ')):''}) và chưa lưu hoặc xuất. Web đã tự lưu nháp lúc ${esc(when)}.</p><p style="margin:0" class="muted">Bấm Tiếp tục để khôi phục. Bấm Hủy để làm báo cáo mới, bản nháp sẽ bị xóa.</p>`,'Tiếp tục');
+  if(r){try{restoreDraft(rv,d)}catch(e){TC.toast('Không khôi phục được bản nháp: '+e.message,1)}}
+  else TC.store.set(draftKey(),null);
+}
+function mount(el){
+  if(!el._rt){
+    el.innerHTML='<div id="rtabs"></div><div id="rutil"></div><div id="rview"></div><div id="rfab" hidden></div>';el._rt=1;
+    window.addEventListener('scroll',()=>{if(el.isConnected)fabVis()},{passive:true});
+    setInterval(()=>{try{autosave()}catch(e){}},5000);
+  }
+  const rv=el.querySelector('#rview');S.bar=el.querySelector('#rtabs');S.ubar=el.querySelector('#rutil');S.fab=el.querySelector('#rfab');
+  if(!S.mode&&!S.hub){S.collapsed=true;newReport(rv,'daily')}else render(rv);
+}
+TC.registerTab({id:'bao-cao',title:'Báo cáo thu chi',ord:1,render:mount});
+TC.bcState=S;
+/* máy khác vừa lưu hoặc xóa: nếu đang ở màn danh sách thì vẽ lại cho thấy ngay (không đụng màn đang nhập liệu) */
+/* số tỷ lệ phân cấp (KK02) vừa đổi do máy khác: đang nhập báo cáo thì tự áp số mới, các ô đã nhập tay giữ nguyên như khi nạp lại tệp */
+TC.refreshPc=()=>{if(!S.el||!S.el.isConnected||!(S.mode==='new'||S.mode==='open')||!S.el.querySelector('#fb-pc'))return false;pcChanged(S.el);return true};
+TC.refreshStore=()=>{if(!S.el||!S.el.isConnected||S.mode||document.querySelector('.ovl'))return false;render(S.el);return true};
+})();
+
+/*@@TC_PART@@*/
+(function(){const st={id:'phan-cap',title:'Tỷ lệ phân cấp thu',render(el){el.innerHTML='<p class="muted">Đang tải…</p>';TC.need('phancap').then(()=>{TC.tabs=TC.tabs.filter(t=>t!==st);const t=TC.tabs.find(x=>x.id==='phan-cap');if(t)t.render(el)},e=>{el.innerHTML='<p class="err">'+TC.esc(e.message)+'</p>'})}};TC.registerTab(st)})();
+/*@@TC_PART@@*/
+/* Quản lý người dùng (cửa sổ nổi, chỉ quản trị) + nhật ký hoạt động + chuông thông báo ở khung trên. */
+(function(){
+const {esc,$}=TC;
+const ROLES={viewer:'Xem',editor:'Sửa',pc:'Phân cấp',admin:'Quản trị'};
+const PRE='BCTC',PASS0='Bctc@2026';
+const pad=n=>String(n).padStart(2,'0');
+const dmy=iso=>{if(!iso)return '';const d=new Date(iso);return isNaN(d)?'':`${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`};
+const ago=iso=>{const d=new Date(iso),s=(Date.now()-d)/1000;if(isNaN(s))return '';if(s<60)return 'vừa xong';if(s<3600)return Math.floor(s/60)+' phút trước';if(s<86400)return Math.floor(s/3600)+' giờ trước';if(s<172800)return 'hôm qua '+pad(d.getHours())+':'+pad(d.getMinutes());return dmy(iso)};
+/* nhóm hoạt động để tô màu chấm nhỏ */
+const kind=a=>/^Đăng nhập/.test(a)?'in':/^Nạp/.test(a)?'load':/^Xuất/.test(a)?'out':/^Lưu|^Tải/.test(a)?'save':/^Xóa|^Bỏ/.test(a)?'del':/^(Tạo|Đổi|Đặt lại|Khóa|Mở khóa|Sửa)/.test(a)?'acct':'misc';
+const nextNames=(us,n)=>{let mx=0;us.forEach(u=>{const m=/^bctc(\d+)$/i.exec(u.username);if(m)mx=Math.max(mx,+m[1])});return Array.from({length:n},(_,i)=>PRE+pad(mx+1+i))};
+const lastOf=u=>u.last||((TC.store.get('log',[]).find(x=>x.u===u.username&&x.a==='Đăng nhập')||{}).t||'');
+const rootOnly=()=>TC.user&&TC.user.root;
+/* tên đăng nhập, mật khẩu tự chọn: cùng quy tắc với máy chủ */
+const UN_RE=/^[a-z0-9._-]{3,30}$/;
+const UN_SP='Tên đăng nhập không được có khoảng trắng.';
+/* kiểm ngay khi gõ: đổi chữ thường, có khoảng trắng thì báo đỏ ngay dưới ô */
+const liveUn=i=>{if(!i||i.disabled)return;const h=i.nextElementSibling,h0=h?h.innerHTML:'',c0=h?h.className:'';const chk=()=>{const c=i.selectionStart,v=i.value.toLowerCase();if(v!==i.value){i.value=v;try{i.setSelectionRange(c,c)}catch(x){}}const sp=/\s/.test(v);i.setAttribute('aria-invalid',sp?'true':'false');i.style.borderColor=sp?'var(--bad)':'';if(h){h.className=sp?'err':c0;h.style.marginTop=sp?'2px':'';h.innerHTML=sp?UN_SP:h0}};i.addEventListener('input',chk);chk()};
+const UN_TIP='Tên đăng nhập 3 đến 30 ký tự: chữ thường không dấu, số, dấu chấm, gạch dưới, gạch ngang (ví dụ <b>ketoan.binhduc</b>). Không trùng tài khoản đã có. Tên đăng nhập của tài khoản cao nhất không đổi được.';
+const NM_TIP='Tên hiển thị 1 đến 60 ký tự, gõ có dấu được (ví dụ <b>Kế toán xã Bình Đức</b>). Để trống thì lấy theo tên đăng nhập.';
+const PW_TIP='Mật khẩu 4 đến 100 ký tự. Để trống thì dùng mật khẩu mặc định '+PASS0+'.';
+const unErr=(v,us,self)=>/\s/.test(v)?UN_SP:!UN_RE.test(v)?'Tên đăng nhập cần 3 đến 30 ký tự: chữ thường không dấu, số, dấu chấm, gạch dưới, gạch ngang.':us.some(x=>x.username===v&&x.username!==self)?'Tên đăng nhập '+v+' đã có người dùng.':'';
+const pwErr=p=>p.length<4||p.length>100?'Mật khẩu cần 4 đến 100 ký tự.':'';
+
+/* ---------- tài khoản: cùng một bộ lệnh cho hai chế độ (máy chủ script, hoặc lưu trên máy này) ---------- */
+const bad=r=>r&&r.ok===false;
+const A=TC.srv.on?{
+  async list(){const r=await TC.srv.call('users');if(bad(r)){TC.toast(r.msg||'Không lấy được danh sách',1);return []}return r.users},
+  add:(names,role,must,pass,disp)=>TC.srv.call('uAdd',{list:names.map(u=>({username:u,name:disp||u.toUpperCase(),role})),pass:pass||PASS0,must}),
+  edit:(n,o)=>TC.srv.call('uSet',Object.assign({username:n},o)),
+  setRole:(n,r)=>TC.srv.call('uSet',{username:n,role:r}),
+  setActive:(n,a)=>TC.srv.call('uSet',{username:n,active:a}),
+  setPass:(n,p,must)=>TC.srv.call('uPass',{username:n,pass:p,must}),
+  del:n=>TC.srv.call('uDel',{username:n}),
+  clearLog:()=>TC.srv.call('logClear')
+}:{
+  async list(){return TC.auth.users()},
+  async add(names,role,must,pass,disp){const all=TC.auth.users();for(const u of names){if(all.some(x=>x.username===u))return {ok:false,msg:'Tài khoản '+u+' đã có.'};const x=await TC.auth.make(u,disp||u.toUpperCase(),role,pass||PASS0);if(must)x.must=true;all.push(x)}TC.auth.save(all);return {ok:true}},
+  async edit(n,o){const all=TC.auth.users(),u=all.find(x=>x.username===n);if(!u)return {ok:false,msg:'Không thấy tài khoản.'};
+    if(o.name!==undefined)u.name=o.name;let nn=n;
+    if(o.newUsername!==undefined&&o.newUsername!==n){if(u.root)return {ok:false,msg:'Không đổi tên đăng nhập của tài khoản cao nhất.'};if(all.some(x=>x.username===o.newUsername))return {ok:false,msg:'Tên đăng nhập '+o.newUsername+' đã có người dùng.'};nn=u.username=o.newUsername}
+    TC.auth.save(all);return {ok:true,username:nn,relogin:nn!==n&&TC.user.username===n}},
+  async setRole(n,r){const all=TC.auth.users(),u=all.find(x=>x.username===n);if(u.role==='admin'&&r!=='admin'&&all.filter(x=>x.role==='admin'&&x.active).length<2)return {ok:false,msg:'Phải còn ít nhất một quản trị đang dùng'};u.role=r;TC.auth.save(all);if(TC.user.username===n)TC.user.role=r;return {ok:true}},
+  async setActive(n,a){const all=TC.auth.users(),u=all.find(x=>x.username===n);if(!a&&u.role==='admin'&&all.filter(x=>x.role==='admin'&&x.active).length<2)return {ok:false,msg:'Phải còn ít nhất một quản trị đang dùng'};u.active=a;TC.auth.save(all);return {ok:true}},
+  async setPass(n,p,must){await TC.auth.setPass(n,p);if(must!==undefined){const all=TC.auth.users(),u=all.find(x=>x.username===n);u.must=!!must;TC.auth.save(all)}return {ok:true}},
+  async del(n){const all=TC.auth.users(),u=all.find(x=>x.username===n);if(u.role==='admin'&&u.active&&all.filter(x=>x.role==='admin'&&x.active).length<2)return {ok:false,msg:'Không xóa được quản trị cuối cùng'};TC.auth.save(all.filter(x=>x.username!==n));return {ok:true}},
+  async clearLog(){TC.store.set('log',[]);return {ok:true}}
+};
+const doit=async(p,okMsg)=>{const r=await p;if(bad(r)){TC.toast(r.msg||'Không thực hiện được',1);return false}if(okMsg)TC.toast(okMsg);return true};
+
+/* ---------- quản lý người dùng ---------- */
+TC.usersModal=async()=>{
+  const m=TC.modal('Quản lý người dùng','<div id="um"><p class="muted">Đang tải danh sách…</p></div>',{wide:1});
+  let us=[],must=false;const S1={open:false,un:'',dn:'',pw:'',role:'viewer',err:''};
+  const load=async()=>{us=await A.list();draw()};
+  const draw=()=>{
+    const el=$('#um',m.el);if(!el)return;
+    const n=Math.max(1,Math.min(30,+($('#u-n',el)||{}).value||1)),role=($('#u-r',el)||{}).value||'viewer';
+    if($('#u-m',el))must=$('#u-m',el).checked;
+    if($('#u-un',el)){S1.open=$('#u-cust',el).open;S1.un=$('#u-un',el).value;S1.dn=$('#u-dn',el).value;S1.pw=$('#u-pw',el).value;S1.role=$('#u-cr',el).value}
+    const nm=nextNames(us,n),preview=nm.length>2?`${nm[0]}, ${nm[1]}... ${nm[nm.length-1]}`:nm.join(', ');
+    el.innerHTML=`<div class="umk"><span>Tạo thêm</span><input type="number" id="u-n" min="1" max="30" value="${n}" aria-label="Số tài khoản"><span>tài khoản quyền</span><select id="u-r" aria-label="Quyền">${Object.entries(ROLES).map(([k,v])=>`<option value="${k}" ${k===role?'selected':''}>${v}</option>`).join('')}</select></div>
+    <button type="button" class="btn pri umadd" id="u-add">Tạo (${esc(preview)} mật khẩu ${PASS0})</button>
+    <details class="umc" id="u-cust" ${S1.open?'open':''}><summary>Tạo một tài khoản tự chọn tên, mật khẩu</summary>
+     <div class="umcg"><div><label for="u-un">Tên đăng nhập ${TC.tip(UN_TIP)}</label><input id="u-un" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="vd ketoan.binhduc" value="${esc(S1.un)}"><small class="muted">3-30 ký tự: a-z, 0-9, . _ -</small></div>
+     <div><label for="u-dn">Tên hiển thị ${TC.tip(NM_TIP)}</label><input id="u-dn" type="text" autocomplete="off" maxlength="60" placeholder="vd Kế toán xã Bình Đức" value="${esc(S1.dn)}"><small class="muted">1-60 ký tự, có dấu được</small></div>
+     <div><label for="u-pw">Mật khẩu ${TC.tip(PW_TIP)}</label><input id="u-pw" type="text" autocomplete="new-password" maxlength="100" placeholder="${PASS0}" value="${esc(S1.pw)}"><small class="muted">4-100 ký tự, trống = ${PASS0}</small></div>
+     <div><label for="u-cr">Quyền</label><select id="u-cr">${Object.entries(ROLES).map(([k,v])=>`<option value="${k}" ${k===S1.role?'selected':''}>${v}</option>`).join('')}</select></div></div>
+     <p class="err" id="u-ce" ${S1.err?'':'hidden'}>${esc(S1.err)}</p><button type="button" class="btn pri" id="u-cadd">Tạo tài khoản này</button></details>
+    <label class="umm"><input type="checkbox" id="u-m" ${must?'checked':''} style="width:auto;min-height:0"> Bắt đổi mật khẩu ở lần đăng nhập đầu tiên ${TC.tip('Mặc định <b>tắt</b>: tài khoản mới dùng ngay mật khẩu '+PASS0+'. Bật thì áp dụng cho các tài khoản tạo mới và các lần đặt lại mật khẩu từ lúc này.')}</label>
+    <div class="tw umt"><table class="t"><tr><th>Tên</th><th>Quyền</th><th>Hoạt động</th><th>Đăng nhập gần nhất</th><th></th></tr>
+    ${us.map(u=>{const me=u.username===TC.user.username,lock=u.root&&!rootOnly();
+      return `<tr data-u="${esc(u.username)}"><td style="text-align:left"><b>${esc(u.username.toUpperCase())}</b>${u.name&&u.name.toLowerCase()!==u.username?`<div class="muted" style="font-size:12.5px">${esc(u.name)}</div>`:''}${u.root?' <span class="badge fin">cao nhất</span>':''}${me?' <span class="badge">bạn</span>':''}${u.must?' <span class="badge">chờ đổi MK</span>':''}</td>
+      <td>${u.root?'Quản trị':`<select data-a="rl" aria-label="Quyền của ${esc(u.username)}">${Object.entries(ROLES).map(([k,v])=>`<option value="${k}" ${k===u.role?'selected':''}>${v}</option>`).join('')}</select>`}</td>
+      <td>${u.root?'':`<input type="checkbox" data-a="tg" ${u.active?'checked':''} aria-label="Hoạt động ${esc(u.username)}" style="width:auto;min-height:0">`}</td>
+      <td class="muted">${esc(dmy(lastOf(u))||'chưa đăng nhập')}</td>
+      <td style="white-space:nowrap;text-align:right">${lock?'':`<button type="button" class="btn sm" data-a="ed">Sửa tên</button> <button type="button" class="btn sm" data-a="pw">Đặt lại MK</button>`}${u.root||me?'':` <button type="button" class="btn sm" data-a="del">Xóa</button>`}</td></tr>`}).join('')}</table></div>
+    <div class="row umf"><button type="button" class="btn sm" id="u-act">Xem nhật ký hoạt động</button><button type="button" class="btn sm" id="u-exp">Tải danh sách</button><span class="muted">Mật khẩu mặc định ${PASS0}. ${TC.srv.on?'Danh sách lưu trên máy chủ, mọi máy dùng chung.':'Danh sách lưu trên máy này.'}</span></div>`;
+    $('#u-n',el).oninput=draw;$('#u-r',el).onchange=draw;
+    liveUn($('#u-un',el));
+    $('#u-act',el).onclick=()=>TC.activityModal();
+    $('#u-exp',el).onclick=()=>TC.download(new Blob([JSON.stringify(us.map(({username,name,role,active})=>({username,name,role,active})),null,1)],{type:'application/json'}),'nguoi-dung.json');
+    $('#u-add',el).onclick=async()=>{
+      const list=nextNames(us,Math.max(1,Math.min(30,+$('#u-n',el).value||1))),r=$('#u-r',el).value,mu=$('#u-m',el).checked;
+      if(await doit(A.add(list,r,mu),'Đã tạo '+list.join(', ')+', mật khẩu '+PASS0)){TC.log('Tạo tài khoản',list.join(', ')+' (quyền '+ROLES[r]+')');}
+      load()};
+    const cadd=$('#u-cadd',el);if(cadd)cadd.onclick=async()=>{
+      const un=$('#u-un',el).value.toLowerCase(),dn=$('#u-dn',el).value.trim(),pw=$('#u-pw',el).value,r=$('#u-cr',el).value,mu=$('#u-m',el).checked;
+      const er=unErr(un,us)||(dn.length>60?'Tên hiển thị tối đa 60 ký tự.':'')||(pw?pwErr(pw):'');
+      const ce=$('#u-ce',el);if(er){S1.err=er;ce.textContent=er;ce.hidden=false;return}
+      if(await doit(A.add([un],r,mu,pw||PASS0,dn||un.toUpperCase()),'Đã tạo '+un+(pw?'':', mật khẩu '+PASS0))){TC.log('Tạo tài khoản',un.toUpperCase()+' (quyền '+ROLES[r]+')');Object.assign(S1,{un:'',dn:'',pw:'',err:''});['#u-un','#u-dn','#u-pw'].forEach(k=>{const x=$(k,el);if(x)x.value=''})}
+      load()};
+    el.querySelectorAll('tr[data-u]').forEach(tr=>{
+      const name=tr.dataset.u,get=()=>us.find(x=>x.username===name);
+      const rl=$('select[data-a=rl]',tr);if(rl)rl.onchange=async()=>{
+        if(await doit(A.setRole(name,rl.value)))TC.log('Đổi quyền',name.toUpperCase()+' thành '+ROLES[rl.value]);load()};
+      const tg=$('input[data-a=tg]',tr);if(tg)tg.onchange=async()=>{
+        if(await doit(A.setActive(name,tg.checked)))TC.log(tg.checked?'Mở khóa tài khoản':'Khóa tài khoản',name.toUpperCase());load()};
+      const ed=$('button[data-a=ed]',tr);if(ed)ed.onclick=async()=>{
+        const u=get();let msg='',v={un:u.username,dn:u.name||''};
+        for(;;){
+          const pd=TC.dialog('Sửa tên tài khoản '+name.toUpperCase(),`${msg?`<p class="err" style="margin:0 0 8px">${esc(msg)}</p>`:''}<div style="margin-bottom:10px"><label>Tên đăng nhập ${TC.tip(UN_TIP)}</label><input name="un" type="text" value="${esc(v.un)}" autocomplete="off" autocapitalize="none" spellcheck="false" ${u.root?'disabled':''}><small class="muted">${u.root?'Tài khoản cao nhất giữ nguyên tên đăng nhập.':'3-30 ký tự: a-z, 0-9, . _ -'+(u.username===TC.user.username?'. Đổi tên của chính bạn thì phải đăng nhập lại.':'. Người này đăng nhập lại bằng tên mới.')}</small></div><div><label>Tên hiển thị ${TC.tip(NM_TIP)}</label><input name="dn" type="text" value="${esc(v.dn)}" maxlength="60" autocomplete="off"><small class="muted">1-60 ký tự, có dấu được</small></div>`,'Lưu');
+          {const ov=document.querySelectorAll('.ovl');liveUn(ov.length&&ov[ov.length-1].querySelector('input[name=un]'))}
+          const d=await pd;if(!d)return;
+          v={un:u.root?u.username:String(d.un||'').toLowerCase(),dn:String(d.dn||'').trim()};
+          const o={};if(v.dn!==(u.name||''))o.name=v.dn||v.un.toUpperCase();if(v.un!==u.username)o.newUsername=v.un;
+          if(!Object.keys(o).length)return;
+          msg=(o.newUsername!==undefined?unErr(v.un,us,u.username):'')||(v.dn.length>60?'Tên hiển thị tối đa 60 ký tự.':'');if(msg)continue;
+          const r=await A.edit(name,o);if(bad(r)){msg=r.msg||'Không lưu được';continue}
+          TC.log('Sửa tài khoản',name.toUpperCase()+(o.newUsername?' thành '+o.newUsername.toUpperCase():'')+(o.name?' · tên '+o.name:''));
+          if(r.relogin){/* đưa thẳng về màn đăng nhập, điền sẵn tên mới; không tải lại trang (trong Apps Script tải lại dễ ra màn trắng) */try{if(TC.srv.on){TC.srv.setToken('');TC.srv.onState=null}}catch(e){}TC.forget&&TC.forget();TC.store.set('tok_user',r.username);TC.user=null;TC.autoLogin=false;TC.loginView(r.username,'Đã đổi tên đăng nhập thành '+r.username+'. Bạn đăng nhập lại bằng tên mới.');return}
+          TC.toast('Đã lưu tài khoản '+(r.username||name).toUpperCase());return load()}};
+      const pw=$('button[data-a=pw]',tr);if(pw)pw.onclick=async()=>{
+        const u=get();
+        if(u.root||u.username===TC.user.username){
+          const d=await TC.dialog('Đổi mật khẩu '+name.toUpperCase(),'<label>Mật khẩu mới (từ 4 ký tự)</label><input type="password" name="p" autocomplete="new-password">','Đổi mật khẩu');
+          if(d&&d.p&&d.p.length>=4){if(await doit(A.setPass(name,d.p,false),'Đã đổi mật khẩu '+name.toUpperCase()))TC.log('Đổi mật khẩu',name.toUpperCase())}else if(d)TC.toast('Mật khẩu cần từ 4 ký tự',1);return}
+        const mu=$('#u-m').checked;
+        let msg='';for(;;){
+          const d=await TC.dialog('Đặt lại mật khẩu',`${msg?`<p class="err" style="margin:0 0 8px">${esc(msg)}</p>`:''}<p style="margin:0 0 8px">Đặt mật khẩu mới cho <b>${esc(name.toUpperCase())}</b>.${mu?' Khi đăng nhập họ sẽ phải đổi mật khẩu mới.':''}</p><label>Mật khẩu mới ${TC.tip(PW_TIP)}</label><input name="p" type="text" autocomplete="new-password" maxlength="100" placeholder="${PASS0}"><small class="muted">4-100 ký tự, để trống = ${PASS0}</small>`,'Đặt lại');
+          if(!d)return;const p=d.p||PASS0;msg=pwErr(p);if(msg)continue;
+          if(await doit(A.setPass(name,p,mu),'Đã đặt lại mật khẩu '+name.toUpperCase()+(d.p?'':' về '+PASS0)))TC.log('Đặt lại mật khẩu',name.toUpperCase());return load()}};
+      const del=$('button[data-a=del]',tr);if(del)del.onclick=async()=>{
+        if(await TC.dialog('Xóa tài khoản',`<p style="margin:0">Xóa tài khoản <b>${esc(name.toUpperCase())}</b>? Không hoàn lại được.</p>`,'Xóa')){
+          if(await doit(A.del(name)))TC.log('Xóa tài khoản',name.toUpperCase());load()}};
+    });
+  };
+  load();return m;
+};
+
+/* ---------- người dùng tự đổi mật khẩu (force = Quản trị bắt đổi: hộp tự mở lại cho tới khi đổi xong) ---------- */
+TC.changePass=async(force)=>{
+  const need=TC.srv.on||!TC.autoLogin;let msg='';
+  for(;;){
+    const d=await TC.dialog(force?'Đổi mật khẩu lần đầu':'Đổi mật khẩu của bạn',`${force?'<p class="muted" style="margin:0 0 8px">Quản trị yêu cầu bạn đặt mật khẩu riêng trước khi dùng tiếp.</p>':''}${msg?`<p class="err" style="margin:0 0 8px">${esc(msg)}</p>`:''}${need?'<div style="margin-bottom:10px"><label>Mật khẩu hiện tại</label><input type="password" name="o" autocomplete="current-password"></div>':''}<div style="margin-bottom:10px"><label>Mật khẩu mới (từ 6 ký tự)</label><input type="password" name="p" autocomplete="new-password"></div><div><label>Nhập lại mật khẩu mới</label><input type="password" name="q" autocomplete="new-password"></div>`,'Đổi mật khẩu');
+    if(!d){if(force)continue;return}
+    if(!d.p||d.p.length<6){msg='Mật khẩu mới cần từ 6 ký tự';continue}
+    if(d.p!==d.q){msg='Hai lần nhập mật khẩu mới chưa giống nhau';continue}
+    if(TC.srv.on){const r=await TC.srv.call('chpass',{o:d.o||'',n:d.p});if(bad(r)){msg=r.msg||'Không đổi được mật khẩu';continue}TC.user.must=false}
+    else{if(need&&!await TC.auth.login(TC.user.username,d.o||'')){msg='Mật khẩu hiện tại chưa đúng';continue}
+      await TC.auth.setPass(TC.user.username,d.p);const all=TC.auth.users(),u=all.find(x=>x.username===TC.user.username);if(u){u.must=false;TC.auth.save(all)}TC.user.must=false}
+    TC.log('Đổi mật khẩu',TC.user.username.toUpperCase()+' tự đổi');TC.toast('Đã đổi mật khẩu');return}
+};
+
+/* ---------- nhật ký hoạt động ---------- */
+const itemHtml=(l,un)=>`<div class="ni-row${un?' un':''}"><span class="dot ${kind(l.a)}"></span><div class="ni-t"><b>${esc(l.a)}</b>${l.d?`<span> · ${esc(l.d)}</span>`:''}<div class="muted" style="font-size:12.5px">${esc((l.u||'-').toUpperCase())}${TC.user&&l.u===TC.user.username?' (bạn)':''} · ${esc(ago(l.t))}</div></div></div>`;
+TC.activityModal=()=>{
+  const m=TC.modal('Nhật ký hoạt động','<div id="am"></div>',{wide:1});
+  const draw=()=>{
+    const el=$('#am',m.el);if(!el)return;const f=($('#a-u',el)||{}).value||'',k=($('#a-k',el)||{}).value||'';
+    const all=TC.store.get('log',[]),users=[...new Set(all.map(x=>x.u))].filter(Boolean);
+    const rows=all.filter(x=>(!f||x.u===f)&&(!k||kind(x.a)===k));
+    el.innerHTML=`<div class="row" style="margin-bottom:8px"><select id="a-u" style="width:auto" aria-label="Lọc theo tài khoản"><option value="">Mọi tài khoản</option>${users.map(u=>`<option value="${esc(u)}" ${u===f?'selected':''}>${esc(u.toUpperCase())}</option>`).join('')}</select>
+     <select id="a-k" style="width:auto" aria-label="Lọc theo việc"><option value="">Mọi việc</option>${[['in','Đăng nhập'],['load','Nạp dữ liệu'],['out','Xuất báo cáo'],['save','Lưu'],['del','Xóa'],['acct','Tài khoản']].map(([v,t])=>`<option value="${v}" ${v===k?'selected':''}>${t}</option>`).join('')}</select>
+     <span class="muted" style="flex:1">${rows.length} hoạt động gần nhất (tối đa 300)</span>${all.length?'<button type="button" class="btn sm" id="a-clr">Xóa nhật ký</button>':''}</div>
+     <div class="ni-list">${rows.length?rows.map(l=>itemHtml(l,false)).join(''):'<p class="muted">Chưa có hoạt động nào.</p>'}</div>`;
+    $('#a-u',el).onchange=draw;$('#a-k',el).onchange=draw;
+    const c=$('#a-clr',el);if(c)c.onclick=async()=>{if(await TC.dialog('Xóa nhật ký','<p style="margin:0">Xóa toàn bộ nhật ký hoạt động? Không hoàn lại được.</p>','Xóa')){await A.clearLog();TC.store.set('log',[]);TC.bellUpdate();draw()}};
+  };
+  draw();return m;
+};
+
+/* ---------- chuông thông báo ---------- */
+const seenKey=()=>'seen:'+(TC.user&&TC.user.username);
+const isNew=(l,s)=>l.t>s&&!(TC.user&&l.u===TC.user.username&&l.a==='Đăng nhập');
+const unread=()=>{const s=TC.store.get(seenKey(),'');return TC.store.get('log',[]).filter(l=>isNew(l,s)).length};
+const markSeen=()=>{TC.store.set(seenKey(),new Date().toISOString());TC.bellUpdate()};
+function renderPanel(){
+  const p=$('#bell-p');if(!p||p.hidden)return;
+  const s=p.dataset.seen||'',rows=TC.store.get('log',[]).slice(0,14);
+  p.innerHTML=`<div class="np-h"><b>Hoạt động gần đây</b><button type="button" class="btn sm" id="np-read">Đánh dấu đã đọc</button></div>
+   <div class="ni-list np-l">${rows.length?rows.map(l=>itemHtml(l,isNew(l,s))).join(''):'<p class="muted" style="padding:10px 14px">Chưa có hoạt động nào.</p>'}</div>
+   <div class="np-f"><button type="button" class="btn sm" id="np-all">Xem tất cả hoạt động</button></div>`;
+  $('#np-read',p).onclick=()=>{p.dataset.seen=new Date().toISOString();markSeen();renderPanel()};
+  $('#np-all',p).onclick=()=>{closePanel();TC.activityModal()};
+}
+function closePanel(){const p=$('#bell-p'),b=$('#bell-b');if(!p||p.hidden)return;p.hidden=true;if(b)b.setAttribute('aria-expanded','false');markSeen()}
+TC.bellUpdate=()=>{const n=$('#bell-n');if(!n)return;const c=unread();n.hidden=!c;n.textContent=c>99?'99+':String(c);const p=$('#bell-p');if(p&&!p.hidden)renderPanel()};
+let bellBound=false;
+TC.bellInit=()=>{
+  const b=$('#bell-b'),p=$('#bell-p');if(!b||!p)return;
+  b.onclick=e=>{e.stopPropagation();if(!p.hidden)return closePanel();p.dataset.seen=TC.store.get(seenKey(),'');p.hidden=false;b.setAttribute('aria-expanded','true');renderPanel()};
+  if(!bellBound){bellBound=true;
+    document.addEventListener('click',e=>{const p=$('#bell-p'),b=$('#bell-b');if(p&&!p.hidden&&!p.contains(e.target)&&!b.contains(e.target))closePanel()});
+    document.addEventListener('keydown',e=>{const p=$('#bell-p');if(e.key==='Escape'&&p&&!p.hidden)closePanel()})}
+  TC.bellUpdate();
+};
+
+/* hai mục trong menu Quản trị mở cửa sổ nổi thay vì chuyển tab */
+TC.registerTab({id:'users',title:'Quản lý người dùng',sub:'Tạo tài khoản, quyền, đặt lại mật khẩu',admin:true,open:()=>TC.usersModal(),render(el){el.innerHTML=''}});
+TC.registerTab({id:'log',title:'Nhật ký hoạt động',sub:'Ai đăng nhập, nạp dữ liệu, xuất báo cáo, lúc nào',admin:true,open:()=>TC.activityModal(),render(el){el.innerHTML=''}});
+})();
+
+/*@@TC_PART@@*/
+/* Tab "Dự toán đầu năm": kho dự toán từng xã, phường (phụ lục V, VI, VII). Nạp một lần, báo cáo tự lấy ra theo tên đơn vị và năm. */
+(function(){
+const {fmt,esc,$}=TC,E=TC.engine;
+const TABN={cd:'Cân đối',thu:'Thu',chi:'Chi'};
+const nrm=s=>String(s||'').replace(/\s+/g,' ').trim();
+const xaTitle=x=>nrm(x).replace(/^Xã(?=\s)/,'xã').replace(/^Phường(?=\s)/,'phường');
+const clone=o=>JSON.parse(JSON.stringify(o));
+const key=(xa,nam)=>`dt:${nrm(xa).toLowerCase()}:${nam}`;
+const skeleton=()=>{const k=window.TC_DT_SKEL;if(!k)return {};const t=clone(k);Object.values(t).forEach(x=>x.rows.forEach(r=>{r.v=r.v.map(()=>null)}));return t};
+const fz=v=>v==null?'':v===0?'-':fmt(v);
+const XA=window.TC_XA96||[],xaIdx=n=>{const k=nrm(n).toLowerCase();return XA.findIndex(x=>x.toLowerCase()===k)+1};
+const fm=v=>v==null?'–':fmt(v);
+const rowOf=(t,re,stt)=>t&&t.rows.find(r=>re.test(r.name)&&(!stt||r.stt===stt));
+function fig(x){
+  const t=x.v.tables||{},d=E.deriveDt(t),has=k=>t[k]&&hasNum({a:t[k]});
+  const cd=rowOf(t.cd,/^Thu bổ sung cân đối/i),bs=rowOf(t.cd,/^Thu bổ sung có mục tiêu/i),v=r=>r&&r.v[0]!=null?r.v[0]:null;
+  const th=d.thu&&d.thu.tong,c=d.chi||{};
+  const a=th?th.nsdp:null,chi=c.tong||null,bcd=v(cd),bmt=v(bs);
+  const chk=a!=null&&chi!=null&&(t.cd||bcd!=null||bmt!=null)?Math.round((a-chi+(bcd||0)+(bmt||0))*1000)/1000:null;
+  return {stt:xaIdx(x.v.xa||x.k.split(':')[1]),apx:[['CĐ','cd'],['Thu','thu'],['Chi','chi']].map(([n,k])=>has(k)?n:`<span class="bad-t">thiếu ${n}</span>`).join(', '),
+    nsnn:th?th.nsnn:null,nsdp:a,bcd,bmt,chi,dtpt:c.dtpt||null,tx:c.tx||null,chk};
+}
+const hasNum=tables=>Object.values(tables||{}).some(t=>t.rows.some(r=>r.v.some(x=>x!=null&&x!==0)));
+
+/* dùng chung với tab báo cáo */
+const DT=TC.dt={
+  key,xaTitle,skeleton,
+  /* tìm đúng khóa trước; không có thì dò cả kho theo tên đã chuẩn hóa (khác dấu hòa/hoà, chữ hoa thường, khoảng trắng) cùng năm */
+  get:(xa,nam)=>{const s=TC.store.get(key(xa,nam),null);if(s)return s;
+    const k=TC.normXa(nrm(xa));if(!k)return null;
+    const hit=DT.list().find(x=>{const v=x.v||{},p=x.k.split(':');return String(v.nam||p[2])===String(nam)&&TC.normXa(nrm(v.xa||p[1]))===k});
+    return hit?hit.v:null},
+  list(){const o=[];try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('tc_dt:')){const kk=k.slice(3);o.push({k:kk,v:TC.store.get(kk,{})})}}}catch(e){}return o.sort((a,b)=>a.k.localeCompare(b.k,'vi'))},
+  /* nạp nhiều tệp phụ lục cùng lúc; mỗi tệp tự nhận xã, năm rồi lưu (tệp cùng xã, năm thì ghép thêm bảng) */
+  async importFiles(files){
+    const out=[];
+    for(const f of files){
+      try{
+        const tables=await E.parseDuToan(f),d=E.deriveDt(tables);
+        if(!d.xa)throw new Error('không thấy tên xã, phường trong phụ lục');
+        if(!d.nam)throw new Error('không thấy năm dự toán trong phụ lục');
+        if(!hasNum(tables))throw new Error('phụ lục chưa có số liệu');
+        const k=key(d.xa,d.nam),old=TC.store.get(k,null);
+        const merged=Object.assign({},old&&old.tables||{},tables);
+        TC.store.set(k,{tables:merged,savedAt:new Date().toLocaleString('vi-VN'),xa:xaTitle(d.xa),nam:d.nam});
+        out.push({name:f.name,ok:1,k,xa:xaTitle(d.xa),nam:d.nam,got:['cd','thu','chi'].filter(x=>tables[x]).map(x=>TABN[x])});
+      }catch(err){out.push({name:f.name,ok:0,msg:err.message})}
+    }
+    return out;
+  }
+};
+
+const S={sel:null,tables:null,sub:'thu',q:'',res:[],xa:'',nam:0,fromSkel:false};
+
+function render(el){
+  const rows=DT.list().filter(x=>!S.q||(x.v.xa||x.k).toLowerCase().includes(S.q.toLowerCase())).sort((a,b)=>(xaIdx(a.v.xa||a.k.split(':')[1])||999)-(xaIdx(b.v.xa||b.k.split(':')[1])||999)||a.k.localeCompare(b.k,'vi'));
+  el.innerHTML=`<div class="card"><h2 style="margin-top:0">Dự toán đầu năm</h2>
+   <div class="tdnh"><b>Kho dự toán đầu năm</b>${TC.tip(`Nạp một lần cho cả năm, báo cáo thu chi sẽ tự lấy ra theo tên xã, phường và năm, bạn không phải nạp lại. Chọn <b>nhiều tệp phụ lục V, VI, VII (xlsx, pdf)</b> của nhiều xã cùng lúc; web tự nhận xã, năm từ từng tệp. Tệp cùng xã thì ghép thêm bảng vào dự toán đã có.`)}</div>
+   <div class="row"><label class="btn pri" style="cursor:pointer">Tải file dự toán (chọn nhiều tệp)<input type="file" id="d-f" accept=".xlsx,.xls,.pdf" multiple style="display:none"></label><button class="btn" id="d-new">Thêm xã nhập tay</button><span class="muted" id="d-busy"></span></div>
+   <div id="d-sum" style="margin-top:8px"></div></div>
+  <div class="card" style="margin-top:12px"><div class="row" style="margin-bottom:8px"><h3 style="margin:0">Dự toán đã lưu (${DT.list().length})</h3><input type="text" id="d-q" placeholder="Tìm tên xã, phường" value="${esc(S.q)}" style="max-width:260px"></div>
+   ${rows.length?`<div class="tw"><table class="t dlist"><colgroup><col style="width:42px"><col style="width:128px"><col style="width:54px"><col style="width:84px"><col style="width:76px"><col style="width:76px"><col style="width:84px"><col style="width:84px"><col style="width:84px"><col style="width:76px"><col style="width:84px"><col style="width:72px"><col style="width:74px"></colgroup>
+   <tr><th rowspan="2">STT</th><th rowspan="2" style="text-align:left">Đơn vị</th><th rowspan="2">Dự toán năm</th><th rowspan="2">Bảng</th><th colspan="2">Dự toán thu</th><th colspan="2">Thu bổ sung từ cấp trên</th><th colspan="3">Dự toán chi NSĐP</th><th rowspan="2">Kiểm tra</th><th rowspan="2"></th></tr>
+   <tr><th>Thu NSNN</th><th>Thu NSĐP</th><th>Bổ sung cân đối</th><th>Bổ sung có mục tiêu</th><th>Tổng chi NSĐP</th><th>Chi ĐTPT</th><th>Chi TX</th></tr>
+   ${rows.map(x=>{const f=fig(x),nm=f.stt?XA[f.stt-1]:xaTitle(x.v.xa||x.k.split(':')[1]);return `<tr><td class="c">${f.stt||'–'}</td><td style="text-align:left">${esc(nm)}</td><td class="c">${esc(x.v.nam||x.k.split(':')[2])}</td><td class="c">${f.apx}</td><td class="n">${fm(f.nsnn)}</td><td class="n">${fm(f.nsdp)}</td><td class="n">${fm(f.bcd)}</td><td class="n">${fm(f.bmt)}</td><td class="n">${fm(f.chi)}</td><td class="n">${fm(f.dtpt)}</td><td class="n">${fm(f.tx)}</td><td class="c">${f.chk==null?'–':Math.abs(f.chk)<0.5?'<span class="ok-t">Khớp</span>':`<span class="bad-t">Lệch ${fmt(f.chk)}</span>`}</td><td style="text-align:right"><button class="btn sm" data-o="${esc(x.k)}">Sửa</button> <button class="btn sm" data-d="${esc(x.k)}">Xóa</button></td></tr>`}).join('')}</table></div>
+   <div class="tdnh" style="margin-top:6px"><span class="muted">Đơn vị tính: triệu đồng.</span>${TC.tip('STT theo danh sách 96 xã, phường (chỉ dùng để đánh số khi báo cáo). Kiểm tra: thu NSĐP − tổng chi NSĐP + thu bổ sung cân đối + thu bổ sung có mục tiêu phải bằng 0. Bảng: CĐ (cân đối, phụ lục VII), Thu (phụ lục V), Chi (phụ lục VI).')}</div>`:'<p class="muted">Chưa có dự toán nào. Nạp tệp ở trên để bắt đầu.</p>'}
+   <div class="tdnh" style="margin-top:6px"><span class="muted">Nơi lưu dự toán</span>${TC.tip('Hiện lưu trên trình duyệt của máy này. Khi chuyển sang Apps Script, kho này nằm trên Google Drive để mọi máy dùng chung.')}</div></div>
+  <div id="d-ed"></div>`;
+  if(S.res.length)TC.fsum($('#d-sum',el),'dt',S.res.map(r=>({name:r.name,err:r.ok?'':r.msg,detail:r.ok?`${r.xa}, năm ${r.nam} (đọc được bảng ${r.got.join(', ')||'-'})`:r.msg})),{redraw:()=>render(el)});
+  $('#d-f',el).onchange=async e=>{const fs=[...e.target.files];if(!fs.length)return;
+    if(!TC.auth.can('edit')){TC.toast('Tài khoản này chỉ được xem, không lưu được',1);return}
+    $('#d-busy',el).textContent=`Đang đọc ${fs.length} tệp…`;S.res=await DT.importFiles(fs);
+    const n=S.res.filter(r=>r.ok).length;if(n)TC.log('Nạp dự toán',S.res.filter(r=>r.ok).map(r=>r.xa+' '+r.nam).slice(0,3).join(', ')+(n>3?'…':''));TC.toast(`Đã lưu ${n}/${fs.length} tệp dự toán`,n<fs.length);render(el)};
+  $('#d-q',el).oninput=e=>{S.q=e.target.value;const p=e.target.selectionStart;render(el);const q=$('#d-q',el);q.focus();q.setSelectionRange(p,p)};
+  $('#d-new',el).onclick=async()=>{
+    const v=await TC.dialog('Thêm dự toán nhập tay',`<div style="margin-bottom:10px"><label>Đơn vị</label><input type="text" name="xa" placeholder="xã Bình Thành"></div><div><label>Năm dự toán</label><input type="number" name="nam" value="${new Date().getFullYear()}"></div>`,'Tạo bảng trống');
+    if(!v)return;const xa=nrm(v.xa),nam=+v.nam;
+    if(!xa||!nam)return TC.toast('Cần tên đơn vị và năm',1);
+    const old=TC.store.get(key(xa,nam),null);
+    if(old)return openEd(el,key(xa,nam));
+    S.sel=key(xa,nam);S.tables=skeleton();S.xa=xaTitle(xa);S.nam=nam;S.fromSkel=true;S.sub='thu';drawEd(el)};
+  el.querySelectorAll('button[data-d]').forEach(b=>b.onclick=async()=>{if(await TC.dialog('Xóa dự toán','<p style="margin:0">Xóa dự toán này? Không hoàn lại được.</p>','Xóa')){TC.store.del(b.dataset.d);TC.log('Xóa dự toán',b.dataset.d);if(S.sel===b.dataset.d)S.sel=null;render(el)}});
+  el.querySelectorAll('button[data-o]').forEach(b=>b.onclick=()=>openEd(el,b.dataset.o));
+  if(S.sel)drawEd(el);
+}
+function openEd(el,k){
+  const v=TC.store.get(k,null);if(!v)return;
+  S.sel=k;S.tables=Object.assign(skeleton(),clone(v.tables));S.xa=v.xa||k.split(':')[1];S.nam=v.nam||+k.split(':')[2];S.fromSkel=false;S.sub=S.tables.thu?'thu':Object.keys(S.tables)[0];drawEd(el);
+}
+const indent=r=>/^[-–]/.test(r.name)?18:/^\+/.test(r.name)?32:/^\d+\.\d+$/.test(r.stt)||/^[IVX]+\.\d+$/.test(r.stt)||/^B\.\d$/.test(r.stt)?10:0;
+function titleOf(t){
+  if(!S.fromSkel)return t.title;
+  return t.title.map(l=>/^(XÃ|PHƯỜNG)\s/i.test(l)?S.xa.toUpperCase():/^\(Kèm theo/i.test(l)?'(Kèm theo Quyết định số: …/QĐ-UBND ngày … của Ủy ban nhân dân tỉnh Tây Ninh)':l.replace(/NĂM\s+\d{4}/i,'NĂM '+S.nam));
+}
+function drawEd(el){
+  const b=$('#d-ed',el);if(!b||!S.sel)return;
+  const t=S.tables[S.sub]||S.tables.thu||S.tables.cd||S.tables.chi;
+  b.innerHTML=`<div class="card" style="margin-top:12px"><div class="row" style="margin-bottom:8px"><h3 style="margin:0">${esc(xaTitle(S.xa))} · năm ${S.nam}</h3><button class="btn sm pri" id="e-save">Lưu dự toán</button><button class="btn sm" id="e-close">Đóng</button></div>
+   <div class="subtabs" role="tablist">${['cd','thu','chi'].filter(k=>S.tables[k]).map(k=>`<button role="tab" data-s="${k}" aria-selected="${S.sub===k}">${TABN[k]}</button>`).join('')}</div>
+   ${t?`<div class="dtitle">${titleOf(t).map((l,i)=>`<div class="${i<=1?'tb':/^\(Kèm|ĐVT|Đơn vị/i.test(l)?'ti':'tb'}">${esc(l)}</div>`).join('')}</div>
+   <div class="tw"><table class="t dtab"><tr><th style="width:56px">STT</th><th>Nội dung</th>${t.heads.map(h=>`<th style="width:120px">${esc(h)}</th>`).join('')}</tr>
+   ${t.rows.map((r,i)=>(!r.stt&&/^\(\d+\)/.test(r.name))?`<tr class="note"><td colspan="${2+t.heads.length}">${esc(r.name)}</td></tr>`:`<tr class="${r.b?'rb':''}${r.i?' ri':''}"><td class="c">${esc(r.stt)}</td><td style="padding-left:${8+indent(r)}px">${esc(r.name)}</td>${t.heads.map((h,j)=>r.inp?`<td class="n"><input class="ni" inputmode="numeric" data-i="${i}" data-j="${j}" value="${fz(r.v[j])}"></td>`:'<td></td>').join('')}</tr>`).join('')}</table></div>`:'<p class="muted">Chưa có bảng.</p>'}</div>`;
+  b.querySelectorAll('.subtabs button').forEach(x=>x.onclick=()=>{S.sub=x.dataset.s;drawEd(el)});
+  b.querySelectorAll('input.ni').forEach(inp=>inp.oninput=()=>{const r=t.rows[+inp.dataset.i];const v=inp.value.trim();r.v[+inp.dataset.j]=v===''?null:TC.numVal(v)});
+  $('#e-close',b).onclick=()=>{S.sel=null;S.done?S.done():render(el)};
+  $('#e-save',b).onclick=()=>{
+    if(!TC.auth.can('edit'))return TC.toast('Tài khoản này chỉ được xem, không lưu được',1);
+    const d=E.deriveDt(S.tables);
+    if(!hasNum(S.tables)||!(d.thu&&d.thu.tong&&d.thu.tong.nsnn)&&!(d.chi&&d.chi.tong))return TC.toast('Chưa có số liệu dự toán để lưu. Hãy gõ số vào bảng hoặc nạp phụ lục.',1);
+    const tables=clone(S.tables);if(S.fromSkel)Object.values(tables).forEach(x=>{x.title=titleOf(x)});
+    TC.store.set(S.sel,{tables,savedAt:new Date().toLocaleString('vi-VN'),xa:xaTitle(S.xa),nam:S.nam});
+    S.fromSkel=false;S.tables=tables;if(S.done)S.sel=null;TC.toast('Đã lưu dự toán '+xaTitle(S.xa)+' năm '+S.nam);S.done?S.done():render(el)};
+}
+TC.dtView=el=>{S.done=null;render(el)};
+/* nhập, sửa dự toán một đơn vị ngay trong trang báo cáo; lưu vào cùng kho nên mục Dự toán đầu năm thấy ngay */
+TC.dtEdit=(box,xa,nam,done)=>{
+  const k=key(xa,nam),v=TC.store.get(k,null);
+  S.done=done;S.sel=k;
+  if(v){S.tables=Object.assign(skeleton(),clone(v.tables));S.xa=v.xa||xaTitle(xa);S.nam=v.nam||nam;S.fromSkel=false}
+  else{S.tables=skeleton();S.xa=xaTitle(xa);S.nam=nam;S.fromSkel=true}
+  S.sub=S.tables.thu?'thu':Object.keys(S.tables)[0];
+  box.innerHTML='<div id="d-ed"></div>';drawEd(box);
+};
+})();
+
+/*@@TC_PART@@*/
+/* Chuyên quản phụ trách: nằm trong menu tài khoản (mọi tài khoản, trừ vai Phân cấp), mở cửa sổ nổi để tích hoặc gõ tên các xã, phường mình phụ trách (lưu theo tên đăng nhập). Báo cáo thảo luận có tab chọn địa bàn theo danh sách này để xuất một lần. */
+(function(){
+const {esc,$}=TC;
+const sKey=()=>'cq:'+(TC.user?TC.user.username:'');
+const mine=()=>{const a=TC.store.get(sKey(),[]);return Array.isArray(a)?a:[]};
+TC.cqMine=mine; /* tab khác dùng: danh sách tên xã, phường mình phụ trách */
+const same=(a,b)=>TC.normXa(a)===TC.normXa(b);
+const names=()=>(window.TC_XA96||[]).slice().sort(TC.xaCmp);
+const changed=()=>document.dispatchEvent(new Event('tc-cq'));
+/* gõ tên: tách theo dấu phẩy, chấm phẩy, xuống dòng; khớp đúng tên riêng, hoặc khớp duy nhất một xã */
+function parseTyped(txt){
+  const all=names(),got=[],bad=[];
+  txt.split(/[,;\n]+/).map(s=>s.trim()).filter(Boolean).forEach(t=>{
+    const k=TC.normXa(TC.xaKey(t)),kk=TC.normXa(t);
+    let hit=all.filter(n=>same(n,t)||TC.normXa(TC.xaKey(n))===k);
+    if(!hit.length)hit=all.filter(n=>TC.normXa(n).includes(kk));
+    if(hit.length===1)got.push(hit[0]);else bad.push(hit.length>1?`${t} (trùng ${hit.length} xã: ${hit.slice(0,3).join(', ')}${hit.length>3?'…':''})`:t)});
+  return {got,bad};
+}
+TC.cqModal=()=>{
+  const m=TC.modal('Chuyên quản phụ trách','<div id="cq"></div>',{wide:1,onClose:changed});
+  let q='';
+  const save=a=>{TC.store.set(sKey(),a);TC.log('Chọn chuyên quản phụ trách',a.length+' địa bàn')};
+  const draw=()=>{
+    const el=$('#cq',m.el);if(!el)return;
+    const sel=mine(),selKey=new Set(sel.map(TC.normXa)),shown=names().filter(n=>!q||TC.normXa(n).includes(TC.normXa(q)));
+    el.innerHTML=`<p class="muted" style="margin:0 0 8px">Chọn các xã, phường bạn phụ trách, lưu theo tài khoản <b>${esc(TC.user?TC.user.username:'')}</b>. Ở báo cáo thảo luận dự toán có tab chọn địa bàn theo danh sách này để xuất một lần.</p>
+      <label style="display:block;margin-bottom:4px">Gõ tên rồi bấm Thêm (nhiều xã thì cách nhau dấu phẩy hoặc xuống dòng)</label>
+      <div class="row" style="margin-bottom:6px"><input type="text" id="cq-t" placeholder="Ví dụ: Đức Hòa, Bình Đức, An Ninh" style="flex:1;min-width:220px"><button class="btn pri" id="cq-add">Thêm</button></div><div id="cq-msg" class="muted" style="margin-bottom:6px"></div>
+      <div class="row" style="margin-bottom:6px"><input type="text" id="cq-q" placeholder="Lọc danh sách theo tên" value="${esc(q)}" style="max-width:220px"><button class="btn sm" id="cq-none">Bỏ chọn tất cả</button><span class="muted">Đã chọn ${sel.length}/96 địa bàn</span></div>
+      <div class="tpgrid">${shown.map(n=>`<label class="ck"><input type="checkbox" data-cq="${esc(n)}" ${selKey.has(TC.normXa(n))?'checked':''}> <span class="muted">${TC.xaNo(n)}</span> ${esc(n)}</label>`).join('')||'<span class="muted">Không thấy địa bàn nào khớp.</span>'}</div>`;
+    el.querySelectorAll('[data-cq]').forEach(c=>c.onchange=()=>{const n=c.dataset.cq,cur=mine().filter(x=>!same(x,n));if(c.checked)cur.push(n);save(cur);const g=$('.tpgrid',el),sc=g.scrollTop;draw();$('.tpgrid',$('#cq',m.el)).scrollTop=sc});
+    $('#cq-none',el).onclick=()=>{save([]);draw()};
+    $('#cq-add',el).onclick=()=>{const r=parseTyped($('#cq-t',el).value),cur=mine();r.got.forEach(n=>{if(!cur.some(x=>same(x,n)))cur.push(n)});if(r.got.length)save(cur);draw();
+      $('#cq-msg',m.el).innerHTML=(r.got.length?`<span style="color:var(--ok,#0f766e)">Đã thêm ${r.got.length} địa bàn.</span> `:'')+(r.bad.length?`<span style="color:var(--bad)">Không nhận ra: ${esc(r.bad.join('; '))}</span>`:'')};
+    $('#cq-t',el).onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();$('#cq-add',el).click()}};
+    const qi=$('#cq-q',el);qi.oninput=()=>{q=qi.value;const p=qi.selectionStart;draw();const n=$('#cq-q',m.el);n.focus();try{n.setSelectionRange(p,p)}catch(e){}};
+  };
+  draw();
+};
+TC.registerTab({id:'chuyen-quan',title:'Chuyên quản phụ trách',sub:'Chọn xã, phường bạn phụ trách để xuất báo cáo một lần',open:()=>TC.cqModal(),render(el){el.innerHTML=''}});
+})();
+
+/*@@TC_PART@@*/
+/* Khung ứng dụng: màn hình đăng nhập, thanh tab, chuyển tab. */
+(function(){
+const {$,esc}=TC;
+const ICONS={
+  pig:`<img src="${window.TC_IMG.pig}" alt="" style="width:100%;height:100%;object-fit:contain">`,
+  chart:'<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="8" width="52" height="48" rx="6"/><path d="M16 44V32M28 44V22M40 44V28M52 44V16"/><path d="M14 20l10-6 10 6 14-8"/></svg>',
+  coin:'<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="32" cy="32" r="26"/><circle cx="32" cy="32" r="19" stroke-width="2"/><text x="32" y="42" font-size="26" font-weight="700" text-anchor="middle" fill="currentColor" stroke="none" font-family="system-ui,Arial,sans-serif">₫</text></svg>',
+  building:'<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 56h52M10 28L32 10l22 18M14 28v28M50 28v28M22 56V36M32 56V36M42 56V36"/><path d="M26 22h12"/></svg>'};
+const ICONNAME={pig:'Heo tài chính',chart:'Biểu đồ',coin:'Tiền và sổ sách',building:'Cơ quan'};
+const root=document.getElementById('app');
+/* ảnh nền màn đăng nhập: bản nhẹ tải sau khi trang đã hiện */
+const bgS=()=>window.TC_IMG.bg?'--bgimg:url('+window.TC_IMG.bg+')':'';
+const bgLater=()=>{if(window.TC_IMG.bg)return;setTimeout(()=>TC.need('bg').then(()=>document.querySelectorAll('.login').forEach(e=>e.style.setProperty('--bgimg','url('+window.TC_IMG.bg+')'))).catch(()=>{}),50)};
+/* mở app Tỷ lệ phân cấp riêng, đăng nhập sẵn bằng tài khoản đang dùng: xin mã dùng một lần (hạn 90 giây) rồi mở link app kèm ?k=mã.
+   App tài chính chạy ở link chính thì mở app phân cấp link chính, còn lại (link thử) mở app phân cấp link thử. */
+const PC_APP={main:'https://script.google.com/macros/s/AKfycbykyJgyXsiGOMc1M7uWbXoT_088vIhdULdb2YGbuu8U2WkHP93Dof9UwvMIrL1ZmcR41w/exec',
+  test:'https://script.google.com/macros/s/AKfycbxae_hjlIv3KSVanbOidHmZpFodSLbFTGv__zaNwjDbBgVpXGXMxs5_AGnSI9BEGOynzg/exec'};
+const pcUrl=()=>/AKfycbxoUmOzXZFN1EXGTfe7SsriHl2zpQfXVndLwqQeZKBmjMS28BYe2GsVS9sdklrcG6P5/.test(String(window.TC_EXEC||''))?PC_APP.main:PC_APP.test;
+async function openPc(){
+  const w=window.open('about:blank','_blank'); /* mở tab ngay lúc bấm để trình duyệt không chặn, có mã rồi mới chuyển trang */
+  if(w)try{w.opener=null;w.document.write('<p style="font:15px system-ui;padding:24px">Đang mở app Tỷ lệ phân cấp…</p>')}catch(e){}
+  let r=null;try{r=await TC.srv.call('ticket')}catch(e){}
+  if(!r||!r.ok||!r.code){if(w)w.close();return TC.toast((r&&r.msg)||'Chưa mở được app Tỷ lệ phân cấp, bạn thử lại',1)}
+  const u=pcUrl()+'?k='+encodeURIComponent(r.code);
+  if(w)w.location.href=u;else window.open(u,'_blank','noopener');
+  TC.log&&TC.log('Mở app Tỷ lệ phân cấp','')}
+function loginView(un,note){
+  const first=!TC.srv.on&&TC.auth.users().length===0;
+  const icon='pig';
+  root.innerHTML=`<div class="login" style="${bgS()}">
+   <div class="card box"><div class="logo" style="color:var(--ac);width:72px;height:72px;margin:0 auto">${ICONS[icon]}</div>
+   <h1>APP TÀI CHÍNH</h1>
+   <p class="sub">${first?'Lần đầu: đặt tên đăng nhập và mật khẩu cho tài khoản quản trị cao nhất':'Đăng nhập để tiếp tục'}</p>
+   <form id="lf" name="login" method="post" action="#" autocomplete="on">
+    <div style="margin-bottom:10px"><label>Tên đăng nhập</label><input type="text" id="l-u" name="username" autocomplete="username" autocapitalize="none"${first?' value="takikj02"':(un||TC.store.get('tok_user',''))?' value="'+esc(un||TC.store.get('tok_user',''))+'"':''}></div>
+    <div style="margin-bottom:10px"><label>Mật khẩu</label><input type="password" id="l-p" name="password" autocomplete="${first?'new-password':'current-password'}"></div>
+    <label style="display:flex;gap:8px;align-items:center;color:var(--tx);margin-bottom:12px"><input type="checkbox" id="l-r" checked style="width:auto;min-height:0"> Ghi nhớ đăng nhập trên máy này</label>
+    <button class="btn pri" style="width:100%" type="submit">${first?'Tạo tài khoản quản trị':'Đăng nhập'}</button><div class="err" id="le" role="alert"></div>${TC.srv.on?'<p class="muted" style="margin:10px 0 0;font-size:12.5px;text-align:center">Chưa có tài khoản hoặc quên mật khẩu: liên hệ Quản trị để được cấp hoặc đặt lại.</p>':''}</form></div></div>`;bgLater();
+  if(note){const n=document.createElement('p');n.id='l-note';n.setAttribute('role','status');n.style.cssText='margin:0 0 12px;padding:8px 10px;border-radius:8px;background:rgba(22,163,74,.1);color:#15803d;font-size:13.5px;text-align:center';n.textContent=note;$('#lf').prepend(n);$('#l-p').focus()}
+  $('#lf').onsubmit=async e=>{e.preventDefault();const u=$('#l-u').value.trim(),p=$('#l-p').value,err=$('#le'),btn=e.target.querySelector('button[type=submit]');err.textContent='';
+    if(!u||!p)return err.textContent='Nhập tên đăng nhập và mật khẩu';
+    if(TC.srv.on){btn.disabled=true;const old=btn.textContent;btn.textContent='Đang đăng nhập…';
+      const r=await TC.srv.call('login',{u,p,keep:$('#l-r').checked});btn.disabled=false;btn.textContent=old;
+      if(!r.ok)return err.textContent=r.msg||'Không đăng nhập được';
+      TC.srv.setToken(r.token,$('#l-r').checked);if($('#l-r').checked)TC.store.set('tok_user',r.user.username);TC.user=r.user;TC.srv.auto=r.auto;return enter()}
+    if(first){if(u.length<3||p.length<6)return err.textContent='Tên đăng nhập từ 3 ký tự, mật khẩu từ 6 ký tự';
+      const ad=await TC.auth.make(u,u,'admin',p);ad.root=true;TC.auth.save([ad])}
+    const user=await TC.auth.login(u,p);if(!user){return err.textContent='Sai tên đăng nhập hoặc mật khẩu'}
+    TC.user=user;TC.remember($('#l-r').checked,user.username);TC.log('Đăng nhập');shell();mustChange()};
+}
+/* vào ứng dụng sau khi đăng nhập ở chế độ máy chủ: kéo dữ liệu dùng chung về rồi mới mở */
+async function enter(){
+  root.innerHTML='<div class="login" style="'+bgS()+'"><div class="card box"><p class="sub" style="margin:20px 0">Đang đồng bộ dữ liệu…</p></div></div>';bgLater();
+  await TC.srv.start();TC.log('Đăng nhập');shell();mustChange()}
+/* tài khoản được đặt "bắt đổi mật khẩu" thì mở hộp đổi ngay sau khi vào */
+function mustChange(){if(TC.user&&TC.user.must)setTimeout(()=>TC.changePass(true),300)}
+TC.remember=(keep,name)=>{try{localStorage.setItem('tc_session',JSON.stringify(keep?name:''));sessionStorage.setItem('tc_session',name)}catch(e){}};
+TC.loginView=(un,note)=>{document.querySelectorAll('.ovl').forEach(o=>o.remove());document.body.style.overflow='';root.innerHTML='';loginView(un,note)};
+TC.forget=()=>{try{localStorage.setItem('tc_session','""');sessionStorage.removeItem('tc_session')}catch(e){}};
+const SHIELD='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.2-7 10-4-1.8-7-5.5-7-10V6l7-3z"/><path d="M9.5 12.2l1.8 1.8 3.4-3.6"/></svg>';
+const BELL='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0112 0c0 7 3 8 3 8H3s3-1 3-8"/><path d="M10.3 20a2 2 0 003.4 0"/></svg>';
+const CARET='<svg class="car" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 4l4 4 4-4"/></svg>';
+/* tab Tỷ lệ phân cấp đã tách thành app riêng của H (KK02); mã nạp số vẫn chạy phía sau cho báo cáo thảo luận, chỉ ẩn khỏi thanh tab */
+TC.HIDE_TABS=['phan-cap','chuyen-quan']; /* chuyên quản phụ trách mở từ menu tài khoản, mỗi tài khoản một danh sách riêng */
+function shell(){
+  if(window.TC_PARTS)setTimeout(()=>TC.need('xlsx').catch(()=>{}),2500); /* bản nhẹ: tải sẵn thư viện Excel khi rảnh để lúc nạp tệp không phải chờ */
+  const tabs=TC.user.role==='pc'?[]:TC.tabs.filter(t=>!t.admin&&!TC.HIDE_TABS.includes(t.id)),adm=TC.auth.can('admin')?TC.tabs.filter(t=>t.admin):[];
+  const icon='pig';
+  const un=TC.user.username||TC.user.name||'',roleName=TC.user.role==='admin'?'Quản trị viên':TC.user.role==='editor'?'Nhập liệu':TC.user.role==='pc'?'Phân cấp':'Chỉ xem';
+  const pcap=TC.user.role==='pc';
+  root.innerHTML=`<header class="top"><span style="width:28px;height:28px;display:inline-block;color:#fff">${ICONS[icon]}</span><h1>APP TÀI CHÍNH</h1>
+   ${adm.length?`<div class="bellw"><button class="btn sm bell" id="bell-b" aria-haspopup="true" aria-expanded="false" aria-controls="bell-p" title="Thông báo hoạt động" aria-label="Thông báo hoạt động">${BELL}<span class="bd" id="bell-n" hidden>0</span></button><div class="npop" id="bell-p" hidden></div></div>`:''}
+   <div class="adm acc"><button type="button" class="avb" id="acc-b" aria-haspopup="true" aria-expanded="false" aria-controls="acc-m" title="Tài khoản: ${esc(un)}" aria-label="Tài khoản ${esc(un)}"><span class="av">${esc(un.charAt(0).toUpperCase()||'?')}</span></button>
+     <div class="menu accm" id="acc-m" role="menu" hidden><div class="whoi"><span class="av avl">${esc(un.charAt(0).toUpperCase()||'?')}</span><div><b>${esc(un)}</b><small>${roleName}</small></div></div>${TC.srv.on?'<div class="syn" id="syn"><i></i><span></span></div>':''}
+     ${adm.length?`<div class="msec">Quản trị</div>${adm.map(t=>`<button role="menuitem" data-t="${t.id}" title="${esc(t.sub||'')}">${t.title}</button>`).join('')}<hr>`:''}
+     ${TC.srv.on&&(TC.auth.can('admin')||pcap)?'<button role="menuitem" id="pcapp-b">Tỷ lệ phân cấp</button>':''}${pcap?'':'<button role="menuitem" id="cq-b">Chuyên quản phụ trách</button>'}<button role="menuitem" id="pw-b">Đổi mật khẩu</button><button role="menuitem" id="dg-b">Chẩn đoán</button>${TC.srv.on&&TC.auth.can('admin')?'<button role="menuitem" id="upd-b">Cập nhật phiên bản mới</button><button role="menuitemcheckbox" id="aut-b"></button>':''}<button role="menuitem" id="lo">Đăng xuất</button></div></div></header>
+   <nav class="tabs${tabs.length<2?' one':''}" role="tablist">${tabs.map(t=>`<button role="tab" data-t="${t.id}">${t.title}</button>`).join('')}</nav><main id="tabbody"></main>`;
+  root.querySelectorAll('nav.tabs button').forEach(b=>b.onclick=()=>TC.showTab(b.dataset.t));
+  const mb=$('#acc-b'),mm=$('#acc-m');
+  {
+    const close=()=>{mm.hidden=true;mb.setAttribute('aria-expanded','false')};
+    mb.onclick=e=>{e.stopPropagation();const open=mm.hidden;mm.hidden=!open;mb.setAttribute('aria-expanded',String(open));if(open)mm.querySelector('button').focus()};
+    mm.querySelectorAll('button[data-t]').forEach(b=>b.onclick=()=>{close();const t=TC.tabs.find(x=>x.id===b.dataset.t);if(t&&t.open)t.open();else TC.showTab(b.dataset.t)});
+    document.addEventListener('click',e=>{if(mm.isConnected&&!mm.hidden&&!mm.contains(e.target))close()});
+    document.addEventListener('keydown',e=>{if(e.key==='Escape'&&mm.isConnected&&!mm.hidden){close();mb.focus()}});
+  }
+  if(TC.bellInit)TC.bellInit();
+  const cqb=$('#cq-b');if(cqb)cqb.onclick=()=>{$('#acc-m').hidden=true;TC.cqModal()};
+  const dgb=$('#dg-b');if(dgb)dgb.onclick=()=>{$('#acc-m').hidden=true;TC.diag()};
+  const pab=$('#pcapp-b');if(pab)pab.onclick=()=>{$('#acc-m').hidden=true;openPc()};
+  $('#pw-b').onclick=()=>{$('#acc-m').hidden=true;TC.changePass()};
+  synShow();TC.srv.onState=synShow;
+  const ab2=$('#aut-b');if(ab2){const paint=()=>{ab2.innerHTML='Tự động cập nhật khi có bản mới <span class="swt'+(TC.srv.auto?' on':'')+'" aria-hidden="true"><i></i></span>';ab2.setAttribute('aria-checked',String(!!TC.srv.auto))};paint();
+    ab2.onclick=async e=>{e.stopPropagation();const on=!TC.srv.auto,r=await TC.srv.call('autoSet',{on});if(r&&r.ok===false)return TC.toast(r.msg||'Không đổi được',1);
+      TC.srv.auto=r.auto;paint();TC.log(r.auto?'Bật tự động cập nhật':'Tắt tự động cập nhật');TC.toast(r.auto?'Đã bật: thay tệp trên Drive là các máy tự tải lại':'Đã tắt: chỉ cập nhật khi bấm nút Cập nhật phiên bản mới')}}
+  const ub=$('#upd-b');if(ub)ub.onclick=async()=>{$('#acc-m').hidden=true;
+    if(!await TC.dialog('Cập nhật phiên bản mới','<p style="margin:0">Chỉ bấm sau khi bạn đã thay tệp web mới trên Google Drive. Tất cả máy đang mở (kể cả máy của bạn) sẽ tự tải lại sau vài giây, dữ liệu đang lưu dở được gửi đi trước, bản nháp báo cáo được giữ lại.</p>','Cập nhật'))return;
+    const r=await TC.srv.call('bump');if(r&&r.ok===false)return TC.toast(r.msg||'Không cập nhật được',1);
+    TC.log('Cập nhật phiên bản web');TC.srv.ver=r.ver;TC.srv.reloading=true;TC.srv.newVer(true)};
+  $('#lo').onclick=async()=>{
+    if(TC.srv.on){const b=$('#lo');b.disabled=true;b.textContent='Đang lưu và thoát…';
+      if(!await TC.srv.stop()){b.disabled=false;b.textContent='Đăng xuất';return TC.toast('Còn dữ liệu chưa gửi lên máy chủ được, kiểm tra mạng rồi thử lại.',1)}
+      await TC.srv.call('logout');TC.srv.setToken('');TC.srv.onState=null;TC.user=null;return location.reload()}
+    TC.forget();TC.user=null;TC.autoLogin=false;loginView()};
+  if(pcap){ /* tài khoản chỉ dùng app Tỷ lệ phân cấp: không có tab thu chi, chỉ một thẻ dẫn sang app đó */
+    $('#tabbody').innerHTML='<div class="card" style="max-width:520px;margin:40px auto;text-align:center"><h2 style="margin-top:0">Tỷ lệ phân cấp</h2><p class="muted">Tài khoản này dùng app Tỷ lệ phân cấp thu. Bấm nút bên dưới để mở app.</p>'+(TC.srv.on?'<button type="button" class="btn pri" id="pcapp-go">Mở app Tỷ lệ phân cấp</button>':'<p class="muted">Chưa mở được app từ trang này, hãy dùng đường link riêng của app Tỷ lệ phân cấp.</p>')+'</div>';
+    const go=$('#pcapp-go');if(go)go.onclick=openPc;
+    return}
+  const last=TC.store.get('tab','bao-cao');
+  TC.showTab(TC.tabs.find(t=>t.id===last&&!t.admin&&!TC.HIDE_TABS.includes(t.id))?last:'bao-cao');
+}
+const cache={};
+function synShow(){const e=$('#syn'),av=$('#acc-b .av');if(!e)return;const st=TC.srv.state,t=TC.srv.at?TC.srv.at.toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'}):'';
+  e.className='syn '+(st==='err'?'err':st==='busy'?'busy':st==='ok'?'ok':'');
+  e.lastChild.textContent=st==='ok'?'Đã đồng bộ'+(t?' lúc '+t:''):st==='busy'?'Đang đồng bộ…':st==='err'?'Chưa gửi được, sẽ tự thử lại':'Chưa đồng bộ';
+  if(av)av.classList.toggle('synerr',st==='err')}
+TC.showTab=id=>{
+  const t=TC.tabs.find(x=>x.id===id&&(!x.admin||TC.auth.can('admin')))||TC.tabs[0];
+  if(!t.admin)TC.store.set('tab',t.id);
+  root.querySelectorAll('nav.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.t===t.id));
+  const ab=$('#adm-b');if(ab)ab.classList.toggle('pri',!!t.admin);
+  const el=$('#tabbody');
+  if(t.id==='bao-cao'){ /* giữ nguyên trạng thái khi chuyển tab */
+    if(!cache.bc){const d=document.createElement('div');try{t.render(d);cache.bc=d}catch(e){TC.errs.push('render '+t.id,e);el.innerHTML='';el.appendChild(errBox(t,e));return}}
+    el.innerHTML='';el.appendChild(cache.bc);
+  }else{el.innerHTML='';
+    if(t.admin){const h=document.createElement('div');h.className='row';h.style.marginBottom='12px';h.innerHTML=`<h2 style="margin:0">Quản trị · ${esc(t.title)}</h2>`;el.appendChild(h)}
+    const box=document.createElement('div');el.appendChild(box);try{t.render(box)}catch(e){TC.errs.push('render '+t.id,e);box.appendChild(errBox(t,e))}}
+};
+/* tab lỗi thì hiện rõ lỗi và nút thử lại, không để trang trắng; cũng ghi vào mục Chẩn đoán */
+function errBox(t,e){const d=document.createElement('div');d.className='card';d.setAttribute('role','alert');
+  d.innerHTML=`<h2 style="margin:0 0 8px">Mục "${esc(t.title)}" chưa mở được</h2><p class="muted" style="margin:0 0 8px">Có lỗi khi hiển thị. Bấm Thử lại; nếu vẫn lỗi, gửi nội dung dưới đây cho quản trị.</p><pre style="white-space:pre-wrap;word-break:break-word;font-size:12px;background:var(--bg);padding:10px;border-radius:8px;max-height:240px;overflow:auto">${esc(String(e&&e.stack||e))}</pre><button class="btn pri" id="eb-r">Thử lại</button> <button class="btn" id="eb-c">Chẩn đoán</button>`;
+  d.querySelector('#eb-r').onclick=()=>TC.showTab(t.id);d.querySelector('#eb-c').onclick=()=>TC.diag();return d}
+/* nút "Lên đầu" dùng chung cho mọi tab và mọi màn hình */
+(function(){
+  const b=document.createElement('button');b.type='button';b.id='b-top';b.className='btn pri totop';b.hidden=true;b.setAttribute('aria-label','Lên đầu trang');b.title='Lên đầu';b.classList.add('fabx');b.innerHTML='<span class="fi" aria-hidden="true">↑</span><span class="fl">Lên đầu</span>';
+  b.onclick=()=>window.scrollTo({top:0,behavior:'smooth'});document.body.appendChild(b);
+  const upd=()=>{b.hidden=(window.scrollY||document.documentElement.scrollTop||0)<400||!document.getElementById('tabbody')};
+  window.addEventListener('scroll',upd,{passive:true});window.addEventListener('resize',upd);
+})();
+if(TC.srv.on){
+  /* chế độ máy chủ: phiên đăng nhập là mã do máy chủ cấp, hết hạn hoặc bị khóa thì quay về màn đăng nhập */
+  TC.srv.onAuth=m=>{if(!TC.user)return;TC.user=null;TC.srv.setToken('');root.innerHTML='';loginView();TC.toast(m||'Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại.',1)};
+  /* có bản mới: báo, gửi nốt dữ liệu, rồi tải lại; bản nháp báo cáo đã tự lưu 5 giây một lần nên mở lại sẽ hỏi tiếp tục */
+  TC.srv.newVer=async self=>{const b=document.createElement('div');b.className='toast';b.setAttribute('role','alert');b.textContent=self?'Đang tải phiên bản mới…':'Có phiên bản mới, đang tải lại…';document.body.appendChild(b);
+    try{if(window.TC_saveDraft)window.TC_saveDraft()}catch(e){}
+    await Promise.race([TC.srv.flush(),new Promise(r=>setTimeout(r,6000))]);setTimeout(()=>location.reload(),1500)};
+  TC.srv.onNewVer=()=>TC.srv.newVer(false);
+  TC.srv.onChange=keys=>{const rel=keys.some(k=>/^(rep:|td:|dt:|pc:)/.test(k));
+    if(keys.some(k=>/^pcf?:/.test(k))&&TC.refreshPc&&TC.refreshPc())TC.toast('Số tỷ lệ phân cấp vừa được cập nhật từ máy khác');
+    else if(rel&&TC.refreshStore&&TC.refreshStore())TC.toast('Đã cập nhật dữ liệu mới từ máy khác');
+    else TC.toast('Có dữ liệu mới từ máy khác ('+keys.length+' mục), mở lại màn hình để thấy.')};
+  /* D4: bản nhẹ có trang mở đầu (boot.js) đã hiện màn đăng nhập và có thể đã gửi lệnh đăng nhập trong lúc tải app */
+  const BT=window.TC_BOOT;
+  if(BT&&BT.login){
+    BT.login.then(r=>{if(r.ok){TC.srv.setToken(r.token,BT.keep);if(BT.keep)TC.store.set('tok_user',r.user.username);TC.user=r.user;TC.srv.auto=r.auto;enter()}
+      else{loginView(BT.u);$('#le').textContent=r.msg||'Không đăng nhập được';$('#l-p').focus()}})
+  }else if(TC.srv.token()){
+    root.innerHTML='<div class="login" style="'+bgS()+'"><div class="card box"><p class="sub" style="margin:20px 0">Đang tải…</p></div></div>';bgLater();
+    ((BT&&BT.me)||TC.srv.call('me')).then(r=>{if(r.ok){TC.user=r.user;TC.srv.auto=r.auto;enter()}else loginView()})
+  }else{
+    const v=BT&&BT.vals?BT.vals():null;loginView();
+    if(v){if(v.u)$('#l-u').value=v.u;$('#l-p').value=v.p;$('#l-r').checked=v.r;if(v.err)$('#le').textContent=v.err;const f=v.focus&&document.getElementById(v.focus);if(f)f.focus()}
+  }
+}else{
+let sess=TC.store.get('session','');try{sess=sess||sessionStorage.getItem('tc_session')||''}catch(e){}
+const u=sess&&TC.auth.users().find(x=>x.username===sess&&x.active);
+if(u){TC.user=u;shell()}else{loginView();autoAdmin()}
+}
+/* người mở trang là chủ trang (hoặc tài khoản takikj02) trong claude.ai thì tự vào quyền quản trị, không cần gõ mật khẩu */
+async function autoAdmin(){
+  try{
+    if(!window.claude||!window.claude.use)return;
+    const cu=await window.claude.use('user');if(!cu)return;
+    const me=await cu.me(),em=String(me.email||'').toLowerCase();
+    if(!(me.isOwner||/^takikj02@/.test(em))||TC.user)return;
+    const all=TC.auth.users();let a=all.find(x=>x.username==='takikj02')||all.find(x=>x.root);
+    if(!a){const r=new Uint8Array(12);crypto.getRandomValues(r);a=await TC.auth.make('takikj02','takikj02','admin',[...r].map(x=>x.toString(16)).join(''));a.root=true;all.push(a);TC.auth.save(all)}
+    if(!a.active||TC.user)return;
+    TC.user=a;TC.autoLogin=true;TC.remember(true,a.username);TC.log('Đăng nhập','tự động bằng tài khoản Claude');shell()
+  }catch(e){}
+}
+})();
