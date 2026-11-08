@@ -129,6 +129,10 @@ function api(q) {
       case 'pull': return out_(pull_(+o.since || 0));
       case 'kk01': return out_(kk01_(o));
       case 'save': return out_(save_(o));
+      case 'gspa': {   // H duyệt 01:49 09/11/2026: đẩy số phương án sang Google Sheet (một chiều)
+        const r = GSPA.dung(o.data, { folderId: CFG.XUAT });
+        return out_({ ok: true, url: r.url, moi: !!r.moi });
+      }
       default: return out_({ ok: false, msg: 'Không rõ yêu cầu: ' + o.a });
     }
   } catch (e) {
