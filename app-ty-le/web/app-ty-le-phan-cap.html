@@ -240,6 +240,8 @@ var PCC=(function(){
  var TW={42:41,44:43,46:45,48:47,50:49,53:52,56:55};
  var TAX27={15:'G',20:'G',25:'G',31:'G',16:'D',21:'D',26:'D',32:'D',17:'T',22:'T',28:'T',33:'T',18:'N',23:'N',29:'N',35:'N'};
  var RATE_TW_NSDP={56:0.3};
+ /* khoản xã không hưởng (H chốt cách C 08/11, mọi phương án): khoáng sản, cả giấy phép TW cấp lẫn địa phương cấp; xã 0%, tỉnh hưởng toàn bộ NSĐP của khoản */
+ var XA0={55:1,56:1};
  /* khoản có phần NSTW tách riêng: dòng TW (mẫu) -> {p: dòng mẹ, q: tỷ lệ NSĐP hưởng của phần TW, er: dòng biểu thuế nếu Thuế điền số thật} */
  var SPLITW={46:{p:45,q:0,er:102},53:{p:52,q:0,er:120},56:{p:55,q:0.3}};
  var r8=function(q){return q==null?null:Math.round(q*1e8)/1e8}; /* tỷ lệ 6 số lẻ theo % */
@@ -306,7 +308,7 @@ var PCC=(function(){
     xaN[m]=distribute(xaN[p].map(function(x){return x*q}),T-tiN[m]).v});
    var xaD={},tiD={};
    for(var m=10;m<=59;m++){
-    if(TW[m]){if(per==='dt'&&RATE_TW_NSDP[m]&&xaN[m]){out.rq[per][m-10]=RATE_TW_NSDP[m];var rw=xaN[m].map(function(x){return x*RATE_TW_NSDP[m]});xaD[m]=distribute(rw,rd(rw.reduce(function(a,b){return a+b},0))).v;tiD[m]=rd(tiN[m]*RATE_TW_NSDP[m])}continue}
+    if(TW[m]){if(per==='dt'&&RATE_TW_NSDP[m]&&xaN[m]){out.rq[per][m-10]=RATE_TW_NSDP[m];var rw=xaN[m].map(function(x){return x*RATE_TW_NSDP[m]});if(XA0[m]){xaD[m]=rw.map(function(){return 0});tiD[m]=rd((tiN[m]+xaN[m].reduce(function(a,b){return a+b},0))*RATE_TW_NSDP[m])}else{xaD[m]=distribute(rw,rd(rw.reduce(function(a,b){return a+b},0))).v;tiD[m]=rd(tiN[m]*RATE_TW_NSDP[m])}}continue}
     if(!leaf(m))continue;
     var q=rate[m],sw=null;
     Object.keys(SPLITW).forEach(function(t){if(SPLITW[t].p===m&&per==='dt'&&xaN[+t])sw=+t});
@@ -315,8 +317,9 @@ var PCC=(function(){
      var sp=SPLITW[sw],s0=R[sw-10].r27,real=!!twReal[sw];
      var twx=function(k){return real?xaN[sw][k]:xaN[m][k]*s0},twt=real?tiN[sw]:tiN[m]*s0;
      rawD=xaN[m].map(function(x,k){var t=twx(k);return (x-t)+t*sp.q});exTi=(tiN[m]-twt)+twt*sp.q;
+     if(XA0[m]){exTi+=rawD.reduce(function(a,b){return a+b},0);rawD=rawD.map(function(){return 0})}
      var nn=tiN[m]+xaN[m].reduce(function(a,b){return a+b},0);q=nn?(exTi+rawD.reduce(function(a,b){return a+b},0))/nn:1;
-     out.tws[m-10]={tw:sw-10,s:s0,q:sp.q,real:real}}
+     out.tws[m-10]={tw:sw-10,s:s0,q:sp.q,real:real,xa0:!!XA0[m]}}
     else{
      if(q==null){if(per==='dt'&&xaN[m]&&R[m-10].ti[5]!=null&&R[m-10].ti[5]===R[m-10].ti[4])q=1;else continue}
      rawD=xaN[m].map(function(x){return x*q});exTi=tiN[m]*q}
@@ -368,7 +371,10 @@ var PCC=(function(){
     var tw=BASE.tws&&BASE.tws[r];
     if(tw){ /* khoản có phần NSTW tách riêng: phần còn lại (tỉnh, xã) và phần TW */
      var kt=i+'.t',kc=i+'.c',kw=i+'.w',twN=function(lv){return lv==='ti'?tiN(tw.tw)>0:sumX(tw.tw)>0};
-     k.units.push({r:r,parts:[{p:'rest',s:tw.s,tw:tw.tw,real:tw.real,q0:1,kt:kt,kp:kc,kx:kc},{p:'tw',s:tw.s,tw:tw.tw,real:tw.real,q0:tw.q,fix:tw.q===0,kt:kw,kp:kw,kx:kw}]});
+     var tR=tiN(r)-tiN(tw.tw),xR=sumX(r)-sumX(tw.tw),tW=tiN(tw.tw),xW=sumX(tw.tw);
+     /* xa0: xã mặc định 0%, tỉnh mặc định hưởng cả phần NSĐP của xã (tỷ lệ tính trên số tỉnh thu) */
+     var q1=tw.xa0&&tR>0?(tR+xR)/tR:1,q2=tw.xa0&&tW>0?tw.q*(tW+xW)/tW:tw.q,qx=tw.xa0?0:null;
+     k.units.push({r:r,parts:[{p:'rest',s:tw.s,tw:tw.tw,real:tw.real,q0:q1,qx0:qx,kt:kt,kp:kc,kx:kc},{p:'tw',s:tw.s,tw:tw.tw,real:tw.real,q0:q2,qx0:qx,fix:tw.q===0,kt:kw,kp:kw,kx:kw}]});
      /* khoáng sản: phần còn lại là giấy phép do địa phương cấp (NSĐP hưởng 100%), gom thành một nhóm */
      var gl=r===45,dd=gl?2:1;
      if(gl)k.lines.push({key:i+'.g',label:'Giấy phép do địa phương cấp (NSĐP hưởng 100%)',d:1,grp:true,children:[kt,kc],ti:tiN(r)-tiN(tw.tw)>0,x:sumX(r)-sumX(tw.tw)>0});
@@ -403,14 +409,14 @@ var PCC=(function(){
   KH.forEach(function(k,i){
    if(k.fixed||!k.units)return;
    k.units.forEach(function(u){var r=u.r,parts=u.parts,qx=qX(r);
-    var q0=BASE.rq&&BASE.rq.dt[r]!=null?BASE.rq.dt[r]:qx,dq=function(pt){return pt.q0!=null?pt.q0:q0};
+    var q0=BASE.rq&&BASE.rq.dt[r]!=null?BASE.rq.dt[r]:qx,dq=function(pt){return pt.q0!=null?pt.q0:q0},dqx=function(pt){return pt.qx0!=null?pt.qx0:dq(pt)};
     var nTi=parts.reduce(function(a,pt){return a+NP(pt,r,-1)},0);
     var tiExp=nTi>0&&parts.some(function(pt){var o=ovk(pt.kt,'ti');return o!=null&&!pt.fix&&ok(o,dq(pt))});
     var C=[],cAll=false;
-    if(lock!=='xa'&&q0!=null)for(var x=0;x<NX&&!cAll;x++){var ph=isPh[x];if(parts.some(function(pt){var o=ovk(ph?pt.kp:pt.kx,ph?'ph':'xa');return o!=null&&!pt.fix&&ok(o,dq(pt))}))cAll=true}
+    if(lock!=='xa'&&q0!=null)for(var x=0;x<NX&&!cAll;x++){var ph=isPh[x];if(parts.some(function(pt){var o=ovk(ph?pt.kp:pt.kx,ph?'ph':'xa');return o!=null&&!pt.fix&&ok(o,dqx(pt))}))cAll=true}
     if(cAll)for(var x=0;x<NX;x++)C.push(x);
     if(!tiExp&&!C.length)return;any=true;
-    var rx=function(pt,x){var o=pt.fix?null:ovk(isPh[x]?pt.kp:pt.kx,isPh[x]?'ph':'xa');return o!=null?o:dq(pt)};
+    var rx=function(pt,x){var o=pt.fix?null:ovk(isPh[x]?pt.kp:pt.kx,isPh[x]?'ph':'xa');return o!=null?o:dqx(pt)};
     var raw=C.map(function(x){return parts.reduce(function(a,pt){return a+NP(pt,r,x)*rx(pt,x)},0)}),exX=raw.reduce(function(a,b){return a+b},0),xaT=rd(exX);
     var baseC=0;C.forEach(function(x){baseC+=BASE.xr[x][r][5]||0});
     var d=distribute(raw,xaT);
@@ -683,7 +689,10 @@ const gocKhac=L=>{KGOC.forEach(i=>KH[i].lines.forEach(l=>{delete L[l.key]}))};
 const pa2Lines=()=>{const L={};G4.forEach(i=>KH[i].lines.forEach(l=>{if(!l.grp&&l.x&&!l.fix&&!/\.w$/.test(l.key))L[l.key]={ph:1,xa:1}}));return L};
 function paRound(k){const L=pa2Lines(),V=PCC.applyPlan(BASE,KH,{lines:L,lock:'tong'},ISPH); /* tỷ lệ tự bù có 6 số lẻ (%): làm tròn lên từ nửa, tính bằng số nguyên cho đúng */
  G4.forEach(i=>KH[i].lines.forEach(l=>{if(l.grp||l.fix||!lnSub(BASE,l,'ti',4))return;const a=lvApplied([l],'ti',L,V);if(!a.auto||a.q==null)return;const n=Math.round(a.q*1e8),dv=Math.pow(10,6-k);L[l.key]=Object.assign({},L[l.key],{ti:Math.floor((n+dv/2)/dv)*dv/1e8})}));return L}
-function seedPA3(){PA.plans.forEach(p=>{if(!p.ro&&!p.sid&&/^\s*Phương án 2\s*$/i.test(p.name||'')&&(p.bv||0)<2){gocKhac(p.lines);p.bv=2}});
+/* khoáng sản cách C (H chốt 08/11, mọi phương án): xã 0%, tỉnh hưởng toàn bộ NSĐP; tính ở tỷ lệ gốc nên mọi phương án bỏ tỷ lệ nhập riêng của khoản này (một lần, cờ ks0) */
+const isXa0=l=>{const pt=l&&l.parts&&l.parts[0],tw=pt&&BASE.tws[pt.r];return !!(tw&&tw.xa0)};
+function ksC(){PA.plans.forEach(p=>{if(p.ro||p.ks0||!p.lines)return;KH.forEach(k=>(k.lines||[]).forEach(l=>{if(isXa0(l))delete p.lines[l.key]}));p.ks0=1})}
+function seedPA3(){ksC();PA.plans.forEach(p=>{if(!p.ro&&!p.sid&&/^\s*Phương án 2\s*$/i.test(p.name||'')&&(p.bv||0)<2){gocKhac(p.lines);p.bv=2}});
  let ch=false;[['pa3','Phương án 3'],['pa4','Phương án 4'],['pa5','Phương án 5']].forEach(([sid,name])=>{const o=PA.plans.find(p=>p.sid===sid);if(o&&(o.sv||1)>=4)return;const L=paRound(PAR[sid]);ch=true;
   if(o){o.lines=L;o.sv=4;o.name=name;return}PA.plans.push({id:PA.nid++,sid,sv:4,name,lines:L,lock:'tong'})});
  /* xếp lại thứ tự Phương án 1, 2, 3... một lần khi vừa thêm */
@@ -742,7 +751,9 @@ function lnSub(src,l,lvl,col){let s=0;(l.parts||[]).forEach(pt=>{if(pt.only==='t
   s+=ptVal(pt,g,col)});return s}
 function lvRate(leaves,lvl,src){let n=0,d=0;leaves.forEach(l=>{n+=lnSub(BASE,l,lvl,4);d+=lnSub(src,l,lvl,5)});return {n,d,q:n?d/n:null}}
 /* tỷ lệ mặc định của một dòng: phần còn lại của khoản có phần TW = 100%, phần TW theo quy định, còn lại là tỷ lệ của dòng mẫu 30 */
-const defRate=l=>{const pt=l.parts[0],tw=BASE.tws[pt.r];if(tw&&pt.p==='rest')return 1;if(tw&&pt.p==='tw')return tw.q;return BASE.rq.dt[pt.r]!=null?BASE.rq.dt[pt.r]:lvRate([l],'ti',BASE).q};
+/* lvl (tùy chọn): tỷ lệ mặc định theo cấp; khoản xã không hưởng (tw.xa0, khoáng sản cách C) thì xã 0%, tỉnh hưởng cả phần NSĐP của xã (tính trên số tỉnh thu) */
+const defRate=(l,lvl)=>{const pt=l.parts[0],tw=BASE.tws[pt.r];if(tw&&tw.xa0&&lvl&&(pt.p==='rest'||pt.p==='tw')){if(lvl!=='ti')return 0;const u=(KH.find(k=>(k.units||[]).some(x=>x.r===pt.r))||{units:[]}).units.find(x=>x.r===pt.r),q=u&&u.parts.find(x=>x.p===pt.p);if(q)return q.q0}
+ if(tw&&pt.p==='rest')return 1;if(tw&&pt.p==='tw')return tw.q;return BASE.rq.dt[pt.r]!=null?BASE.rq.dt[pt.r]:lvRate([l],'ti',BASE).q};
 /* tỷ lệ BTC (số cứng): tỷ lệ NSĐP theo số Bộ Tài chính giao của từng dòng mẫu; phần NSTW hưởng 100% = 0%, phần TW tách riêng theo quy định */
 const btcR=r=>{const w=M0.btc.w[r],x=M0.btc.x[r];return w&&x!=null?Math.round(x/w*1e8)/1e8:null};
 const btcLine=l=>{if(l.fix)return 0;const pt=l.parts[0];if(BASE.tws[pt.r]&&(pt.p==='rest'||pt.p==='tw'))return defRate(l);const q=btcR(pt.r);return q==null?defRate(l):q};
@@ -753,7 +764,7 @@ function lvApplied(leaves,lvl,lines,src){src=src||VIEW;const vs=[];let auto=fals
  leaves.forEach(l=>{if(!lnSub(BASE,l,lvl,4))return;if(l.fix){vs.push(0);return}
   const k=lvl==='ph'?'ph':lvl,o=(lines[l.key]||{})[k];if(o!=null){vs.push(o);return}
   const r=l.parts[0].r;if(lvl==='ti'&&src.qa&&src.qa[r]!=null&&l.parts[0].p!=='tw'){auto=true;vs.push(src.qa[r]);return}
-  vs.push(defRate(l))});
+  vs.push(defRate(l,lvl))});
  if(!vs.length)return {q:null,auto};const same=vs.every(v=>!ok(v,vs[0]));return {q:same?vs[0]:null,mixed:!same,auto}}
 /* kiểm tra khớp: tổng NSĐP toàn tỉnh phải bằng số chốt; khi ghim tổng thì từng khoản phải giữ đúng NSĐP của khoản */
 function chkPlan(p){const V=viewFor(p),lock=p.ro?'tong':(p.lock||'tong'),out=[];
@@ -1276,7 +1287,7 @@ function renderPA(){const cp=curPlan(),d=defPlan();document.getElementById('cmpb
   +'<hr><div class="pam" data-act="add">＋ Thêm phương án</div><div class="pam g"><span data-act="ren">Đổi tên</span><span data-act="dup">Nhân bản</span><span data-act="del">Xóa</span></div>'}
 const askName=(title,val,ok,extra)=>{modal(`<h3>${title}</h3><p><input id="pnm" class="s" style="width:100%" value="${E(val)}" maxlength="40" autocomplete="off"></p>${extra||''}`,[{t:'Hủy'},{t:'Lưu',pri:1,f:()=>{const v=(document.getElementById('pnm').value||'').trim();if(v)ok(v,(document.querySelector('input[name=pm]:checked')||{}).value)}}]);setTimeout(()=>{const i=document.getElementById('pnm');if(i){i.focus();i.select()}},60)};
 const nxName=()=>{let n=PA.plans.length+1;while(PA.plans.some(p=>p.name==='Phương án '+n))n++;return 'Phương án '+n};
-function preset100(){const lines={};KH.forEach(k=>{if(k.fixed)return;(k.lines||[]).forEach(l=>{if(!l.grp&&l.x&&!l.fix&&!/\.w$/.test(l.key))lines[l.key]={ph:1,xa:1}})});return lines}
+function preset100(){const lines={};KH.forEach(k=>{if(k.fixed)return;(k.lines||[]).forEach(l=>{if(!l.grp&&l.x&&!l.fix&&!/\.w$/.test(l.key)&&!isXa0(l))lines[l.key]={ph:1,xa:1}})});return lines}
 const clone=o=>JSON.parse(JSON.stringify(o));
 function addPlan(){askName('Thêm phương án',nxName(),(nm,mode)=>{const cp=curPlan();let p;
   if(mode==='x100')p={id:PA.nid++,name:nm,lines:preset100(),lock:'tong'};
