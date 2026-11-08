@@ -115,6 +115,33 @@ var GSPA = (function () {
     var KT = K0 + d.khoan.length, LK = col(7 + 5 * PAN);
     SK.set(KT, 2, 'Tổng cộng các khoản thu'); SK.style('bold', a1(KT, 2));
     for (var c = 3; c <= 7 + 5 * PAN; c++) SK.set(KT, c, '=SUM(' + col(c) + K0 + ':' + col(c) + (KT - 1) + ')', NUM);
+    // dòng khu vực (giống app): khoản có 4 dòng khu vực (GTGT, TNDN, TTĐB, tài nguyên); khu vực ngoài quốc doanh tách
+    // doanh nghiệp (= dòng khu vực trừ dòng hộ) và hộ, cá nhân (dòng mục VI). Chỉ để hiển thị, không cộng vào tổng.
+    var NQD = { 21: 67, 22: 68, 23: 69, 25: 70 };
+    var KVN = ['Khu vực doanh nghiệp nhà nước do Trung ương quản lý', 'Khu vực doanh nghiệp nhà nước do địa phương quản lý',
+      'Khu vực doanh nghiệp có vốn đầu tư nước ngoài', 'Khu vực kinh tế ngoài quốc doanh'];
+    var KV = {}, kvr = KT + 2;
+    SK.set(kvr - 1, 2, 'Dòng khu vực (chỉ hiển thị, không cộng vào tổng)'); SK.style('bold', a1(kvr - 1, 2));
+    function lincells(c, plus, minus, btcRow) {
+      var ref = function (dd) { return "'Dữ liệu PA'!" + col(c) + (P0 + (btcRow != null ? btcRow : dd)); };
+      return '=' + ref(plus) + (minus != null && btcRow == null ? '-' + ref(minus) : '');
+    }
+    d.khoan.forEach(function (kk, q) {
+      var dg = kk.dong || [];
+      if (dg.length !== 4 || !NQD[dg[3]] || NQD[dg[3]] >= N) return;
+      var hr = NQD[dg[3]], items = [];
+      dg.forEach(function (r0, j) { items.push({ ten: KVN[j], d: 1, p: r0 }); });
+      items.push({ ten: 'Thu từ doanh nghiệp, tổ chức kinh doanh', d: 2, p: dg[3], m: hr, b: dg[3] });
+      items.push({ ten: 'Thu từ cá nhân, hộ gia đình, hộ kinh doanh', d: 2, p: hr, b: dg[3] });
+      KV[q] = [];
+      items.forEach(function (it) {
+        var r = kvr++; SK.set(r, 1, q); SK.set(r, 2, (it.d === 2 ? '    + ' : '  - ') + it.ten);
+        [3, 4, 5].forEach(function (c, j) { SK.set(r, 3 + j, lincells(c, it.p, it.m), NUM); });
+        [8, 9].forEach(function (c, j) { SK.set(r, 6 + j, lincells(c, it.p, null, it.b != null ? it.b : it.p), NUM); });
+        for (var k = 0; k < PAN; k++) for (var j = 0; j < 5; j++) SK.set(r, 8 + 5 * k + j, lincells(pc(k, j), it.p, it.m), NUM);
+        KV[q].push({ row: r, ten: it.ten, d: it.d });
+      });
+    });
 
     // ---- Sheet 1: Tỷ lệ mẫu
     S1.set(1, 1, 'TỶ LỆ PHÂN CHIA VÀ THU NSĐP 2027 THEO PHƯƠNG ÁN'); S1.style('title', 'A1');
@@ -143,9 +170,16 @@ var GSPA = (function () {
       S1.style('grid', 'A' + r + ':K' + r); if (isTot) S1.style('tot', 'A' + r + ':K' + r);
     }
     put1(7, KT, 'Tổng cộng các khoản thu', true);
-    d.khoan.forEach(function (kk, q) { put1(8 + q, K0 + q, (q + 1) + '. ' + kk.ten); });
-    var nr = 8 + d.khoan.length + 1;
-    S1.set(nr, 1, 'Ghi chú: ô vàng C3 là ô chọn phương án. Tỷ lệ NSĐP hưởng là tỷ lệ thực của PA đang chọn = NSĐP do app tính / thu NSNN; TW = 1 − NSĐP tổng / NSNN tổng. Kiểm tra khớp: Tỉnh + 96 xã = Tổng.');
+    var r1 = 8;
+    d.khoan.forEach(function (kk, q) {
+      put1(r1++, K0 + q, (q + 1) + '. ' + kk.ten); S1.style('bold', 'A' + (r1 - 1));
+      (KV[q] || []).forEach(function (it) {
+        put1(r1, it.row, (it.d === 2 ? '        + ' : '    - ') + it.ten);
+        S1.style(it.d === 2 ? 'sub2' : 'sub', 'A' + r1 + ':K' + r1); r1++;
+      });
+    });
+    var nr = r1 + 1;
+    S1.set(nr, 1, 'Ghi chú: ô vàng C3 là ô chọn phương án. Tỷ lệ NSĐP hưởng là tỷ lệ thực của PA đang chọn = NSĐP do app tính / thu NSNN; TW = 1 − NSĐP tổng / NSNN tổng. Kiểm tra khớp: Tỉnh + 96 xã = Tổng. Dòng khu vực (chữ nhạt, thụt vào) giống app, chỉ để xem, không cộng vào tổng; khu vực ngoài quốc doanh tách doanh nghiệp và hộ, cá nhân.');
     S1.style('wrap', 'A' + nr); // không hợp nhất ô ghi chú: hợp nhất cắt ngang cột cố định A sẽ làm Google báo lỗi
     S1.widths = { 1: 360 }; for (c = 2; c <= 11; c++) S1.widths[c] = 100; S1.freeze = [6, 1];
 
@@ -252,6 +286,8 @@ var GSPA = (function () {
       red: function (r) { r.setFontWeight('bold').setFontSize(12).setFontColor('#b3261e'); },
       pick: function (r) { r.setBackground(YEL).setFontWeight('bold').setFontSize(14).setHorizontalAlignment('center'); },
       wrap: function (r) { r.setWrap(true); },
+      sub: function (r) { r.setFontColor('#3d4b5c'); },
+      sub2: function (r) { r.setFontColor('#5a6b82').setFontStyle('italic'); },
       grid: function (r) { r.setBorder(true, true, true, true, true, true, '#dfe4de', SpreadsheetApp.BorderStyle.SOLID); }
     };
     sheets.forEach(function (S, idx) {
