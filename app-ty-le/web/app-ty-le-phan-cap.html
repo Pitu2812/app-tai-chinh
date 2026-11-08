@@ -66,6 +66,8 @@ b.adj{background:#ffe27a;border-radius:4px;padding:0 .3em}
 #lock{display:none;position:fixed;inset:0;background:var(--bg);z-index:400;align-items:center;justify-content:center}#lock.on{display:flex}#lock form{background:var(--sf);border:1px solid var(--ln);border-radius:16px;padding:26px 30px;display:flex;flex-direction:column;gap:12px;min-width:300px}#lock h2{margin:0;font-size:18px}#lkm{color:var(--bad);min-height:1.2em;font-size:13px}
 tr .rate.z{background:#f1f3f6;color:#8a94a3}
 tr.syn td{cursor:default}tr.syn.d0 td{border-top:2px solid #9db6d6}tr.syn.d2.memo td{font-style:italic;font-weight:400;color:#5a6b82}tr.syn.d2 td{font-weight:400}
+#gsb small{font-weight:400;opacity:.8}#gsb small.gserr{color:#c0392b;opacity:1}
+html.srv #gsb{display:inline-flex;align-items:center;gap:4px}
 </style>
 <style>
 .top{gap:12px}.top h1{flex:none;font-size:17px}
@@ -189,6 +191,7 @@ th,.rz2 th,.evt th,.kht th,.kht th:first-child{text-align:center!important}tr.gr
  <span class="pwrap"><button class="pa" id="pab"><b id="pan"></b><small id="pad"></small><span class="cv">▼</span></button><div class="pamenu" id="pam"></div></span>
  <button class="ib sm cmpb" id="cmpb" hidden title="So sánh 2 đến 4 phương án">⇄ So sánh</button><span style="flex:1"></span><span class="chip tip" id="src"></span>
  <button class="ib tip" id="ubtn" data-t="Nạp biểu 01, 02 của thuế (chọn cả hai file một lần)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4m0 0-4 4m4-4 4 4M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg></button>
+ <button class="chip tip srvonly" id="gsb" type="button" data-t="Dựng hoặc cập nhật Google Sheet chọn phương án theo số app (5 phương án), rồi mở ra. Mỗi lần sửa phương án, Google Sheet tự cập nhật sau 30 giây."><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M4 9h16M4 15h16M10 9v12"/></svg> Google Sheet<small id="gss"></small></button>
  <button class="chip tip" id="sy" style="display:none" data-t=""></button>
  <button class="ib" id="bell"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8M10 20a2 2 0 0 0 4 0"/></svg><span class="badge" id="bdg">0</span></button>
  <span class="mwrap"><button class="ib" id="mn">⋯</button><div class="menu" id="mm">
@@ -1778,6 +1781,32 @@ async function enter(r){SV.user=r.user;SV.info=r.info||null;if(r.kk)SV.kk={pa:r.
  await flush();
  clearInterval(SV.iv);SV.iv=setInterval(()=>{if(document.visibilityState==='visible')flush().then(()=>pull())},30000);
  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')pull()})}
+/* ---- Google Sheet chọn phương án (H duyệt 09/11 01:49): chỉ một chiều app -> Google Sheet ----
+   dữ liệu đúng dạng gs-nguon (so-goc + ket-qua) để script dựng bảng; bấm nút thì cập nhật rồi mở,
+   sửa phương án thì tự cập nhật ngầm, gom trong 30 giây, không mở thẻ mới */
+function gsData(){
+ const rows=BASE.rows.map((r,i)=>({i,ten:r.n,nsnn_tinh:r.ti[4],nsdp_tinh:r.ti[5],nsnn_xa:r.xa[4],nsdp_xa:r.xa[5],nsnn_tong:r.v[4],nsdp_tong:r.v[5],ty_le_btc:btcR(i)}));
+ const khoan=KH.map((k,i)=>({i,ten:k.n,dong:k.idx,co_dinh:!!k.fixed,ty_le_btc:k.fixed?null:btcK(k)}));
+ const xa=BASE.xn.map((n,k)=>({k,ten:n,phuong:!!ISPH[k],nsnn:BASE.xr[k].map(a=>a[4]),nsdp:BASE.xr[k].map(a=>a[5])}));
+ const pa=PA.plans.map(pl=>{const V=viewFor(pl);return {id:pl.id,ten:pl.name,mac_dinh:pl.id===PA.def,tong:V.rows[0].v[5],tinh:V.rows[0].ti[5],xa:V.rows[0].xa[5],
+  theo_dong:V.rows.map(r=>[r.ti[5],r.xa[5],r.v[5]]),theo_xa:V.xn.map((n,k)=>({ten:n,nsdp:V.xr[k].map(a=>a[5])}))}});
+ return {so_chot:BASE.rows[0].v[5],rows,khoan,xa,btc:{w:M0.btc.w,x:M0.btc.x},pa}}
+let gsT=null,gsBusy=false,gsSig=raw.get('pcr:gssig')||'',gsLast=raw.get('pcr:PA')||'';
+const gsShow=(s,m)=>{const e=$g('gss');if(!e)return;e.className=s==='err'?'gserr':'';e.textContent=m?' · '+m:''};
+async function gsRun(win){if(gsBusy){if(win)try{win.close()}catch(e){}return}gsBusy=true;gsShow('busy',win?'đang cập nhật…':'đang cập nhật ngầm…');
+ try{let d;try{d=gsData()}catch(e){console.error(e);gsShow('err','lỗi dựng số');if(win)try{win.close()}catch(_){}return}
+  const sig=JSON.stringify(d.pa.map(p=>[p.ten,p.theo_dong]));
+  if(!win&&sig===gsSig){gsShow('ok',SV.gsAt?'đã cập nhật '+hm(SV.gsAt):'');return}
+  const r=await call('gspa',{data:d});
+  if(!r.ok||!r.url){gsShow('err','chưa cập nhật được');if(win){try{win.close()}catch(_){}toast('Google Sheet chưa cập nhật được: '+(r.msg||''),6000)}return}
+  gsSig=sig;raw.set('pcr:gssig',sig);SV.gs=r.url;SV.gsAt=new Date();gsShow('ok','đã cập nhật '+hm(SV.gsAt));
+  if(win){try{win.location.href=r.url}catch(e){win=null}if(!win){const t=$g('toast');t.innerHTML=`Google Sheet đã cập nhật · <a href="${E(r.url)}" target="_blank" rel="noopener">mở bảng tính</a>`;t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('on'),8000)}}}
+ finally{gsBusy=false}}
+SV.gsRun=gsRun;SV.gsData=gsData;
+$g('gsb').onclick=()=>{clearTimeout(gsT);let w=null;try{w=window.open('','_blank')}catch(e){}if(w)try{w.document.title='Đang cập nhật Google Sheet…';w.document.body.textContent='Đang cập nhật Google Sheet theo số app, chờ một chút…'}catch(e){}gsRun(w)};
+/* tự cập nhật khi phương án đổi (sửa trên máy này), gom 30 giây */
+const gsWatch=()=>{const v=raw.get('pcr:PA')||'';if(SV.quiet||v===gsLast)return;gsLast=v;if(!ready)return;clearTimeout(gsT);gsT=setTimeout(()=>gsRun(null),30000)};
+const _set2=LS.set;LS.set=(k,v)=>{_set2(k,v);if(k==='pcr:PA')gsWatch()};
 SV.sync=async()=>{setState('busy');await flush();await pull();toast('Đã đồng bộ với Drive')};
 $g('sy').onclick=()=>SV.sync();
 /* ---- khởi động ---- */
