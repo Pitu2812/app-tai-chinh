@@ -1420,7 +1420,7 @@ function inputArea(td,py){
     const star=req?' <span class="req" title="Bắt buộc">*</span>':'';
     if(id==='dt')return `<tr class="irow" id="fb-dt"><td class="nm"><b>${lab}${star}</b><small>${sub}</small></td><td>${mau}</td><td><span id="st-dt"></span></td><td class="ra"><button type="button" class="btn sm pri" id="b-dtgo">Nạp dự toán</button></td></tr>`;
     if(id==='pcc')return `<tr class="irow" id="fb-pcc"><td class="nm"><b>${lab}${star}</b><small>${sub}</small></td><td>${mau}</td><td><span class="chip wn">Chờ mẫu chi</span>${TC.tip('Phần này sẽ nhận số ước thực hiện và dự toán chi năm sau khi có mẫu chi, giống phần ước thực hiện và dự toán của báo cáo thảo luận thu.')}</td><td class="ra"><button type="button" class="btn sm" disabled>Chờ mẫu chi</button></td></tr>`;
-    if(id==='pc')return `<tr class="irow" id="fb-pc"><td class="nm"><b>${lab}${star}</b><small>${sub}</small></td><td>${mau}</td><td><input type="file" id="f-pc" class="vh" accept=".xlsx" multiple><div class="flist" id="pc-list"></div><div class="nm" id="pc-st" style="font-size:12.5px;color:var(--mut)"></div></td><td class="ra"><button type="button" class="btn sm pri" data-pick="f-pc" title="Tải tệp .xlsx để thêm mới">Tải tệp</button> <button type="button" class="btn sm" id="pc-sync" title="Tải lại số đang dùng chung trên máy chủ (do Quản trị đồng bộ)">Làm mới</button>${pcGoiOk()?` <button type="button" class="btn sm pri" id="pc-goi" title="Lấy số dự toán theo phương án mặc định của app Tỷ lệ phân cấp, xem trước rồi mới ghi">⟳ Đồng bộ DT ${S.info.nam+1}</button>`:''}<span id="pc-undo"></span></td></tr>`;
+    if(id==='pc')return `<tr class="irow" id="fb-pc"><td class="nm"><b>${lab}${star}</b><small>${sub}</small></td><td>${mau}</td><td><input type="file" id="f-pc" class="vh" accept=".xlsx" multiple><div class="flist" id="pc-list"></div><div class="nm" id="pc-st" style="font-size:12.5px;color:var(--mut)"></div></td><td class="ra"><button type="button" class="btn sm pri" data-pick="f-pc" title="Tải tệp .xlsx để thêm mới">Tải tệp</button> <button type="button" class="btn sm" id="pc-sync" title="Kiểm tra ngay số theo phương án mặc định của app Tỷ lệ phân cấp (app cũng tự kiểm khi mở)">Làm mới</button></td></tr>`;
     return `<tr class="irow" id="fb-${id}"><td class="nm"><b>${lab}${star}</b><small>${sub}</small></td><td>${mau}</td><td><div id="fl-${id}"></div><div class="chk" id="chk-${id}"></div></td><td class="ra"><input type="file" id="f-${id}" class="vh" accept=".xls,.xlsx,.pdf,.htm,.html" multiple><input type="file" id="d-${id}" webkitdirectory multiple hidden><button type="button" class="btn sm" data-repl="${id}">Thay thế</button><button type="button" class="btn sm pri" data-pick="f-${id}">Thêm tệp</button><button type="button" class="btn sm" data-dir="${id}">Thư mục</button></td></tr>`};
   const all=`<div class="drop filebox inAll" id="fb-all"><div class="ic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4"/><path d="M7 9l5-5 5 5"/><path d="M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3"/></svg></div><div class="dtx"><b>Kéo thả hoặc Tải tệp dữ liệu vào đây</b>${TC.tip('Nhận tệp .xls, .xlsx, .pdf xuất từ TABMIS, tối đa 120 tệp mỗi lần (đủ cho 21 đơn vị chuyên quản, cả thu, chi, năm nay và cùng kỳ), kéo thả hoặc chọn cả thư mục. Web tự nhận thu hay chi, năm nay hay cùng kỳ, đơn vị, ngày, tháng, năm, rồi xếp vào đúng dòng bên dưới. Tệp .xls dạng vỏ tự ghép với thư mục _files đi kèm. Chọn cả tệp Excel và tệp PDF của cùng một báo cáo thì web đối chiếu hai bên.')}<div class="muted fbh">Web tự nhận thu hay chi, đơn vị, năm</div></div><div class="sl-acts-h"><input type="file" id="f-all" class="vh" accept=".xls,.xlsx,.pdf,.htm,.html" multiple><input type="file" id="d-all" webkitdirectory multiple hidden><button type="button" class="btn pri" data-pick="f-all">Chọn tệp</button><button type="button" class="btn" data-dir="all">Chọn thư mục</button></div></div><div class="chk" id="chk-all"></div>`;
   return `<div id="ready" class="ready"></div>${all}
@@ -1475,7 +1475,7 @@ function flowView(el){
   if(td&&S.itab!=='chi'){tdPickEl=el;tdPickBox(el)}
   if(S.mode==='open'){chk(el,'thu',['Đang dùng số liệu đã lưu cùng báo cáo. Chọn tệp mới nếu muốn thay.']);chk(el,'chi',['Đang dùng số liệu đã lưu cùng báo cáo. Chọn tệp mới nếu muốn thay.'])}
   if(S.bieu){const b=$('#fb-bieu',el);b.classList.add('ok');$('.nm',b).textContent='Đã nạp biểu '+S.bieu.n+' xã, phường';$('#cmpbox',el).hidden=false;$('#bd',el).textContent=S.bieu.ngay||'?'}
-  renderWarn1(el);renderPc(el);
+  renderWarn1(el);renderPc(el);pcTheo(el);
   $('#b-kho',el).onclick=()=>{const k=$('#kho',el),on=k.hidden;k.hidden=!on;$('#b-kho',el).setAttribute('aria-expanded',on);$('#b-kho',el).textContent='Lấy số liệu đã lưu trong kho '+(on?'▴':'▾');if(on)khoPanel(el)};
   if(genUnits().length)showOut(el,1)
 }
@@ -1653,16 +1653,21 @@ function pcChanged(el){
 function renderPc(el){
   const b=$('#fb-pc',el);if(!b)return;
   const y=S.info.nam+1,base=TC.store.get('pc:'+y,null),fs=pcFiles(y),st=$('#pc-st',el),pl=$('#pc-list',el),when=t=>t?new Date(t).toLocaleString('vi-VN'):'';
+  const auto=!!(base&&base.nguon==='app-ty-le-phan-cap'),nw=pcNewer(base,fs),useI=new Set(nw.map(x=>x.i)),nXa=new Set();
+  nw.forEach(x=>Object.keys(x.f.xa||{}).forEach(k=>nXa.add(k)));
   st.style.color='';b.classList.toggle('ok',!!(base||fs.length));
-  const info=(base?(base.nguon==='app-ty-le-phan-cap'?`Đang dùng: ${esc(base.pa||base.name)}${base.ma?' · mã '+esc(base.ma):''}, ${base.n} xã, phường, đồng bộ từ app Tỷ lệ phân cấp lúc ${esc(when(base.ts))}${base.dongbo&&base.dongbo.by?' bởi '+esc(base.dongbo.by):''}. `:`Bảng gốc: ${esc(base.name)}, ${base.n} xã, phường, lấy từ tab Tỷ lệ phân cấp lúc ${esc(when(base.ts))}. `):'')+(fs.length?`${fs.length} tệp nạp thêm (tối đa ${PCMAX}), xã trùng thì lấy theo tệp nạp sau cùng. `:'')+(base||fs.length?'':`Chọn tệp để web điền sẵn cột ước thực hiện ${S.info.nam} và dự toán ${S.info.nam+1} cho từng xã, phường.`);
-  pl.innerHTML=(base||fs.length?'<span class="chip ok">✓ Đã đồng bộ</span>':'<span class="chip no">✕ Chưa đồng bộ</span>')+TC.tip(info)+(base?'<button class="btn sm" data-prm="-1" aria-label="Bỏ bảng gốc" style="margin-left:6px">✕ Bỏ</button>':'')
+  const info=(base?(auto?`Đang dùng: ${esc(base.pa||base.name)}${base.ma?' · mã '+esc(base.ma):''}, ${base.n} xã, phường, là phương án mặc định của app Tỷ lệ phân cấp (gói ghi lúc ${esc(when(pcBaseAt(base)))}${base.dongbo&&base.dongbo.at?', app tài chính lấy về lúc '+esc(when(base.dongbo.at)):''}). App tự lấy lại mỗi khi bên app phân cấp đổi phương án mặc định. `:`Bảng gốc: ${esc(base.name)}, ${base.n} xã, phường, lấy lúc ${esc(when(base.ts))}. `):'')
+    +(fs.length?`${fs.length} tệp tải lên trực tiếp (tối đa ${PCMAX}). Tệp tải lên sau lúc có gói số thì dùng tệp, so theo từng xã; đổi phương án mặc định sau đó thì lại theo gói mới. `:'')
+    +(base||fs.length?'':`App tự lấy số khi bên app Tỷ lệ phân cấp có phương án mặc định. Có thể tải tệp lên để web điền sẵn cột ước thực hiện ${S.info.nam} và dự toán ${S.info.nam+1} cho từng xã, phường.`);
+  pl.innerHTML=(base||fs.length?'<span class="chip ok">✓ Đã đồng bộ</span>':'<span class="chip no">✕ Chưa đồng bộ</span>')+TC.tip(info)+(base&&!auto?'<button class="btn sm" data-prm="-1" aria-label="Bỏ bảng gốc" style="margin-left:6px">✕ Bỏ</button>':'')
    +'<div id="pc-sum"></div>';
-  TC.fsum(pl.querySelector('#pc-sum'),'pc',fs.map(f=>({name:f.name,detail:`${f.n} xã, phường · sheet «${f.sheet}» · nạp lúc ${when(f.ts)}`})),{
+  TC.fsum(pl.querySelector('#pc-sum'),'pc',fs.map((f,i)=>({name:f.name,detail:`${f.n} xã, phường · sheet «${f.sheet}» · tải lên lúc ${when(f.ts)}${useI.has(i)?'':' · cũ hơn gói số, không dùng'}`})),{
     redraw:()=>renderPc(el),
     onRemove:i=>{TC.store.set('pcf:'+y,pcFiles(y).filter((_,j)=>j!==i));pcChanged(el)},
     onClear:()=>{TC.store.set('pcf:'+y,[]);pcChanged(el)}});
-  st.textContent='';
-  const un=$('#pc-undo',el);if(un){const pv=pcGoiOk()&&TC.store.get('pcprev:'+y,null);un.innerHTML=pv?' <button type="button" class="btn sm" id="pc-undo-b" title="Trả về số trước lần đồng bộ gần nhất">↶ Hoàn tác</button>':'';const ub=$('#pc-undo-b',el);if(ub)ub.onclick=()=>pcUndo(el)}
+  st.textContent=[base?'Đang dùng: '+(auto?(base.pa||base.name)+(base.ma?' · mã '+base.ma:'')+' (mặc định app phân cấp, gói '+when(pcBaseAt(base))+')':base.name):'',
+    nXa.size?nXa.size+' xã, phường dùng tệp tải lên (mới hơn gói)':'',fs.length>nw.length?(fs.length-nw.length)+' tệp tải lên cũ hơn gói, không dùng':''].filter(Boolean).join(' · ');
+  if(pcTheoErr&&TC.auth.can('admin')){st.textContent='Chưa tự lấy được số mới: '+pcTheoErr.replace(/\.?\s*Đang giữ số cũ\.?$/,'')+'. Đang giữ số cũ.'+(st.textContent?' '+st.textContent:'');st.style.color='var(--bad)'}
   pl.querySelectorAll('button[data-prm]').forEach(x=>x.onclick=()=>{const i=+x.dataset.prm;
     TC.log('Bỏ tệp tỷ lệ phân cấp','năm '+y);
     if(i<0)TC.store.del('pc:'+y)
@@ -1919,10 +1924,9 @@ function wire(el){
   $('#o-lv',el).onclick=()=>runAll(el);
   const opc=$('#o-pc',el);if(opc)opc.onclick=()=>{S.tdOpen=!tdOpen();const p=$('#tpick',el),b=opc;p.hidden=!S.tdOpen;b.classList.toggle('on',S.tdOpen);b.setAttribute('aria-expanded',S.tdOpen);if(S.tdOpen){tdPickBox(el);p.scrollIntoView({behavior:'smooth',block:'start'})}};
   const psy=$('#pc-sync',el);if(psy)psy.onclick=async()=>{const old=psy.textContent;psy.disabled=true;psy.textContent='Đang đồng bộ…';
-    const ok=!TC.srv.on||(await TC.srv.flush()&&await TC.srv.pull(false,true));psy.disabled=false;psy.textContent=old;
+    const ok=!TC.srv.on||(await TC.srv.flush()&&(await pcTheo(el,true),true)&&await TC.srv.pull(false,true));psy.disabled=false;psy.textContent=old;
     if(!ok)return TC.toast('Chưa đồng bộ được, kiểm tra mạng rồi thử lại.',1);
-    pcChanged(el);TC.toast(TC.store.get('pc:'+(S.info.nam+1),null)||pcFiles(S.info.nam+1).length?'Đã đồng bộ số mới nhất':'Chưa có số để đồng bộ: app Tỷ lệ phân cấp chưa gửi số nào lên máy chủ')};
-  const pgo=$('#pc-goi',el);if(pgo)pgo.onclick=()=>pcGoi(el);
+    pcChanged(el);TC.toast(TC.store.get('pc:'+(S.info.nam+1),null)||pcFiles(S.info.nam+1).length?'Đang dùng số mới nhất':'Chưa có số: app Tỷ lệ phân cấp chưa có phương án mặc định gửi sang')};
   const pci=$('#f-pc',el);if(pci)pci.onchange=async e=>{const fs=[...e.target.files];e.target.value='';if(!fs.length)return;
     const st=$('#pc-st',el),y=S.info.nam+1;st.textContent='Đang đọc…';st.style.color='';
     const cur=pcFiles(y),errs=[];let added=0;
@@ -2339,52 +2343,38 @@ const ctxTd=w=>({thu:w.thu||TD_NO_THU,chi:w.chi,tables:w.tables,info:w.info,dt:w
 /* bảng Tỷ lệ phân cấp đang dùng = bảng gốc (tab Tỷ lệ phân cấp / Google Sheet) + tối đa 5 tệp .xlsx nạp thêm; tệp nạp sau ghi đè xã trùng */
 const PCMAX=5;
 /* Đồng bộ DT năm sau (H duyệt 09/11/2026): Quản trị bấm, máy chủ đọc gói số app Tỷ lệ phân cấp gửi KK01 (phương án mặc định), xem trước rồi mới ghi pc:{năm} dùng chung */
-const pcGoiOk=()=>TC.srv.on&&TC.auth.can('admin')&&S.info.nam+1===2027;
-const pcT7=(pc,i)=>{let t=0,c=0;Object.values((pc&&pc.xa)||{}).forEach(r=>{const v=r&&r[7]&&r[7][i];if(typeof v==='number'){t+=v;c++}});return c?t:null};
-const pcSame=(a,b)=>JSON.stringify(a||null)===JSON.stringify(b||null);
-async function pcGoi(el){
-  const btn=$('#pc-goi',el),y=S.info.nam+1,old=btn.textContent;btn.disabled=true;btn.textContent='Đang lấy số…';
-  let r=null;try{r=await TC.srv.call('pcGoi',{nam:y})}catch(e){}
-  btn.disabled=false;btn.textContent=old;
-  if(!r||!r.ok)return TC.toast((r&&r.msg)||'Chưa lấy được gói số, bạn thử lại.',1);
-  let d;try{d=JSON.parse(r.v)}catch(e){d=null}
-  if(!d||!d.xa||!d.names||typeof d.xa!=='object'||!Object.keys(d.xa).length)return TC.toast('Gói số từ app Tỷ lệ phân cấp không đúng định dạng, báo KK02 kiểm lại.',1);
-  const cur=TC.store.get('pc:'+y,null),keys=new Set([...Object.keys(d.xa),...Object.keys((cur&&cur.xa)||{})]);
-  let doi=0,moi=0,bo=0;keys.forEach(k=>{const a=cur&&cur.xa&&cur.xa[k],b=d.xa[k];if(!a&&b)moi++;else if(a&&!b)bo++;else if(!pcSame(a,b))doi++});
-  const f=v=>v==null?'—':TC.fmt?TC.fmt(v):Number(v).toLocaleString('vi-VN'),tn=pcT7(d,5),to=pcT7(cur,5),tg=d.tong||{};
-  const when=t=>t?new Date(t).toLocaleString('vi-VN'):'—',same=cur&&!doi&&!moi&&!bo;
-  const html=`<div style="font-size:14px;line-height:1.6">
-   <p style="margin:0 0 8px"><b>Phương án mặc định:</b> ${esc(d.pa||d.name||'?')}${d.ma?' · mã '+esc(d.ma):''}<br><span class="muted">App Tỷ lệ phân cấp ghi gói lúc ${esc(when(r.at||d.ts))}</span></p>
-   ${tg.nsdp!=null?`<p style="margin:0 0 8px"><b>DT ${y} NSĐP:</b> ${f(tg.nsdp)} (tỉnh ${f(tg.tinh)}, xã ${f(tg.xa)})</p>`:''}
-   <table class="tbl" style="width:100%;font-size:13.5px"><tr><th style="text-align:left"></th><th>Đang dùng</th><th>Số mới</th></tr>
-    <tr><td style="text-align:left">Nguồn</td><td>${cur?esc(cur.pa||cur.name||''):'(chưa có)'}</td><td>${esc(d.pa||d.name||'')}</td></tr>
-    <tr><td style="text-align:left">Số xã, phường</td><td>${cur?cur.n||Object.keys(cur.xa||{}).length:0}</td><td>${d.n||Object.keys(d.xa).length}</td></tr>
-    <tr><td style="text-align:left">Cộng DT ${y} NSĐP các xã (dòng tổng thu)</td><td>${f(to)}</td><td>${f(tn)}</td></tr></table>
-   <p style="margin:8px 0 0">${!cur?`Hiện chưa có số DT ${y}, sẽ nạp mới ${moi} xã, phường.`:same?'<b>Số mới giống hệt số đang dùng.</b>':`So với số đang dùng: <b>${doi}</b> xã đổi số${moi?', '+moi+' xã mới':''}${bo?', '+bo+' xã không còn trong gói':''}${tn!=null&&to!=null?', chênh '+f(tn-to):''}.`}</p>
-   <p class="muted" style="margin:6px 0 0;font-size:12.5px">Bấm Đồng bộ thì mọi máy dùng chung số mới, bảng thảo luận tự lấy số khi mở lại. Có nút Hoàn tác về số cũ.</p></div>`;
-  const ok=await TC.dialog('Đồng bộ DT '+y+' từ app Tỷ lệ phân cấp',html,'Đồng bộ');if(!ok)return;
-  TC.store.set('pcprev:'+y,cur?{v:cur}:{v:null});
-  const nv=Object.assign({},d,{ts:Date.now(),dongbo:{at:Date.now(),by:TC.user.username,fileAt:r.at||null,fileId:r.id||''}});
-  TC.store.set('pc:'+y,nv);TC.log('Đồng bộ DT '+y,(d.pa||d.name||'')+(d.ma?' · mã '+d.ma:'')+' · '+doi+' xã đổi');
-  pcChanged(el);
-  const sent=await TC.srv.flush().catch(()=>false);
-  TC.toast(sent===false?'Đã ghi trên máy này, chưa gửi lên máy chủ được; app tự gửi lại khi có mạng.':'Đã đồng bộ DT '+y+' theo '+(d.pa||'phương án mặc định'),sent===false?1:0)}
-async function pcUndo(el){
-  const y=S.info.nam+1,pv=TC.store.get('pcprev:'+y,null);if(!pv)return;
-  const ok=await TC.dialog('Hoàn tác đồng bộ DT '+y,`<p style="margin:0">Trả số DT ${y} về ${pv.v?'<b>'+esc(pv.v.pa||pv.v.name||'số trước')+'</b>, dùng từ '+esc(new Date(pv.v.ts).toLocaleString('vi-VN')):'trạng thái chưa có số'}?</p>`,'Hoàn tác');if(!ok)return;
-  if(pv.v)TC.store.set('pc:'+y,pv.v);else TC.store.del('pc:'+y);TC.store.del('pcprev:'+y);
-  TC.log('Hoàn tác đồng bộ DT '+y,pv.v?(pv.v.pa||pv.v.name||''):'về chưa có số');pcChanged(el);await TC.srv.flush().catch(()=>{});TC.toast('Đã trả về số trước')}
+/* Tự theo phương án mặc định của app Tỷ lệ phân cấp (H duyệt 06:46 09/11/2026):
+   máy chủ so giờ gói số trên Drive với số đang dùng, gói mới hơn thì máy chủ ghi pc:<năm> dùng chung.
+   Tệp tải lên trực tiếp (pcf:<năm>) chỉ dùng khi tải lên sau lúc app phân cấp ghi gói: cái nào mới hơn thì dùng cái đó. */
+let pcTheoAt=0,pcTheoRun=null,pcTheoErr='';
+function pcTheo(el,force){
+  const y=S.info.nam+1;if(!TC.srv.on||y!==2027)return Promise.resolve(null);
+  if(pcTheoRun)return pcTheoRun;
+  if(!force&&Date.now()-pcTheoAt<60000)return Promise.resolve(null);pcTheoAt=Date.now();
+  const before=JSON.stringify(TC.store.get('pc:'+y,null));
+  return pcTheoRun=(async()=>{let r=null;try{r=await TC.srv.call('pcTheo',force?{nam:y,force:true}:{nam:y})}catch(e){}
+    pcTheoRun=null;if(!r)return null;
+    if(!r.ok){pcTheoErr=r.msg||'lỗi máy chủ';if(el.isConnected)renderPc(el);return r}
+    pcTheoErr='';
+    if(r.changed){await TC.srv.pull(false,true).catch(()=>{});
+      if(JSON.stringify(TC.store.get('pc:'+y,null))!==before){if(el.isConnected)pcChanged(el);TC.toast('Đã cập nhật số DT '+y+' theo '+(r.pa||'phương án mặc định')+' của app Tỷ lệ phân cấp')}}
+    return r})()}
+/* giờ của gói: lúc app phân cấp ghi gói lên Drive */
+const pcBaseAt=b=>b?(b.dongbo&&b.dongbo.fileAt)||b.ts||0:0;
+/* tệp tải lên còn dùng: tải lên sau giờ gói, xếp cũ trước mới sau để tệp mới nhất đè lên */
+const pcNewer=(base,fs)=>{const t=pcBaseAt(base);return fs.map((f,i)=>({f,i})).filter(x=>!base||(x.f.ts||0)>t).sort((a,b)=>(a.f.ts||0)-(b.f.ts||0))};
 const pcFiles=y=>{const a=TC.store.get('pcf:'+y,[]);return Array.isArray(a)?a:[]};
 /* bảng phân cấp thiếu danh sách tên (do app khác gửi lên) thì dựng tên từ danh sách 96 xã phường theo khóa, để khung chọn địa bàn không hỏng */
 function pcNames(o){if(!o||typeof o!=='object')return o;const nm=Object.assign({},o.names),ref={};(window.TC_XA96||[]).forEach(x=>{ref[TC.normXa(x)]=x});
   Object.keys(o.xa||{}).forEach(k=>{if(!nm[k])nm[k]=ref[k]||k});o.names=nm;return o}
 function pcGet(w){
   const y=w.info.nam+1,base=pcNames(TC.store.get('pc:'+y,null)),fs=pcFiles(y);
-  if(!fs.length)return base;
+  const use=pcNewer(base,fs).map(x=>x.f);
+  if(!use.length)return base;
   const xa=Object.assign({},base&&base.xa),names=Object.assign({},base&&base.names);
-  fs.forEach(f=>{Object.assign(xa,f.xa);Object.assign(names,f.names)});
-  const last=fs[fs.length-1];
-  return {ts:last.ts,name:(base?'bảng gốc + ':'')+fs.length+' tệp nạp thêm',n:Object.keys(xa).length,sheet:last.sheet,xa,names};
+  use.forEach(f=>{Object.assign(xa,f.xa);Object.assign(names,f.names)});
+  const last=use[use.length-1];
+  return {ts:last.ts,name:(base?(base.pa||base.name)+' + ':'')+use.length+' tệp tải lên mới hơn',n:Object.keys(xa).length,sheet:last.sheet,xa,names};
 }
 /* số đang dùng: nền lấy từ bảng Tỷ lệ phân cấp (nếu đã nạp), số người dùng gõ đè lên */
 function tdInp(w){
