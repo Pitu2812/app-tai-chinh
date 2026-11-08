@@ -373,8 +373,8 @@ var PCC=(function(){
      var kt=i+'.t',kc=i+'.c',kw=i+'.w',twN=function(lv){return lv==='ti'?tiN(tw.tw)>0:sumX(tw.tw)>0};
      var tR=tiN(r)-tiN(tw.tw),xR=sumX(r)-sumX(tw.tw),tW=tiN(tw.tw),xW=sumX(tw.tw);
      /* xa0: xã mặc định 0%, tỉnh mặc định hưởng cả phần NSĐP của xã (tỷ lệ tính trên số tỉnh thu) */
-     var q1=tw.xa0&&tR>0?(tR+xR)/tR:1,q2=tw.xa0&&tW>0?tw.q*(tW+xW)/tW:tw.q,qx=tw.xa0?0:null;
-     k.units.push({r:r,parts:[{p:'rest',s:tw.s,tw:tw.tw,real:tw.real,q0:q1,qx0:qx,kt:kt,kp:kc,kx:kc},{p:'tw',s:tw.s,tw:tw.tw,real:tw.real,q0:q2,qx0:qx,fix:tw.q===0,kt:kw,kp:kw,kx:kw}]});
+     var f1=tw.xa0&&tR>0?(tR+xR)/tR:null,f2=tw.xa0&&tW>0?(tW+xW)/tW:null,q1=f1?f1:1,q2=f2?tw.q*f2:tw.q,qx=tw.xa0?0:null;
+     k.units.push({r:r,parts:[{p:'rest',s:tw.s,tw:tw.tw,real:tw.real,q0:q1,qx0:qx,tf:f1,kt:kt,kp:kc,kx:kc},{p:'tw',s:tw.s,tw:tw.tw,real:tw.real,q0:q2,qx0:qx,tf:f2,fix:tw.q===0,kt:kw,kp:kw,kx:kw}]});
      /* khoáng sản: phần còn lại là giấy phép do địa phương cấp (NSĐP hưởng 100%), gom thành một nhóm */
      var gl=r===45,dd=gl?2:1;
      if(gl)k.lines.push({key:i+'.g',label:'Giấy phép do địa phương cấp (NSĐP hưởng 100%)',d:1,grp:true,children:[kt,kc],ti:tiN(r)-tiN(tw.tw)>0,x:sumX(r)-sumX(tw.tw)>0});
@@ -397,6 +397,8 @@ var PCC=(function(){
   var NX=BASE.xn.length,out={rows:null,xn:BASE.xn,xr:BASE.xr.map(function(a){return a.map(function(x){return x.slice()})}),ti:BASE.ti.map(function(x){return x.slice()}),adj:BASE.xr.map(function(){return []})};
   var any=false,lock=PL.lock||'tong',L=PL.lines||{};
   var ovk=function(key,lv){var o=L[key];return o&&o[lv]!=null?o[lv]:null};
+  /* tỷ lệ tỉnh nhập của khoản xã không hưởng (khoáng sản) tính trên tổng thu tỉnh + xã: đổi sang tỷ lệ trên số tỉnh tự thu bằng hệ số tf */
+  var tiO=function(pt){var o=ovk(pt.kt,'ti');return o!=null&&pt.tf?o*pt.tf:o};
   var qT=function(r){var n=BASE.ti[r][4]||0;return n>0?(BASE.ti[r][5]||0)/n:null};
   var qX=function(r){var n=0,d=0;for(var x=0;x<NX;x++){n+=BASE.xr[x][r][4]||0;d+=BASE.xr[x][r][5]||0}return n>0?d/n:null};
   var NP=function(pt,r,x){ /* NSNN của phần pt ở xã x (x=-1 là cấp tỉnh); phần TW chia theo tỷ trọng thì dùng số chưa làm tròn */
@@ -411,7 +413,7 @@ var PCC=(function(){
    k.units.forEach(function(u){var r=u.r,parts=u.parts,qx=qX(r);
     var q0=BASE.rq&&BASE.rq.dt[r]!=null?BASE.rq.dt[r]:qx,dq=function(pt){return pt.q0!=null?pt.q0:q0},dqx=function(pt){return pt.qx0!=null?pt.qx0:dq(pt)};
     var nTi=parts.reduce(function(a,pt){return a+NP(pt,r,-1)},0);
-    var tiExp=nTi>0&&parts.some(function(pt){var o=ovk(pt.kt,'ti');return o!=null&&!pt.fix&&ok(o,dq(pt))});
+    var tiExp=nTi>0&&parts.some(function(pt){var o=tiO(pt);return o!=null&&!pt.fix&&ok(o,dq(pt))});
     var C=[],cAll=false;
     if(lock!=='xa'&&q0!=null)for(var x=0;x<NX&&!cAll;x++){var ph=isPh[x];if(parts.some(function(pt){var o=ovk(ph?pt.kp:pt.kx,ph?'ph':'xa');return o!=null&&!pt.fix&&ok(o,dqx(pt))}))cAll=true}
     if(cAll)for(var x=0;x<NX;x++)C.push(x);
@@ -422,7 +424,7 @@ var PCC=(function(){
     var d=distribute(raw,xaT);
     C.forEach(function(x,j){out.xr[x][r][5]=d.v[j];if(d.adj[j])out.adj[x].push([r,5,d.adj[j]])});
     if(C.length&&ROLL[r])ex.xa[r]=exX;
-    var rt=function(pt){var o=pt.fix?null:ovk(pt.kt,'ti');return o!=null?o:dq(pt)};
+    var rt=function(pt){var o=pt.fix?null:tiO(pt);return o!=null?o:dq(pt)};
     if(tiExp){var e=parts.reduce(function(a,pt){return a+NP(pt,r,-1)*rt(pt)},0);out.ti[r][5]=rd(e);if(ROLL[r])ex.ti[r]=PL.rl?rd(e):e} /* PL.rl: tỷ lệ tròn để hạch toán, tổng tỉnh cộng từ số đã làm tròn từng dòng */
     else if(lock==='tong'&&nTi>0){ /* tỉnh tự bù để giữ tổng của khoản: tỷ lệ tỉnh (phần không cố định) làm tròn 6 số lẻ (%) rồi mới tính */
      var fixC=0,nR=0;parts.forEach(function(pt){var v=NP(pt,r,-1);if(pt.fix||pt.p==='tw')fixC+=v*rt(pt);else nR+=v});
@@ -692,11 +694,12 @@ function paRound(k){const L=pa2Lines(),V=PCC.applyPlan(BASE,KH,{lines:L,lock:'to
 /* khoáng sản cách C (H chốt 08/11, mọi phương án): xã 0%, tỉnh hưởng toàn bộ NSĐP; tính ở tỷ lệ gốc nên mọi phương án bỏ tỷ lệ nhập riêng của khoản này (một lần, cờ ks0) */
 const isXa0=l=>{const pt=l&&l.parts&&l.parts[0],tw=pt&&BASE.tws[pt.r];return !!(tw&&tw.xa0)};
 function ksC(){PA.plans.forEach(p=>{if(p.ro||p.ks0||!p.lines)return;KH.forEach(k=>(k.lines||[]).forEach(l=>{if(isXa0(l))delete p.lines[l.key]}));p.ks0=1})}
-function seedPA3(){ksC();PA.plans.forEach(p=>{if(!p.ro&&!p.sid&&/^\s*Phương án 2\s*$/i.test(p.name||'')&&(p.bv||0)<2){gocKhac(p.lines);p.bv=2}});
+function seedPA3(){ksC();PA.plans.forEach(p=>{if(!p.ro&&!p.sid&&/^\s*Phương án\s*2(?!\d)/i.test(p.name||'')&&(p.bv||0)<2){gocKhac(p.lines);p.bv=2}});
  let ch=false;[['pa3','Phương án 3'],['pa4','Phương án 4'],['pa5','Phương án 5']].forEach(([sid,name])=>{const o=PA.plans.find(p=>p.sid===sid);if(o&&(o.sv||1)>=4)return;const L=paRound(PAR[sid]);ch=true;
   if(o){o.lines=L;o.sv=4;o.name=name;return}PA.plans.push({id:PA.nid++,sid,sv:4,name,lines:L,lock:'tong'})});
  /* xếp lại thứ tự Phương án 1, 2, 3... một lần khi vừa thêm */
- if(ch){const num=p=>{const m=/^\s*Phương án\s+(\d+)\s*$/i.exec(p.name||'');return m?+m[1]:1e9};PA.plans.sort((a,b)=>num(a)-num(b))}}
+ /* thứ tự PA1, PA2, ... theo số đầu tên (tên có thể thêm chữ sau số); tên khác xếp cuối giữ thứ tự cũ */
+ const num=p=>{const m=/^\s*Phương án\s*(\d+)(?!\d)/i.exec(p.name||'');return m?+m[1]:1e9};if(PA.plans.some((p,i)=>i&&num(PA.plans[i-1])>num(p)))PA.plans.sort((a,b)=>num(a)-num(b))}
 const initKH=()=>{KH.forEach((k,i)=>{k.o=i;k.nsnn=sumv(i=>RB[i].v,k.idx,4);k.nsdp=sumv(i=>RB[i].v,k.idx,5);k.g=k.nsnn?k.nsdp/k.nsnn:0;k.fixed=/xuất nhập khẩu/.test(k.n)});PCC.buildLines(BASE,KH,KHG);migPlans()};
 const PA=(()=>{let v=null;try{v=JSON.parse(LS.get('pcr:PA')||'null')}catch(_){}
  if(!v||!Array.isArray(v.plans)||!v.plans.length)v={plans:[{id:1,name:'Phương án 1',ro:true,lines:{},lock:'tong'}],cur:1,def:1,nid:2};return v})();
@@ -751,8 +754,9 @@ function lnSub(src,l,lvl,col){let s=0;(l.parts||[]).forEach(pt=>{if(pt.only==='t
   s+=ptVal(pt,g,col)});return s}
 function lvRate(leaves,lvl,src){let n=0,d=0;leaves.forEach(l=>{n+=lnSub(BASE,l,lvl,4);d+=lnSub(src,l,lvl,5)});return {n,d,q:n?d/n:null}}
 /* tỷ lệ mặc định của một dòng: phần còn lại của khoản có phần TW = 100%, phần TW theo quy định, còn lại là tỷ lệ của dòng mẫu 30 */
-/* lvl (tùy chọn): tỷ lệ mặc định theo cấp; khoản xã không hưởng (tw.xa0, khoáng sản cách C) thì xã 0%, tỉnh hưởng cả phần NSĐP của xã (tính trên số tỉnh thu) */
-const defRate=(l,lvl)=>{const pt=l.parts[0],tw=BASE.tws[pt.r];if(tw&&tw.xa0&&lvl&&(pt.p==='rest'||pt.p==='tw')){if(lvl!=='ti')return 0;const u=(KH.find(k=>(k.units||[]).some(x=>x.r===pt.r))||{units:[]}).units.find(x=>x.r===pt.r),q=u&&u.parts.find(x=>x.p===pt.p);if(q)return q.q0}
+/* lvl (tùy chọn): tỷ lệ mặc định theo cấp; khoản xã không hưởng (tw.xa0, khoáng sản cách C) thì xã 0%; tỷ lệ tỉnh tính trên tổng thu tỉnh + xã (100%, 30%) */
+const tfOf=l=>{const pt=l.parts[0],tw=BASE.tws[pt.r];if(!tw||!tw.xa0)return null;const k=KH.find(k=>(k.units||[]).some(x=>x.r===pt.r)),u=k&&k.units.find(x=>x.r===pt.r),q=u&&u.parts.find(x=>x.p===pt.p);return q&&q.tf||null};
+const defRate=(l,lvl)=>{const pt=l.parts[0],tw=BASE.tws[pt.r];if(tw&&tw.xa0&&lvl&&lvl!=='ti'&&(pt.p==='rest'||pt.p==='tw'))return 0;
  if(tw&&pt.p==='rest')return 1;if(tw&&pt.p==='tw')return tw.q;return BASE.rq.dt[pt.r]!=null?BASE.rq.dt[pt.r]:lvRate([l],'ti',BASE).q};
 /* tỷ lệ BTC (số cứng): tỷ lệ NSĐP theo số Bộ Tài chính giao của từng dòng mẫu; phần NSTW hưởng 100% = 0%, phần TW tách riêng theo quy định */
 const btcR=r=>{const w=M0.btc.w[r],x=M0.btc.x[r];return w&&x!=null?Math.round(x/w*1e8)/1e8:null};
@@ -763,7 +767,7 @@ const btcK=k=>{let w=0,x=0;k.idx.forEach(r=>{w+=M0.btc.w[r]||0;x+=M0.btc.x[r]||0
 function lvApplied(leaves,lvl,lines,src){src=src||VIEW;const vs=[];let auto=false;
  leaves.forEach(l=>{if(!lnSub(BASE,l,lvl,4))return;if(l.fix){vs.push(0);return}
   const k=lvl==='ph'?'ph':lvl,o=(lines[l.key]||{})[k];if(o!=null){vs.push(o);return}
-  const r=l.parts[0].r;if(lvl==='ti'&&src.qa&&src.qa[r]!=null&&l.parts[0].p!=='tw'){auto=true;vs.push(src.qa[r]);return}
+  const r=l.parts[0].r;if(lvl==='ti'&&src.qa&&src.qa[r]!=null&&l.parts[0].p!=='tw'){auto=true;const f=tfOf(l);vs.push(f?src.qa[r]/f:src.qa[r]);return}
   vs.push(defRate(l,lvl))});
  if(!vs.length)return {q:null,auto};const same=vs.every(v=>!ok(v,vs[0]));return {q:same?vs[0]:null,mixed:!same,auto}}
 /* kiểm tra khớp: tổng NSĐP toàn tỉnh phải bằng số chốt; khi ghim tổng thì từng khoản phải giữ đúng NSĐP của khoản */
