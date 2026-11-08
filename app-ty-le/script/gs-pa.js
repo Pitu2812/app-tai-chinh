@@ -130,8 +130,10 @@ var GSPA = (function () {
     function put1(r, row, name, isTot) {
       var t = 'Khoản!$C' + row, p = 'Khoản!$D' + row, x = 'Khoản!$E' + row;
       S1.set(r, 1, name);
-      S1.set(r, 2, '=IF(Khoản!$F' + row + '=0,"",1-Khoản!$G' + row + '/Khoản!$F' + row + ')', PCT);
-      S1.set(r, 3, '=IF(Khoản!$F' + row + '=0,"",Khoản!$G' + row + '/Khoản!$F' + row + ')', PCT);
+      // dòng tổng lấy tỷ lệ BTC của dòng tổng mẫu (dòng 0), giống app; các khoản lấy theo cộng dòng lá
+      var bw = isTot ? "'Dữ liệu PA'!$H$" + P0 : 'Khoản!$F' + row, bx = isTot ? "'Dữ liệu PA'!$I$" + P0 : 'Khoản!$G' + row;
+      S1.set(r, 2, '=IF(' + bw + '=0,"",1-' + bx + '/' + bw + ')', PCT);
+      S1.set(r, 3, '=IF(' + bw + '=0,"",' + bx + '/' + bw + ')', PCT);
       S1.set(r, 4, '=IF((' + t + '+' + p + '+' + x + ')=0,"",1-' + selk(row, 5) + '/(' + t + '+' + p + '+' + x + '))', PCT);
       S1.set(r, 5, '=IF(' + t + '=0,"",' + selk(row, 1) + '/' + t + ')', PCT);
       S1.set(r, 6, '=IF(' + p + '=0,"",' + selk(row, 2) + '/' + p + ')', PCT);
