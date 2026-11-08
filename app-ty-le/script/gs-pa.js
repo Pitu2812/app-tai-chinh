@@ -26,7 +26,7 @@ var GSPA = (function () {
 
   function Sheet(name) {
     this.name = name; this.cells = {}; this.maxR = 1; this.maxC = 1;
-    this.merges = []; this.widths = {}; this.freeze = null; this.styles = {}; this.validation = null; this.charts = []; this.tab = null;
+    this.merges = []; this.widths = {}; this.freeze = null; this.styles = {}; this.validation = null; this.charts = []; this.tab = null; this.hideCols = null; this.cond = null;
   }
   Sheet.prototype.set = function (r, c, v, fmt) {
     var k = r + ',' + c, o = this.cells[k] || (this.cells[k] = {});
@@ -130,16 +130,16 @@ var GSPA = (function () {
       var dg = kk.dong || [];
       if (dg.length !== 4 || !NQD[dg[3]] || NQD[dg[3]] >= N) return;
       var hr = NQD[dg[3]], items = [];
-      dg.forEach(function (r0, j) { items.push({ ten: KVN[j], d: 1, p: r0 }); });
-      items.push({ ten: 'Thu từ doanh nghiệp, tổ chức kinh doanh', d: 2, p: dg[3], m: hr, b: dg[3] });
-      items.push({ ten: 'Thu từ cá nhân, hộ gia đình, hộ kinh doanh', d: 2, p: hr, b: dg[3] });
+      dg.forEach(function (r0, j) { items.push({ ten: KVN[j], d: 1, p: r0, key: j < 3 ? q + '.' + j : null }); });
+      items.push({ ten: 'Thu từ doanh nghiệp, tổ chức kinh doanh', d: 2, p: dg[3], m: hr, b: dg[3], key: q + '.3d' });
+      items.push({ ten: 'Thu từ cá nhân, hộ gia đình, hộ kinh doanh', d: 2, p: hr, b: dg[3], key: q + '.3h' });
       KV[q] = [];
       items.forEach(function (it) {
         var r = kvr++; SK.set(r, 1, q); SK.set(r, 2, (it.d === 2 ? '    + ' : '  - ') + it.ten);
         [3, 4, 5].forEach(function (c, j) { SK.set(r, 3 + j, lincells(c, it.p, it.m), NUM); });
         [8, 9].forEach(function (c, j) { SK.set(r, 6 + j, lincells(c, it.p, null, it.b != null ? it.b : it.p), NUM); });
         for (var k = 0; k < PAN; k++) for (var j = 0; j < 5; j++) SK.set(r, 8 + 5 * k + j, lincells(pc(k, j), it.p, it.m), NUM);
-        KV[q].push({ row: r, ten: it.ten, d: it.d });
+        KV[q].push({ row: r, ten: it.ten, d: it.d, key: it.key });
       });
     });
 
@@ -154,6 +154,25 @@ var GSPA = (function () {
     S1.head(5, 8, 'Thu NSĐP 2027', 5, 10); S1.head(5, 11, 'Kiểm tra khớp', 6, 11);
     ['TW', 'ĐP', 'TW', 'Tỉnh', 'Phường', 'Xã', 'Tổng', 'Tỉnh', '96 xã'].forEach(function (t, j) { S1.head(6, 2 + j, t); });
     function selk(row, j) { return 'INDEX(Khoản!$H' + row + ':$' + LK + row + ',1,(' + PAS + '-1)*5+' + j + ')'; }
+    // tỷ lệ đặt trong app (PA3-5 đã làm tròn): dòng nào có tỷ lệ đặt thì hiện đúng tỷ lệ đặt (chữ xanh) thay cho tỷ lệ tính ngược
+    // cột phụ ẩn bên phải: mỗi PA 3 cột Tỉnh, Phường, Xã. Không có pa[k].lines thì giữ tỷ lệ tính ngược như cũ.
+    var TWR = { 35: 1, 42: 1, 45: 1 }, DC = 13, LDC = col(DC + 3 * PAN - 1), DAT = false;
+    function dat(r, st, sp, sx) {
+      var any = false;
+      [st, sp, sx].forEach(function (sp1, j) {
+        for (var k = 0; k < PAN; k++) {
+          var L = PA[k].lines || {}, o = L[sp1[0]], v = o && o[sp1[1]] != null ? Number(o[sp1[1]]) : null;
+          if (v != null && isFinite(v)) { S1.set(r, DC + 3 * k + j, v, PCT); any = true; }
+        }
+      });
+      if (!any) return;
+      DAT = true;
+      [5, 6, 7].forEach(function (c, j) {
+        var cell = S1.cells[r + ',' + c], f0 = cell && typeof cell.v === 'string' ? cell.v.replace(/^=/, '') : '""';
+        var pick = 'INDEX($' + col(DC) + r + ':$' + LDC + r + ',1,(' + PAS + '-1)*3+' + (j + 1) + ')';
+        S1.set(r, c, '=IF(' + pick + '<>"",' + pick + ',' + f0 + ')', PCT);
+      });
+    }
     function put1(r, row, name, isTot) {
       var t = 'Khoản!$C' + row, p = 'Khoản!$D' + row, x = 'Khoản!$E' + row;
       S1.set(r, 1, name);
@@ -172,14 +191,27 @@ var GSPA = (function () {
     put1(7, KT, 'Tổng cộng các khoản thu', true);
     var r1 = 8;
     d.khoan.forEach(function (kk, q) {
-      put1(r1++, K0 + q, (q + 1) + '. ' + kk.ten); S1.style('bold', 'A' + (r1 - 1));
+      put1(r1, K0 + q, (q + 1) + '. ' + kk.ten); S1.style('bold', 'A' + r1);
+      // dòng khoản chỉ có 2 dòng tỷ lệ (tổ chức = tỉnh, cá nhân = phường/xã), không có phần NSTW tách riêng
+      if (!kk.co_dinh && !KV[q] && (kk.dong || []).length === 1 && !TWR[kk.dong[0]]) dat(r1, [q + '.t', 'ti'], [q + '.c', 'ph'], [q + '.c', 'xa']);
+      r1++;
       (KV[q] || []).forEach(function (it) {
         put1(r1, it.row, (it.d === 2 ? '        + ' : '    - ') + it.ten);
-        S1.style(it.d === 2 ? 'sub2' : 'sub', 'A' + r1 + ':K' + r1); r1++;
+        S1.style(it.d === 2 ? 'sub2' : 'sub', 'A' + r1 + ':K' + r1);
+        if (it.key) dat(r1, [it.key, 'ti'], [it.key, 'ph'], [it.key, 'xa']);
+        r1++;
       });
     });
+    var LR1 = r1 - 1;
+    if (DAT) {
+      for (k = 0; k < PAN; k++) ['Tỉnh', 'Phường', 'Xã'].forEach(function (t, j) { S1.set(6, DC + 3 * k + j, 'Đặt PA' + (k + 1) + ' ' + t); });
+      S1.hideCols = [DC, 3 * PAN];
+      S1.cond = [5, 6, 7].map(function (c, j) {
+        return { range: a1(8, c) + ':' + a1(LR1, c), formula: '=INDEX($' + col(DC) + '8:$' + LDC + '8,1,(' + '$C$3-1)*3+' + (j + 1) + ')<>""', color: '#1a56c4' };
+      });
+    }
     var nr = r1 + 1;
-    S1.set(nr, 1, 'Ghi chú: ô vàng C3 là ô chọn phương án. Tỷ lệ NSĐP hưởng là tỷ lệ thực của PA đang chọn = NSĐP do app tính / thu NSNN; TW = 1 − NSĐP tổng / NSNN tổng. Kiểm tra khớp: Tỉnh + 96 xã = Tổng. Dòng khu vực (chữ nhạt, thụt vào) giống app, chỉ để xem, không cộng vào tổng; khu vực ngoài quốc doanh tách doanh nghiệp và hộ, cá nhân.');
+    S1.set(nr, 1, 'Ghi chú: ô vàng C3 là ô chọn phương án. Tỷ lệ NSĐP hưởng là tỷ lệ thực của PA đang chọn = NSĐP do app tính / thu NSNN; TW = 1 − NSĐP tổng / NSNN tổng. Kiểm tra khớp: Tỉnh + 96 xã = Tổng. Dòng khu vực (chữ nhạt, thụt vào) giống app, chỉ để xem, không cộng vào tổng; khu vực ngoài quốc doanh tách doanh nghiệp và hộ, cá nhân. Tỷ lệ chữ xanh là tỷ lệ đặt trong app (PA 3, 4, 5 đã làm tròn 3, 4, 5 số lẻ), số tiền tính từ tỷ lệ này.');
     S1.style('wrap', 'A' + nr); // không hợp nhất ô ghi chú: hợp nhất cắt ngang cột cố định A sẽ làm Google báo lỗi
     S1.widths = { 1: 360 }; for (c = 2; c <= 11; c++) S1.widths[c] = 100; S1.freeze = [6, 1];
 
@@ -312,6 +344,11 @@ var GSPA = (function () {
       if (S.freeze) { sh.setFrozenRows(S.freeze[0]); sh.setFrozenColumns(S.freeze[1]); }
       if (S.validation) sh.getRange(S.validation.cell).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(S.validation.list, true).setAllowInvalid(false).build());
       if (S.tab) sh.setTabColor(S.tab);
+      if (S.cond) sh.setConditionalFormatRules(S.cond.map(function (cf) {
+        return SpreadsheetApp.newConditionalFormatRule().whenFormulaSatisfied(cf.formula).setFontColor(cf.color).setBold(true).setRanges([sh.getRange(cf.range)]).build();
+      }));
+      try { sh.showColumns(1, sh.getMaxColumns()); } catch (e) {}
+      if (S.hideCols) sh.hideColumns(S.hideCols[0], S.hideCols[1]);
       S.charts.forEach(function (ch) {
         sh.insertChart(sh.newChart().setChartType(Charts.ChartType.PIE).addRange(sh.getRange(ch.range))
           .setOption('title', ch.title).setOption('pieHole', 0.55).setOption('colors', ch.colors).setOption('legend', { position: 'right' })
