@@ -572,11 +572,78 @@ function pcGoi_(q) {
   return { ok: true, v: best.getBlob().getDataAsString('UTF-8'), at: best.getLastUpdated().getTime(), id: best.getId() };
 }
 
+/* pcTheo (H duyệt 06:46 09/11/2026, đề xuất 1 của KK01): app tài chính tự theo phương án mặc định của app phân cấp.
+   Ai đăng nhập cũng gọi được, chỉ máy chủ ghi khóa pc:NĂM; gói lỗi thì giữ số cũ. */
+function kvRead_(sh, ix, k) {
+  var e = ix.idx[k];
+  if (!e || !(e.chunks > 0)) return null;
+  return sh.getRange(e.row, 4, 1, e.chunks).getValues()[0].join('');
+}
+function kvWrite_(sh, ix, k, v) {   // cùng cách ghi với push_: cắt ô, dấu thời gian mới để các máy kéo về
+  var ts = Math.max(Date.now(), ix.maxTs + 1), last = sh.getLastRow(), e = ix.idx[k], chunks = [];
+  for (var p = 0; p < v.length; p += CFG.CHUNK) chunks.push(v.slice(p, p + CFG.CHUNK));
+  var width = 3 + chunks.length;
+  if (sh.getMaxColumns() < width) sh.insertColumnsAfter(sh.getMaxColumns(), width - sh.getMaxColumns());
+  var row;
+  if (e) row = e.row; else { row = last + 1; if (sh.getMaxRows() < row) sh.insertRowsAfter(sh.getMaxRows(), 200); }
+  if (e && e.chunks > chunks.length) sh.getRange(row, 4 + chunks.length, 1, e.chunks - chunks.length).clearContent();
+  sh.getRange(row, 1, 1, width).setValues([[k, ts, chunks.length].concat(chunks)]);
+  ix.idx[k] = { row: row, ts: ts, chunks: chunks.length }; ix.maxTs = ts;
+  return ts;
+}
+function pcGoiFile_() {
+  var it = DriveApp.getFolderById(PC_GOI_DIR).getFilesByName(PC_GOI_TEN), best = null;
+  while (it.hasNext()) { var f = it.next(); if (f.isTrashed()) continue; if (!best || f.getLastUpdated() > best.getLastUpdated()) best = f; }
+  return best;
+}
+function pcGoiCheck_(d) {
+  if (!d || typeof d !== 'object') return 'không đọc được nội dung';
+  if (d.nguon !== 'app-ty-le-phan-cap') return 'nguồn không phải app Tỷ lệ phân cấp';
+  if (!d.xa || typeof d.xa !== 'object' || Array.isArray(d.xa)) return 'thiếu danh sách xã';
+  var ks = Object.keys(d.xa);
+  if (ks.length < 90) return 'chỉ có ' + ks.length + ' xã, phường (cần ít nhất 90)';
+  for (var i = 0; i < ks.length; i++) {
+    var r = d.xa[ks[i]], r7 = r && r[7];
+    if (!Array.isArray(r7) || r7.length < 6) return 'xã ' + ks[i] + ' thiếu dòng tổng thu';
+    for (var j = 0; j < 6; j++) if (r7[j] !== null && typeof r7[j] !== 'number') return 'xã ' + ks[i] + ' có ô không phải số';
+  }
+  return '';
+}
+function pcTheo_(q) {
+  var c = need_(q), nam = +q.nam || 2027, key = 'pc:' + nam;
+  if (nam !== 2027) return { ok: true, same: true, none: true };
+  var cache = CacheService.getScriptCache();
+  if (!q.force && cache.get('pcTheo')) return { ok: true, same: true };   // force: người dùng bấm Làm mới thì kiểm ngay
+  cache.put('pcTheo', '1', 60);
+  var f;
+  try { f = pcGoiFile_(); } catch (e) { return { ok: false, msg: 'Không mở được thư mục gói số: ' + e.message }; }
+  if (!f) return { ok: true, same: true, none: true };
+  var at = f.getLastUpdated().getTime();
+  var lock = LockService.getScriptLock(); lock.waitLock(25000);
+  try {
+    var sh = c.ss.getSheetByName('kv'), ix = kvIndex_(sh), cur = null;
+    try { cur = JSON.parse(kvRead_(sh, ix, key) || 'null'); } catch (e) { cur = null; }
+    if (cur && cur.dongbo && +cur.dongbo.fileAt >= at) return { ok: true, same: true, at: at };
+    var d;
+    try { d = JSON.parse(f.getBlob().getDataAsString('UTF-8')); } catch (e) { d = null; }
+    var err = pcGoiCheck_(d);
+    if (err) {
+      cache.put('pcTheo', '1', 600);   // gói lỗi: giữ số cũ, 10 phút sau mới kiểm lại
+      return { ok: false, msg: 'Gói số sai định dạng: ' + err + '. Đang giữ số cũ.' };
+    }
+    d.ts = Date.now();
+    d.dongbo = { at: d.ts, by: 'tự động theo app phân cấp', fileAt: at, fileId: f.getId() };
+    kvWrite_(sh, ix, key, JSON.stringify(d));
+    c.ss.getSheetByName('log').appendRow([new Date().toISOString(), c.u.username, 'Tự đồng bộ DT ' + nam, String((d.pa || d.name || '') + (d.ma ? ' · mã ' + d.ma : '')).slice(0, 500)]);
+    return { ok: true, changed: true, pa: d.pa || d.name || '', ma: d.ma || '', at: at };
+  } finally { lock.releaseLock(); }
+}
+
 var ROUTES = {
   login: login_, me: me_, logout: logout_, ticket: guard_(ticket_),
   users: guard_(usersList_), uAdd: guard_(userAdd_), uSet: guard_(userSet_), uDel: guard_(userDel_), uPass: guard_(userPass_), chpass: guard_(chPass_),
   stat: guard_(stat_), fList: guard_(fList_), fPut: guard_(fPut_), fGet: guard_(fGet_), fDel: guard_(fDel_),
-  pull: guard_(pull_), push: guard_(push_), log: guard_(logAdd_), logClear: guard_(logClear_), bump: guard_(bump_), autoSet: guard_(autoSet_), pcGoi: guard_(pcGoi_)
+  pull: guard_(pull_), push: guard_(push_), log: guard_(logAdd_), logClear: guard_(logClear_), bump: guard_(bump_), autoSet: guard_(autoSet_), pcGoi: guard_(pcGoi_), pcTheo: guard_(pcTheo_)
 };
 function guard_(fn) {
   return function (q) {
