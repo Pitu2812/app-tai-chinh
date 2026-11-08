@@ -561,11 +561,22 @@ function doPost(e) {
   return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);
 }
 
+/* pcGoi (H duyệt 01:05 09/11/2026): Quản trị lấy gói số app Tỷ lệ phân cấp gửi KK01 từ thư mục gui-KK01 */
+var PC_GOI_DIR = '19l_e5Mv3-4e40yOt9d23GXDqsT36UpUN', PC_GOI_TEN = 'so-lieu-gui-KK01-2027.json';
+function pcGoi_(q) {
+  need_(q, 'admin');
+  var it, best = null;
+  try { it = DriveApp.getFolderById(PC_GOI_DIR).getFilesByName(PC_GOI_TEN); } catch (e) { return { ok: false, msg: 'Không mở được thư mục gói số: ' + e.message }; }
+  while (it.hasNext()) { var f = it.next(); if (f.isTrashed()) continue; if (!best || f.getLastUpdated() > best.getLastUpdated()) best = f; }
+  if (!best) return { ok: false, msg: 'Chưa có gói số từ app Tỷ lệ phân cấp.' };
+  return { ok: true, v: best.getBlob().getDataAsString('UTF-8'), at: best.getLastUpdated().getTime(), id: best.getId() };
+}
+
 var ROUTES = {
   login: login_, me: me_, logout: logout_, ticket: guard_(ticket_),
   users: guard_(usersList_), uAdd: guard_(userAdd_), uSet: guard_(userSet_), uDel: guard_(userDel_), uPass: guard_(userPass_), chpass: guard_(chPass_),
   stat: guard_(stat_), fList: guard_(fList_), fPut: guard_(fPut_), fGet: guard_(fGet_), fDel: guard_(fDel_),
-  pull: guard_(pull_), push: guard_(push_), log: guard_(logAdd_), logClear: guard_(logClear_), bump: guard_(bump_), autoSet: guard_(autoSet_)
+  pull: guard_(pull_), push: guard_(push_), log: guard_(logAdd_), logClear: guard_(logClear_), bump: guard_(bump_), autoSet: guard_(autoSet_), pcGoi: guard_(pcGoi_)
 };
 function guard_(fn) {
   return function (q) {
