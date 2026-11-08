@@ -244,6 +244,11 @@ function kiemTra() {
 }
 
 /* chạy MỘT LẦN trong trình soạn thảo bằng takikj02 để cấp quyền kết nối app tài chính (UrlFetchApp); sau đó ai đăng nhập bằng tài khoản app tài chính cũng dùng được */
+/* Chạy một lần trong trình soạn script (tài khoản takikj02) để Google hỏi quyền Bảng tính cho nút Google Sheet */
+function capQuyenSheet() {
+  const id = PropertiesService.getScriptProperties().getProperty('GSPA_ID');
+  Logger.log('Quyền Bảng tính: ' + (id ? SpreadsheetApp.openById(id).getName() : SpreadsheetApp.getActiveSpreadsheet() === null ? 'đã có quyền' : 'đã có quyền'));
+}
 function capQuyen() {
   const r = tc_({ a: 'sso_who', t: 'kiem-tra' });
   Logger.log('Kết nối app tài chính: ' + JSON.stringify(r) + ' (err=auth nghĩa là thông, đã có quyền)');
