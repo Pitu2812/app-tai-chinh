@@ -83,6 +83,7 @@ html.srv #gsb{display:inline-flex;align-items:center;gap:4px}
 .pc .wscroll.pcw{max-height:none}
 .pc .hb{font-size:14px;font-variant-numeric:tabular-nums}
 .pc dl{font-size:14px}
+.wscroll table.rz th{font-size:max(.9em,min(1em,12px))}.wscroll table.rz tr.ln td{font-size:max(.94em,min(1em,12px))}
 .wscroll.free.ovx{overflow:auto;max-height:calc(100vh - 220px)}
 </style>
 <style>
@@ -565,7 +566,7 @@ function fitHeads(){document.querySelectorAll('table.rz th,.rz2 th,.evt th,.kht 
   const avail=h.clientWidth-parseFloat(cs.paddingLeft)-parseFloat(cs.paddingRight)-(h.querySelector('.ar')?10:0);if(!(avail>0))return;
   FHC.font=`${cs.fontWeight} ${b}px ${cs.fontFamily}`;
   const w=Math.max(...(h.textContent||'').replace(/[⇅▲▼]/g,'').split(/\s+/).map(x=>FHC.measureText(x).width),0);
-  if(w>avail)h.style.fontSize=Math.max(b*0.62,b*avail/w).toFixed(2)+'px'})}
+  if(w>avail)h.style.fontSize=Math.max(Math.min(b,12),b*0.62,b*avail/w).toFixed(2)+'px'})}
 /* khung so sánh (ý 19): bảng dùng .wscroll, biểu đồ dùng .pcz phóng to thu nhỏ */
 const zbox=b=>{const p=b.closest('.pane,.pc');return p&&(p.querySelector('.wscroll[data-z]')||p.querySelector('.pcz[data-pz]'))};
 function pczApply(box){const id=box.dataset.pz,s=zget(id);if(s.fit)s.z=100;box.style.zoom=s.z/100;const lb=document.getElementById('zv-'+id);if(lb)lb.textContent=s.z+'%';const fb=document.querySelector(`[data-zf="${id}"]`);if(fb)fb.classList.toggle('on',s.fit)}
