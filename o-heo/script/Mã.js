@@ -35,7 +35,7 @@ const OH = {
   BAM_LAP: 300,
   SAO_LUU_NGAY: 7, SAO_LUU_GIU: 8,
   COT: {
-    NguoiDung: ['ten_dn', 'ho_ten', 'vai_tro', 'muoi', 'bam', 'avatar', 'trang_thai', 'doi_mk', 'tao_luc', 'dang_nhap_cuoi', 'hoat_dong'],
+    NguoiDung: ['ten_dn', 'ho_ten', 'vai_tro', 'muoi', 'bam', 'avatar', 'trang_thai', 'doi_mk', 'tao_luc', 'dang_nhap_cuoi', 'hoat_dong', 'quyen', 'ghi_chu'],
     Phien: ['bam_token', 'ten_dn', 'het_han', 'tao_luc'],
     HoiThoai: ['id', 'loai', 'ten', 'thanh_vien', 'tao_boi', 'tao_luc', 'thu_muc_id'],
     TinNhan: ['id', 'hoi_thoai', 'nguoi_gui', 'noi_dung', 'loai', 'tep_id', 'luc'],
@@ -47,7 +47,15 @@ const OH = {
   SO: { het_han: 1, tao_luc: 1, dang_nhap_cuoi: 1, hoat_dong: 1, luc: 1, xong_luc: 1, sua_luc: 1, id: 1, tin_id: 1, han: 1, kich_thuoc: 1, an_den: 1 },
   UU_TIEN: ['hi', 'imp', 'mid', 'lo'],
   COT_VIEC: ['todo', 'doing', 'done'],
-  AVATAR: ['none', 'bow', 'hat', 'bunny', 'bee', 'scarf']
+  AVATAR: ['none', 'bow', 'hat', 'bunny', 'bee', 'scarf'],
+  /* phân quyền: cột quyen trống = Đầy đủ (tài khoản cũ); phu_qt luôn bật riêng */
+  QUYEN: ['nhan_rieng', 'tao_nhom', 'sua_nhom', 'gui_tep', 'giao_viec', 'thu_hoi', 'thong_ke', 'xuat_excel', 'phu_qt'],
+  MAU: {
+    du: ['nhan_rieng', 'tao_nhom', 'sua_nhom', 'gui_tep', 'giao_viec', 'thu_hoi', 'thong_ke', 'xuat_excel'],
+    co_ban: ['nhan_rieng', 'gui_tep', 'giao_viec', 'thu_hoi', 'thong_ke'],
+    chi_nhan: ['nhan_rieng', 'gui_tep', 'thu_hoi']
+  },
+  DK_CHO_TOI_DA: 20, DK_MOI_MAY_GIO: 3, DK_HET_HAN: 7 * 864e5
 };
 
 /* ---------------- giao diện ---------------- */
@@ -113,7 +121,7 @@ function api(q) {
     if (!fn) return JSON.stringify({ ok: false, msg: 'Lệnh không có: ' + o.lenh });
     const me = fn.moPhien ? null : xacThuc_(o.token);
     if (!fn.moPhien && !me) return JSON.stringify({ ok: false, het_phien: true, msg: 'Phiên đăng nhập đã hết, bạn đăng nhập lại nha.' });
-    if (fn.quanTri && me.vai_tro !== 'quan_tri') return JSON.stringify({ ok: false, msg: 'Chỉ quản trị làm được việc này.' });
+    if (fn.quanTri && me.vai_tro !== 'quan_tri' && !(fn.phuQt && coQuyen_(me, 'phu_qt'))) return JSON.stringify({ ok: false, msg: 'Chỉ quản trị làm được việc này.' });
     if (me && me.doi_mk === '1' && !fn.choDoiMk) return JSON.stringify({ ok: false, phai_doi_mk: true, msg: 'Bạn cần đổi mật khẩu trước.' });
     const kq = fn(o.du_lieu || {}, me) || {};
     doiBan_();
@@ -137,6 +145,10 @@ API_.dangNhap = function (d) {
   if (!u || u.bam !== bam_(u.muoi, mk)) { cache.put(kSai, String(sai + 1), 300); loi_('Tên đăng nhập hoặc mật khẩu chưa đúng.'); }
   if (u.trang_thai === 'da_xoa') loi_('Tên đăng nhập hoặc mật khẩu chưa đúng.');
   if (u.trang_thai === 'khoa') loi_('Tài khoản đang bị khóa, bạn nhắn quản trị nha.');
+  if (u.trang_thai === 'cho_duyet' && !hetHanDk_(u)) loi_('Tài khoản đang chờ quản trị duyệt, bạn đợi chút nha.');
+  if (u.trang_thai === 'cho_duyet') loi_('Yêu cầu đăng ký quá 7 ngày chưa được duyệt nên đã tự hủy, bạn đăng ký lại nha.');
+  if (u.trang_thai === 'tu_choi') loi_('Yêu cầu đăng ký chưa được duyệt. Bạn nhắn quản trị hoặc đăng ký lại nha.');
+  if (u.trang_thai !== 'dang_dung') loi_('Tên đăng nhập hoặc mật khẩu chưa đúng.');
   cache.remove(kSai);
   const token = Utilities.getUuid() + Utilities.getUuid(), now = Date.now();
   khoa_(function () {
@@ -144,9 +156,33 @@ API_.dangNhap = function (d) {
     const T = bang_('NguoiDung'), x = T.rows.filter(function (r) { return r.ten_dn === ten; })[0];
     x.dang_nhap_cuoi = now; ghiDong_(T, x);
   });
-  return { token: token, toi: congKhai_(u), phai_doi_mk: u.doi_mk === '1' };
+  const toi = congKhai_(u); toi.quyen = quyenCua_(u);
+  return { token: token, toi: toi, phai_doi_mk: u.doi_mk === '1' };
 };
 API_.dangNhap.moPhien = true;
+/* người mới tự đăng ký: chờ quản trị (hoặc phụ quản trị) duyệt; mật khẩu băm ngay, không ai đọc được */
+API_.dangKy = function (d) {
+  const ten = String(d.ten_dn || '').trim().toLowerCase(), hoTen = String(d.ho_ten || '').trim().slice(0, 60), mk = String(d.mat_khau || '');
+  const ghiChu = String(d.ghi_chu || '').trim().slice(0, 300), may = String(d.may || '').replace(/[^a-z0-9-]/gi, '').slice(0, 40) || 'khong_ro';
+  if (!hoTen) loi_('Bạn nhập họ tên nha.');
+  if (!/^[a-z0-9._-]{3,30}$/.test(ten)) loi_('Tên đăng nhập 3 đến 30 ký tự, chỉ chữ thường không dấu, số, dấu chấm, gạch.');
+  if (mk.length < 8) loi_('Mật khẩu cần ít nhất 8 ký tự.');
+  const cache = CacheService.getScriptCache(), kMay = 'dk:' + may, lan = Number(cache.get(kMay) || 0);
+  if (lan >= OH.DK_MOI_MAY_GIO) loi_('Máy này đã gửi ' + OH.DK_MOI_MAY_GIO + ' yêu cầu trong một giờ, bạn chờ một lát rồi gửi lại nha.');
+  const u0 = taoNguoi_(ten, hoTen, 'thanh_vien', mk);
+  khoa_(function () {
+    cotQuyen_(); const T = bang_('NguoiDung');
+    if (T.rows.filter(function (r) { return r.trang_thai === 'cho_duyet' && !hetHanDk_(r); }).length >= OH.DK_CHO_TOI_DA) loi_('Đang có nhiều yêu cầu chờ duyệt, bạn nhắn quản trị hoặc thử lại sau nha.');
+    const cu = T.rows.filter(function (r) { return r.ten_dn === ten; })[0];
+    if (cu && cu.trang_thai === 'cho_duyet' && !hetHanDk_(cu)) loi_('Tên đăng nhập này đang chờ duyệt rồi.');
+    if (cu && !dungLaiDuoc_(cu)) loi_('Tên đăng nhập này đã có người dùng, bạn chọn tên khác nha.');
+    u0.trang_thai = 'cho_duyet'; u0.doi_mk = ''; u0.quyen = OH.MAU.co_ban.join(','); u0.ghi_chu = ghiChu;
+    if (cu) { Object.assign(cu, u0, { _r: cu._r, hoat_dong: '' }); ghiDong_(T, cu); } else them_('NguoiDung', u0);
+  });
+  cache.put(kMay, String(lan + 1), 3600);
+  return {};
+};
+API_.dangKy.moPhien = true;
 API_.dangXuat = function (d, me) {
   khoa_(function () { const T = bang_('Phien'); xoaPhien_(T.rows.filter(function (r) { return r.bam_token === me._bam; })); });
   return {};
@@ -174,45 +210,87 @@ API_.doiAvatar = function (d, me) {
 };
 
 /* ---------- quản trị ---------- */
-API_.dsNguoiDung = function () { return { nguoi: bang_('NguoiDung').rows.filter(function (u) { return u.trang_thai !== 'da_xoa'; }).map(function (u) { const c = congKhai_(u); c.trang_thai = u.trang_thai; c.doi_mk = u.doi_mk === '1'; c.dang_nhap_cuoi = u.dang_nhap_cuoi; c.hoat_dong = u.hoat_dong; return c; }) }; };
-API_.dsNguoiDung.quanTri = true;
-API_.capTaiKhoan = function (d) {
+API_.dsNguoiDung = function () {
+  const rows = bang_('NguoiDung').rows;
+  return {
+    nguoi: rows.filter(function (u) { return u.trang_thai === 'dang_dung' || u.trang_thai === 'khoa'; }).map(function (u) { const c = congKhai_(u); c.trang_thai = u.trang_thai; c.doi_mk = u.doi_mk === '1'; c.dang_nhap_cuoi = u.dang_nhap_cuoi; c.hoat_dong = u.hoat_dong; c.quyen = quyenCua_(u); return c; }),
+    cho: rows.filter(function (u) { return u.trang_thai === 'cho_duyet' && !hetHanDk_(u); }).map(function (u) { return { ten_dn: u.ten_dn, ho_ten: u.ho_ten, ghi_chu: u.ghi_chu, tao_luc: u.tao_luc }; })
+  };
+};
+API_.dsNguoiDung.quanTri = true; API_.dsNguoiDung.phuQt = true;
+API_.duyetDangKy = function (d, me) {
+  const q = quyenChon_(d, me);
+  let u;
+  khoa_(function () {
+    const T = bang_('NguoiDung'); u = T.rows.filter(function (r) { return r.ten_dn === d.ten_dn; })[0];
+    if (!u || u.trang_thai !== 'cho_duyet' || hetHanDk_(u)) loi_('Yêu cầu này không còn chờ duyệt (đã có người duyệt, từ chối hoặc quá hạn).');
+    u.trang_thai = 'dang_dung'; u.quyen = q; ghiDong_(T, u);
+  });
+  return { ten_dn: u.ten_dn };
+};
+API_.duyetDangKy.quanTri = true; API_.duyetDangKy.phuQt = true;
+API_.tuChoiDangKy = function (d) {
+  khoa_(function () {
+    const T = bang_('NguoiDung'), u = T.rows.filter(function (r) { return r.ten_dn === d.ten_dn; })[0];
+    if (!u || u.trang_thai !== 'cho_duyet') loi_('Yêu cầu này không còn chờ duyệt.');
+    u.trang_thai = 'tu_choi'; ghiDong_(T, u);
+  });
+  return {};
+};
+API_.tuChoiDangKy.quanTri = true; API_.tuChoiDangKy.phuQt = true;
+/* phân quyền: chỉ quản trị chính */
+API_.datQuyen = function (d, me) {
+  const q = quyenChon_(d, me);
+  khoa_(function () {
+    cotQuyen_(); const T = bang_('NguoiDung'), u = T.rows.filter(function (r) { return r.ten_dn === d.ten_dn; })[0];
+    if (!u || (u.trang_thai !== 'dang_dung' && u.trang_thai !== 'khoa')) loi_('Không thấy tài khoản.');
+    if (u.vai_tro === 'quan_tri') loi_('Quản trị luôn có đủ quyền.');
+    u.quyen = q; ghiDong_(T, u);
+  });
+  return { quyen: q.split(',').filter(function (k) { return OH.QUYEN.indexOf(k) >= 0; }) };
+};
+API_.datQuyen.quanTri = true;
+API_.capTaiKhoan = function (d, me) {
   const ten = String(d.ten_dn || '').trim().toLowerCase(), hoTen = String(d.ho_ten || '').trim();
   if (!/^[a-z0-9._-]{3,30}$/.test(ten)) loi_('Tên đăng nhập 3 đến 30 ký tự, chỉ chữ thường không dấu, số, dấu chấm, gạch.');
   if (!hoTen) loi_('Bạn nhập họ tên nha.');
-  const mk = matKhauTam_();
+  const mk = matKhauTam_(), q = quyenChon_(d, me);
   khoa_(function () {
-    const cu = bang_('NguoiDung').rows.filter(function (r) { return r.ten_dn === ten; })[0];
-    if (cu) loi_(cu.trang_thai === 'da_xoa' ? 'Tên này thuộc một tài khoản đã xóa (để giữ đúng tin nhắn cũ), bạn chọn tên khác nha.' : 'Tên đăng nhập này đã có.');
-    them_('NguoiDung', taoNguoi_(ten, hoTen.slice(0, 60), 'thanh_vien', mk));
+    cotQuyen_(); const T = bang_('NguoiDung'), cu = T.rows.filter(function (r) { return r.ten_dn === ten; })[0];
+    if (cu && cu.trang_thai === 'cho_duyet' && !hetHanDk_(cu)) loi_('Tên này đang chờ duyệt, bạn duyệt ở mục Chờ duyệt nha.');
+    if (cu && !dungLaiDuoc_(cu)) loi_(cu.trang_thai === 'da_xoa' ? 'Tên này thuộc một tài khoản đã xóa (để giữ đúng tin nhắn cũ), bạn chọn tên khác nha.' : 'Tên đăng nhập này đã có.');
+    const n = taoNguoi_(ten, hoTen.slice(0, 60), 'thanh_vien', mk); n.quyen = q;
+    if (cu) { Object.assign(cu, n, { _r: cu._r, hoat_dong: '', ghi_chu: '' }); ghiDong_(T, cu); } else them_('NguoiDung', n);
   });
   danhDau_('v_nguoi');
   return { ten_dn: ten, mat_khau_tam: mk };
 };
-API_.capTaiKhoan.quanTri = true;
-API_.datLaiMatKhau = function (d) {
+API_.capTaiKhoan.quanTri = true; API_.capTaiKhoan.phuQt = true;
+API_.datLaiMatKhau = function (d, me) {
   const mk = matKhauTam_();
   khoa_(function () {
     const T = bang_('NguoiDung'), u = T.rows.filter(function (r) { return r.ten_dn === d.ten_dn; })[0];
-    if (!u) loi_('Không thấy tài khoản.');
+    if (!u || (u.trang_thai !== 'dang_dung' && u.trang_thai !== 'khoa')) loi_('Không thấy tài khoản.');
+    chanPhuQt_(u, me);
     u.muoi = Utilities.getUuid(); u.bam = bam_(u.muoi, mk); u.doi_mk = '1'; ghiDong_(T, u);
     xoaPhienCua_(u.ten_dn);
   });
   return { ten_dn: d.ten_dn, mat_khau_tam: mk };
 };
-API_.datLaiMatKhau.quanTri = true;
+API_.datLaiMatKhau.quanTri = true; API_.datLaiMatKhau.phuQt = true;
 API_.khoaTaiKhoan = function (d, me) {
   if (d.ten_dn === me.ten_dn) loi_('Không tự khóa tài khoản của mình được.');
   khoa_(function () {
     const T = bang_('NguoiDung'), u = T.rows.filter(function (r) { return r.ten_dn === d.ten_dn; })[0];
-    if (!u) loi_('Không thấy tài khoản.');
+    if (!u || (u.trang_thai !== 'dang_dung' && u.trang_thai !== 'khoa')) loi_('Không thấy tài khoản.');
+    chanPhuQt_(u, me);
     u.trang_thai = d.khoa ? 'khoa' : 'dang_dung'; ghiDong_(T, u);
     if (d.khoa) xoaPhienCua_(u.ten_dn);
   });
   danhDau_('v_nguoi');
   return {};
 };
-API_.khoaTaiKhoan.quanTri = true;
+API_.khoaTaiKhoan.quanTri = true; API_.khoaTaiKhoan.phuQt = true;
 /* xóa tài khoản: không xóa dòng (giữ tên cho tin nhắn, việc cũ), chỉ đánh dấu da_xoa, xóa mật khẩu và phiên,
    rút khỏi các nhóm; tin nhắn, tệp, việc vẫn giữ nguyên; tên đăng nhập không cấp lại cho người khác */
 API_.xoaTaiKhoan = function (d, me) {
@@ -265,7 +343,12 @@ API_.dongBo = function (d, me) {
   const v = phienBan_(), kq = { v: v, online: hoatDong_(), bay_gio: Date.now() };
   const can = d.v || {};
   const dau = !d.v;
-  if (dau || can.v_nguoi !== v.v_nguoi) kq.nguoi = nguoi_().map(congKhai_);
+  if (dau || can.v_nguoi !== v.v_nguoi) {
+    const ds = nguoi_();
+    kq.nguoi = ds.filter(function (u) { return u.trang_thai === 'dang_dung' || u.trang_thai === 'khoa' || u.trang_thai === 'da_xoa'; }).map(congKhai_);
+    kq.quyen = quyenCua_(me);
+    if (me.vai_tro === 'quan_tri' || coQuyen_(me, 'phu_qt')) kq.cho_duyet = ds.filter(function (u) { return u.trang_thai === 'cho_duyet' && !hetHanDk_(u); }).length;
+  }
   let ht = null;
   if (dau || can.v_ht !== v.v_ht || can.v_tin !== v.v_tin || can.v_viec !== v.v_viec) ht = hoiThoaiCua_(me.ten_dn);
   if (dau || can.v_ht !== v.v_ht) {
@@ -301,6 +384,7 @@ API_.moRieng = function (d, me) {
   if (ban === me.ten_dn) loi_('Không nhắn riêng cho chính mình được.');
   if (!bang_('NguoiDung').rows.some(function (r) { return r.ten_dn === ban && r.trang_thai === 'dang_dung'; })) loi_('Không thấy người này.');
   const id = 'd:' + [me.ten_dn, ban].sort().join(':');
+  if (!bangNhanh_('HoiThoai').some(function (r) { return r.id === id; })) canQuyen_(me, 'nhan_rieng', 'nhắn riêng với người mới');
   let moi = false;
   khoa_(function () {
     if (bang_('HoiThoai').rows.some(function (r) { return r.id === id; })) return;
@@ -311,6 +395,7 @@ API_.moRieng = function (d, me) {
   return { id: id };
 };
 API_.taoNhom = function (d, me) {
+  canQuyen_(me, 'tao_nhom', 'tạo nhóm');
   const ten = String(d.ten || '').trim().slice(0, 60) || 'Nhóm mới';
   const nguoi = bang_('NguoiDung').rows.filter(function (r) { return r.trang_thai === 'dang_dung'; }).map(function (r) { return r.ten_dn; });
   const tv = [me.ten_dn].concat((d.thanh_vien || []).filter(function (x) { return x !== me.ten_dn && nguoi.indexOf(x) >= 0; }));
@@ -326,6 +411,7 @@ API_.taoNhom = function (d, me) {
 API_.suaNhom = function (d, me) {
   const h = hoiThoai_(d.id, me);
   if (h.loai !== 'nhom') loi_('Chỉ sửa được nhóm.');
+  canQuyen_(me, 'sua_nhom', 'sửa nhóm');
   const nguoi = bang_('NguoiDung').rows.filter(function (r) { return r.trang_thai === 'dang_dung'; }).map(function (r) { return r.ten_dn; });
   let ghi = [];
   khoa_(function () {
@@ -385,6 +471,7 @@ API_.xoaTin = function (d, me) {
     if (t.loai === 'he_thong' || t.loai === 'xoa_tin') loi_('Tin thông báo của app không xóa được.');
     if (t.loai === 'da_xoa') return;
     if (t.nguoi_gui !== me.ten_dn && me.vai_tro !== 'quan_tri') loi_('Bạn chỉ xóa được tin của mình.');
+    canQuyen_(me, 'thu_hoi', 'thu hồi tin');
     if (t.loai === 'tep' && t.tep_id !== '') {
       const f = bang_('Tep').rows.filter(function (x) { return x.id === Number(t.tep_id); })[0];
       if (f && f.drive_id) { try { DriveApp.getFileById(f.drive_id).setTrashed(true); } catch (e) {} }
@@ -444,6 +531,7 @@ API_.giaoViec = function (d, me) {
   const tieuDe = String(d.tieu_de || '').trim().slice(0, 500);
   if (!tieuDe) loi_('Bạn ghi tên việc nha.');
   const nhan = String(d.nguoi_nhan || me.ten_dn);
+  if (nhan !== me.ten_dn) canQuyen_(me, 'giao_viec', 'giao việc cho người khác');
   if (!bang_('NguoiDung').rows.some(function (r) { return r.ten_dn === nhan && r.trang_thai === 'dang_dung'; })) loi_('Người nhận không còn dùng app.');
   let h = null;
   if (d.hoi_thoai) { h = hoiThoai_(d.hoi_thoai, me); if (h.thanh_vien.split(',').indexOf(nhan) < 0) loi_('Người nhận không ở trong cuộc trò chuyện này.'); }
@@ -491,6 +579,7 @@ API_.xoaViec = function (d, me) {
 
 /* ---------- tệp gửi kèm: gửi từng phần vào Drive ---------- */
 API_.batDauGuiTep = function (d, me) {
+  canQuyen_(me, 'gui_tep', 'gửi tệp');
   const h = hoiThoai_(d.hoi_thoai, me);
   const co = Number(d.kich_thuoc || 0), ten = String(d.ten || 'tep').replace(/[\\/:*?"<>|\u0000-\u001f]/g, '_').slice(0, 150), mime = String(d.mime || 'application/octet-stream');
   if (co <= 0) loi_('Tệp trống.');
@@ -585,6 +674,7 @@ API_.taiPhanTep = function (d, me) {
 
 /* ---------- xuất Excel thống kê việc ---------- */
 API_.xuatThongKe = function (d, me) {
+  canQuyen_(me, 'xuat_excel', 'xuất Excel thống kê');
   const rows = bang_('Viec').rows.filter(function (t) { return me.vai_tro === 'quan_tri' || t.nguoi_nhan === me.ten_dn || t.nguoi_giao === me.ten_dn; });
   const now = new Date(), thang = Utilities.formatDate(now, 'Asia/Ho_Chi_Minh', 'MM-yyyy');
   const ss = SpreadsheetApp.create('Thong-ke-viec-' + thang + '-' + me.ten_dn);
@@ -676,6 +766,26 @@ function bam_(muoi, mk) {
 }
 function matKhauTam_() { const c = 'abcdefghjkmnpqrstuvwxyz23456789'; let s = ''; const u = Utilities.getUuid().replace(/-/g, ''); for (let i = 0; i < 10; i++) s += c.charAt(parseInt(u.substr(i * 3, 3), 16) % c.length); return s; }
 function taoNguoi_(ten, hoTen, vai, mk) { const m = Utilities.getUuid(); return { ten_dn: ten, ho_ten: hoTen, vai_tro: vai, muoi: m, bam: bam_(m, mk), avatar: 'bow', trang_thai: 'dang_dung', doi_mk: '1', tao_luc: Date.now(), dang_nhap_cuoi: '' }; }
+function quyenCua_(u) {
+  if (u.vai_tro === 'quan_tri') return OH.QUYEN.slice();
+  if (!u.quyen) return OH.MAU.du.slice();
+  return String(u.quyen).split(',').filter(function (k) { return OH.QUYEN.indexOf(k) >= 0; });
+}
+function coQuyen_(u, k) { return quyenCua_(u).indexOf(k) >= 0; }
+function canQuyen_(u, k, viec) { if (!coQuyen_(u, k)) loi_('Tài khoản của bạn chưa được bật quyền ' + viec + ', bạn nhắn quản trị nha.'); }
+/* quyền chọn khi cấp, duyệt, phân quyền: phụ quản trị chỉ chọn 3 mẫu; lưu 'khong' khi tắt hết */
+function quyenChon_(d, me) {
+  let q;
+  if (d.mau) { if (!OH.MAU[d.mau]) loi_('Mẫu quyền không có.'); q = OH.MAU[d.mau].slice(); }
+  else if (Array.isArray(d.quyen) && me.vai_tro === 'quan_tri') q = OH.QUYEN.filter(function (k) { return d.quyen.indexOf(k) >= 0; });
+  else q = OH.MAU.co_ban.slice();
+  if (d.mau && me.vai_tro === 'quan_tri' && d.phu_qt) q.push('phu_qt');
+  return q.length ? q.join(',') : 'khong';
+}
+function cotQuyen_() { damBaoCot_('NguoiDung', 'quyen'); damBaoCot_('NguoiDung', 'ghi_chu'); }
+function hetHanDk_(u) { return u.trang_thai === 'cho_duyet' && Date.now() - Number(u.tao_luc || 0) > OH.DK_HET_HAN; }
+function dungLaiDuoc_(u) { return u.trang_thai === 'tu_choi' || hetHanDk_(u); }
+function chanPhuQt_(u, me) { if (me.vai_tro !== 'quan_tri' && u.vai_tro === 'quan_tri') loi_('Phụ quản trị không làm được việc này với tài khoản quản trị.'); }
 function congKhai_(u) { return { ten_dn: u.ten_dn, ho_ten: u.ho_ten, vai_tro: u.vai_tro, avatar: u.avatar || 'none', khoa: u.trang_thai !== 'dang_dung', da_xoa: u.trang_thai === 'da_xoa' }; }
 function tepCongKhai_(t) { return { id: t.id, ten: t.ten, mime: t.mime, kich_thuoc: t.kich_thuoc, nguoi_gui: t.nguoi_gui, luc: t.luc, link: t.kich_thuoc >= OH.TEP_LINK ? (t.link || ('https://drive.google.com/file/d/' + t.drive_id + '/view')) : '' }; }
 function xacThuc_(token) {
