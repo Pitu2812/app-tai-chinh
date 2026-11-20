@@ -260,7 +260,7 @@ textarea{resize:vertical}
 @media (max-width:560px){.pvbg{padding:0}.pvw{max-height:100%;height:100%;border-radius:0}}
 .tiles6{grid-template-columns:repeat(6,minmax(0,1fr))}@media (max-width:700px){.tiles6{grid-template-columns:repeat(3,minmax(0,1fr))}}button.tile{border:2px solid transparent;text-align:left;display:flex;flex-direction:column;cursor:pointer;font:inherit;color:inherit}button.tile b{font-size:22px}button.tile span{font-size:12px;color:var(--mute)}button.tile[aria-pressed=true]{border-color:var(--pink)}
 .stk{position:sticky;top:0;z-index:20;background:var(--bg)}.stk .tabs{padding-bottom:6px}
-.board .col-h{position:sticky;top:var(--stkh,110px);z-index:6;background:var(--panel);margin:-10px -10px 0;padding:10px 10px 6px;border-radius:18px 18px 0 0}
+.board .col{overflow:clip}.board .col-h{position:sticky;top:var(--stkh,110px);z-index:6;background:var(--panel);margin:-10px -10px 0;padding:10px 10px 6px;border-radius:0;box-shadow:0 -2px 0 0 var(--panel),0 6px 6px -6px rgba(61,43,53,.25)}
 .board .subh{display:block;position:sticky;top:calc(var(--stkh,110px) + 38px);z-index:5;background:var(--soft);padding:2px 0}
 .tiles5{grid-template-columns:repeat(5,minmax(0,1fr))}@media (max-width:700px){.tiles5{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .vtwrap{overflow-x:auto;border-radius:14px;border:1px solid var(--line);background:var(--panel)}
@@ -289,7 +289,7 @@ textarea{resize:vertical}
 .tcard.chop{animation:chop 1.6s ease-in-out}
 .tbline{display:flex;align-items:center}.tbline .tbhd{flex:1;min-width:0}
 .grip{align-self:stretch;display:flex;align-items:center;padding:0 2px 0 8px;font-size:18px;color:#8a6f7d;cursor:grab;touch-action:none;user-select:none}.grip:active{cursor:grabbing}
-.tbrow.keo{position:fixed;z-index:60;margin:0;pointer-events:none;box-shadow:0 14px 34px rgba(61,43,53,.35),0 0 0 3px var(--pink);transform:rotate(-1deg) scale(1.02);opacity:.97}
+.tbrow.keo{position:fixed;z-index:60;margin:0;pointer-events:none;box-shadow:0 14px 34px rgba(61,43,53,.35),0 0 0 3px var(--pink);transform:rotate(-1deg) scale(1.02);opacity:1}
 .tbph{border:2px dashed var(--pink);border-radius:14px;background:var(--pink-soft);display:flex;align-items:center;justify-content:center;color:var(--pink-deep);font-size:13px;font-weight:700}
 body.dangkeo{cursor:grabbing;user-select:none}body.dangkeo *{cursor:grabbing!important}
 @keyframes vuatha{0%{box-shadow:0 0 0 4px var(--pink)}100%{box-shadow:0 0 0 0 rgba(0,0,0,0)}}.tbrow.vuatha{animation:vuatha .7s ease-out}
@@ -574,7 +574,8 @@ function render(){
 /* vẽ lại xong thì trả về đúng chỗ đang cuộn, không để trang giật lên đầu */
 function giuCuon(y){if(y>0&&Math.abs(window.scrollY-y)>1)window.scrollTo(0,y)}
 /* hàng tiêu đề + hàng tab dính trên cùng; tiêu đề cột Bảng việc dính ngay dưới */
-function stkH(){var e=document.getElementById('stk');if(e)document.documentElement.style.setProperty('--stkh',e.offsetHeight+'px')}
+function stkH(){var e=document.getElementById('stk');if(!e)return;document.documentElement.style.setProperty('--stkh',e.offsetHeight+'px');if(window.ResizeObserver&&!e._ro){e._ro=new ResizeObserver(function(){document.documentElement.style.setProperty('--stkh',e.offsetHeight+'px')});e._ro.observe(e)}}
+window.addEventListener('load',stkH);if(document.fonts&&document.fonts.ready)document.fonts.ready.then(stkH);
 window.addEventListener('resize',stkH);
 function go(tab){if(tab==='chat'&&ST.tab==='chat'&&ST.open){ST.open=false}ST.tab=tab;render();window.scrollTo(0,0)}
 function renderMain(){
@@ -1244,22 +1245,24 @@ BIND.me=function(m){
 function doLogout(){var t=ST.token;call('dangXuat',{}).catch(function(){});logoutLocal('Đã đăng xuất')}
 
 /* ================= quản trị ================= */
-function maintenance(){var k='oheo_baotri';if(SS.get(k)){tinhTrang();return}SS.set(k,'1');ST.ttDang=1;call('baoTri',{}).then(function(o){ST.ttDang=0;ST.adminInfo=o;if(o.cat_tin)toast('Đã cất '+o.cat_tin+' tin cũ sang thư mục lưu trữ');if(ST.tab==='admin')renderMain()}).catch(function(e){ST.ttDang=0;tinhTrang()})}
-/* đọc tình trạng dữ liệu; lỗi thì ghi rõ để quản trị biết */
-function tinhTrang(){if(ST.ttDang)return;ST.ttDang=1;ST.ttLoi='';call('tinhTrang',{}).then(function(o){ST.ttDang=0;ST.adminInfo=o;if(ST.tab==='admin')renderMain()}).catch(function(e){ST.ttDang=0;ST.ttLoi=(e&&e.message)||String(e);if(ST.tab==='admin')renderMain()})}
+function maintenance(){tinhTrang();var k='oheo_baotri';if(SS.get(k))return;SS.set(k,'1');call('baoTri',{}).then(function(o){ST.adminInfo=Object.assign(ST.adminInfo||{},o,{luc:Date.now()});ST.ttLoi='';if(o.cat_tin)toast('Đã cất '+o.cat_tin+' tin cũ sang thư mục lưu trữ');if(ST.tab==='admin')renderMain()}).catch(function(){})}
+/* đọc tình trạng dữ liệu ngay, không chờ bảo trì; quá 40 giây hoặc lỗi thì ghi rõ để quản trị bấm Thử lại */
+function tinhTrang(){if(ST.ttGoi)return;ST.ttGoi=1;ST.ttLoi='';var xong=false,to=setTimeout(function(){if(xong)return;xong=true;ST.ttGoi=0;if(!ST.adminInfo){ST.ttLoi='máy chủ trả lời chậm quá 40 giây';if(ST.tab==='admin')renderMain()}},40000);
+ call('tinhTrang',{}).then(function(o){if(xong&&ST.adminInfo)return;xong=true;clearTimeout(to);ST.ttGoi=0;ST.ttLoi='';ST.adminInfo=Object.assign(ST.adminInfo||{},o,{luc:Date.now()});if(ST.tab==='admin')renderMain()})
+ .catch(function(e){if(xong)return;xong=true;clearTimeout(to);ST.ttGoi=0;ST.ttLoi=(e&&(e.msg||e.goc||e.message))||'không rõ lỗi';if(ST.tab==='admin')renderMain()})}
 function viewAdmin(){
  if(!ST.users){call('dsNguoiDung',{}).then(function(o){ST.users=o.nguoi;ST.cho=o.cho||[];ST.choDuyet=ST.cho.length;if(ST.tab==='admin')render()}).catch(fail);return'<p class="hint">Đang tải danh sách...</p>'}
  var qt=isQT(),h='';
  if(ST.cho&&ST.cho.length)h+='<section class="card stack" id="cho" style="margin-bottom:12px;border:2px solid var(--pink)"><h2>Chờ duyệt ('+ST.cho.length+')</h2><p class="hint">Người tự đăng ký. Bạn chọn quyền rồi bấm Duyệt. Mật khẩu do họ tự đặt, đã mã hóa nên không ai xem được. Yêu cầu quá 7 ngày tự hủy.</p>'+ST.cho.map(function(u){return'<div class="urow"><span class="av" style="background:'+hashBg(u.ten_dn)+';width:34px;height:34px" aria-hidden="true">'+pig('normal',30,null,'none')+'</span><div class="who"><b>'+esc(u.ho_ten)+'</b><div class="hint">'+esc(u.ten_dn)+' · gửi '+fmtTime(u.tao_luc)+(u.ghi_chu?'<br>“'+esc(u.ghi_chu)+'”':'')+'</div></div><div class="acts"><label class="hint" for="dq-'+esc(u.ten_dn)+'">Quyền</label>'+mauSelect('dq-'+u.ten_dn,'co_ban')+'<button class="btn sm solid" type="button" data-dy="'+esc(u.ten_dn)+'">Duyệt</button><button class="btn sm" type="button" data-tc="'+esc(u.ten_dn)+'">Từ chối</button></div></div>'}).join('')+'</section>';
  h+='<div class="two"><section class="card stack"><h2>Tài khoản ('+ST.users.length+')</h2>'+ST.users.map(function(u){return'<div class="urow">'+av(u.ten_dn,34,true)+'<div class="who"><b>'+esc(u.ho_ten)+'</b><div class="hint">'+esc(u.ten_dn)+' · '+tenQuyen(u)+(u.khoa?' <span class="tag red">đã khóa</span>':'')+(u.doi_mk?' <span class="tag">chưa đổi mật khẩu</span>':'')+'<br>'+(u.khoa?'':seenSpan(u.ten_dn))+(u.dang_nhap_cuoi?' · đăng nhập lần cuối '+fmtTime(u.dang_nhap_cuoi):'')+'</div></div><div class="acts">'+(qt?'<button class="btn sm" type="button" data-rn="'+esc(u.ten_dn)+'">Đổi tên</button>':'')+(qt&&u.vai_tro!=='quan_tri'?'<button class="btn sm" type="button" data-pq="'+esc(u.ten_dn)+'">Phân quyền</button>':'')+(qt?'<button class="btn sm" type="button" data-rs="'+esc(u.ten_dn)+'">Đặt lại mật khẩu</button>':'')+(u.ten_dn!==me()&&(qt||u.vai_tro!=='quan_tri')?'<button class="btn sm" type="button" data-lk="'+esc(u.ten_dn)+'" data-on="'+(u.khoa?0:1)+'">'+(u.khoa?'Mở khóa':'Khóa')+'</button>':'')+(qt&&u.ten_dn!==me()&&u.ten_dn!=='takikj02'?'<button class="btn sm" type="button" data-del="'+esc(u.ten_dn)+'" style="background:var(--no-bg);color:var(--no)">Xóa tài khoản</button>':'')+'</div></div>'}).join('')+'<div id="pw-out"></div></section>';
  h+='<div class="stack">'+(qt?'':'<section class="card stack"><h2>Cấp tài khoản, đặt lại mật khẩu</h2><p class="hint">Hai việc này chỉ tài khoản Quản trị làm. Phụ quản trị duyệt đăng ký và khóa, mở khóa tài khoản.</p></section>')+(qt?'<form class="card stack" id="nu-f"><h2>Cấp tài khoản mới</h2><label for="nu-n">Họ tên</label><input type="text" id="nu-n" maxlength="60" placeholder="Ví dụ: Nguyễn Minh Thư" required><label for="nu-u">Tên đăng nhập (chữ thường không dấu)</label><input type="text" id="nu-u" maxlength="30" placeholder="Ví dụ: thu.nm" autocapitalize="none" spellcheck="false" required><label for="nu-q">Quyền</label>'+mauSelect('nu-q','co_ban')+'<button class="btn solid" type="submit" style="align-self:flex-start">Cấp tài khoản</button><div class="err" role="alert"></div><div id="nu-out"></div></form>':'');
- var a=ST.adminInfo;if(!a&&!ST.ttLoi&&isQT())setTimeout(tinhTrang,0);
+ var a=ST.adminInfo;if(!a&&!ST.ttLoi&&!ST.ttGoi&&isQT())setTimeout(tinhTrang,0);
  if(!qt)return h+'</div></div>';
  h+='<section class="card stack"><h2>Tình trạng dữ liệu</h2>'+(a?('<p>Google Sheet: '+(a.o_sheet?Math.round(a.o_sheet/1e5)/100+' triệu ô / 10 triệu ô':'?')+'</p><p>Drive: '+(a.drive_tong?fmtSize(a.drive_dung)+' / '+fmtSize(a.drive_tong)+(a.drive_dung/a.drive_tong>.8?' <span class="tag red">gần đầy, nên nâng cấp gói hoặc dời tệp cũ</span>':''):'?')+'</p><p class="hint">Tin cũ hơn tháng trước tự cất sang "02 Lưu trữ tin nhắn" mỗi tháng; Google Sheet tự sao lưu mỗi 7 ngày vào "04 Sao lưu" (giữ 8 bản), khi quản trị mở app.'+(a.sao_luu?' Vừa sao lưu xong.':'')+'</p>'):ST.ttLoi?'<p class="err">Chưa đọc được tình trạng dữ liệu: '+esc(ST.ttLoi)+'</p><button type="button" class="btn sm" data-tt>Thử lại</button>':'<p class="hint">Đang kiểm tra...</p>')+'</section></div></div>';
  return h;
 }
 BIND.admin=function(m){
- var ttb=m.querySelector("[data-tt]");if(ttb)ttb.onclick=function(){ST.ttLoi="";renderMain()};
+ var ttb=m.querySelector("[data-tt]");if(ttb)ttb.onclick=function(){ST.ttLoi="";ST.adminInfo=null;tinhTrang();renderMain()};
  if(!ST.users)return;
  function showPw(o,who){m.querySelector('#pw-out').innerHTML='<div class="pwbox">Mật khẩu tạm của '+esc(who)+': <b>'+esc(o.mat_khau_tam)+'</b><br><span class="hint">Bạn gửi riêng cho người đó (tên đăng nhập '+esc(o.ten_dn)+'). Lần đăng nhập tới họ phải đổi mật khẩu. Mật khẩu này chỉ hiện một lần.</span></div>';m.querySelector('#pw-out').scrollIntoView({block:'nearest'})}
  function reload(){call('dsNguoiDung',{}).then(function(o){ST.users=o.nguoi;ST.cho=o.cho||[];ST.choDuyet=ST.cho.length;var keep=m.querySelector('#pw-out').innerHTML;renderMain();var p=document.getElementById('pw-out');if(p)p.innerHTML=keep})}
