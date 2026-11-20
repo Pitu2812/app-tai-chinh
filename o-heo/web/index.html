@@ -372,7 +372,10 @@ var pollT=null,polling=false,firstSync=true;
 function startApp(){firstSync=true;ST.v=null;ST.sauTin=0;ST.tin={};ST.tep={};poll()}
 function stopPoll(){clearTimeout(pollT);pollT=null}
 /* mở khung chat thì 2 giây hỏi tin mới một lần; người kia đang nhắn thì 1,5 giây; ẩn trang thì 20 giây */
-function nextPoll(){if(document.hidden)return 20000;if(ST.go&&ST.go.ai&&ST.go.ai.length)return 1500;return ST.tab==='chat'&&ST.open!==false&&ST.conv?2000:4000}
+/* không có gì mới thì giãn dần: mở chat 2 giây lên tới 8 giây, chỗ khác 4 lên tới 12 giây; bấm, gõ là nhanh lại */
+function nextPoll(){if(document.hidden)return 20000;if(ST.go&&ST.go.ai&&ST.go.ai.length)return 1500;var chat=ST.tab==='chat'&&ST.open!==false&&ST.conv,q=ST.quiet||0;return chat?Math.min(2000+q*600,8000):Math.min(4000+q*800,12000)}
+function wake(){if(!ST.token)return;var q=ST.quiet||0;ST.quiet=0;if(q>3&&!polling)schedule(800)}
+['keydown','pointerdown','focus'].forEach(function(e){window.addEventListener(e,wake,true)});
 function schedule(ms){clearTimeout(pollT);pollT=setTimeout(poll,ms)}
 function poll(){
  if(!ST.token||(ST.toi&&ST.toi.doi_mk))return;
@@ -394,6 +397,7 @@ function merge(o){
  if(o.nhan)ST.nhan=o.nhan;if(o.xem)ST.xem=o.xem;ST.go=o.go||null;
  ST.v=o.v;
  if(firstSync){firstSync=false;if(!ST.conv||!ST.ht.some(function(h){return h.id===ST.conv})){var l=sortedConvs()[0];ST.conv=l?l.id:null}render();remindOnOpen();if(ST.toi.vai_tro==='quan_tri')maintenance();return}
+ ST.quiet=(ch.nguoi||ch.ht||ch.tin||ch.viec||(ST.go&&ST.go.ai&&ST.go.ai.length))?0:(ST.quiet||0)+1;
  if(ch.nguoi||ch.ht||ch.tin||ch.viec)refresh(ch);
  updatePresence();updateTyping();updateRcpt();
 }
