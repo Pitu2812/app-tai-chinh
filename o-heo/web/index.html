@@ -45,7 +45,10 @@ textarea{resize:vertical}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:10px 18px;border-radius:99px;font-weight:600;font-size:14px;z-index:60;max-width:calc(100% - 32px);text-align:center}
 .bdg{display:inline-block;min-width:18px;margin-left:4px;background:var(--no);color:#fff;border-radius:99px;font-size:11px;padding:0 5px;line-height:18px;text-align:center;font-weight:700}
 .icon-btn .bdg{position:absolute;top:-4px;right:-4px;margin:0}
-.av{flex:none;border-radius:50%;display:grid;place-items:center;overflow:visible}
+.av{flex:none;border-radius:50%;display:grid;place-items:center;overflow:visible;position:relative}
+.pres{position:absolute;right:-2px;bottom:-2px;width:12px;height:12px;border-radius:50%;border:2px solid var(--panel);background:#b9aab2}
+.pres.on{background:#2fbf71}
+.seen{font-size:12px;color:var(--mute);font-weight:400}.seen.on{color:var(--ok);font-weight:600}
 .err{color:var(--no);font-size:14px;min-height:1em}
 
 /* đăng nhập */
@@ -288,8 +291,19 @@ function flower(v){
  return s+'<circle cx="15" cy="15" r="'+(r*.4)+'" fill="var(--butter)"/></svg>';
 }
 function bell(sz){return'<svg viewBox="0 0 24 24" width="'+sz+'" height="'+sz+'" aria-hidden="true" style="vertical-align:-3px"><path d="M12 3c-3.3 0-6 2.6-6 6v3.6L4.4 15.4c-.4.7.1 1.6.9 1.6h13.4c.8 0 1.3-.9.9-1.6L18 12.6V9c0-3.4-2.7-6-6-6z" fill="var(--butter)" stroke="var(--pig-line)" stroke-width="1.5" stroke-linejoin="round"/><path d="M9.5 19a2.5 2.5 0 0 0 5 0" fill="none" stroke="var(--pig-line)" stroke-width="1.5" stroke-linecap="round"/><circle cx="12" cy="2.6" r="1.2" fill="var(--pig-line)"/></svg>'}
-function av(t,sz){var u=ST.nguoi[t]||{avatar:'none'};var a=t===ST.toi.ten_dn?ST.toi.avatar:u.avatar;return'<span class="av" style="background:'+hashBg(t)+';width:'+sz+'px;height:'+sz+'px" aria-hidden="true">'+pig('happy',Math.round(sz*.9),null,a)+'</span>'}
-function avConv(h,sz){if(h.loai==='nhom')return'<span class="av" style="background:var(--mint-soft);width:'+sz+'px;height:'+sz+'px" aria-hidden="true">'+pig('party',Math.round(sz*.9),null,'none')+'</span>';return av(other(h),sz)}
+function av(t,sz,dot){var u=ST.nguoi[t]||{avatar:'none'};var a=t===ST.toi.ten_dn?ST.toi.avatar:u.avatar;return'<span class="av" style="background:'+hashBg(t)+';width:'+sz+'px;height:'+sz+'px" aria-hidden="true">'+pig('happy',Math.round(sz*.9),null,a)+(dot&&!u.da_xoa?'<i class="pres'+(isOn(t)?' on':'')+'" data-pres="'+esc(t)+'"></i>':'')+'</span>'}
+/* online: máy chủ trả giờ hoạt động cuối của từng người; dưới 50 giây là đang online */
+function lastSeen(t){if(t===ST.toi.ten_dn)return Date.now();var x=ST.online&&ST.online[t];return x?x+(ST.skew||0):0}
+function isOn(t){var x=lastSeen(t);return!!x&&Date.now()-x<50000}
+function seenText(t){var u=ST.nguoi[t];if(u&&u.da_xoa)return'đã xóa';if(u&&u.khoa)return'đã khóa';var x=lastSeen(t);if(!x)return'chưa vào app';var m=Math.floor((Date.now()-x)/60000);if(Date.now()-x<50000)return'đang online';if(m<1)return'vừa hoạt động';if(m<60)return'hoạt động '+m+' phút trước';var h=Math.floor(m/60);if(h<24)return'hoạt động '+h+' giờ trước';var d=Math.floor(h/24);return d===1?'hoạt động hôm qua':'hoạt động '+d+' ngày trước'}
+function seenSpan(t){return'<span class="seen'+(isOn(t)?' on':'')+'" data-seen="'+esc(t)+'">'+seenText(t)+'</span>'}
+function groupSeen(h){var n=h.thanh_vien.filter(function(t){return t!==ST.toi.ten_dn&&isOn(t)}).length;return n?n+' người khác đang online':'chưa ai khác online'}
+function updatePresence(){
+ app.querySelectorAll('[data-pres]').forEach(function(e){e.classList.toggle('on',isOn(e.dataset.pres))});
+ document.querySelectorAll('[data-seen]').forEach(function(e){var t=e.dataset.seen;e.textContent=seenText(t);e.classList.toggle('on',isOn(t))});
+ var g=document.querySelector('[data-gseen]');if(g){var h=curConv();if(h)g.textContent=groupSeen(h)}
+}
+function avConv(h,sz,dot){if(h.loai==='nhom')return'<span class="av" style="background:var(--mint-soft);width:'+sz+'px;height:'+sz+'px" aria-hidden="true">'+pig('party',Math.round(sz*.9),null,'none')+'</span>';return av(other(h),sz,dot)}
 function other(h){var o=h.thanh_vien.filter(function(x){return x!==ST.toi.ten_dn})[0];return o||ST.toi.ten_dn}
 function convName(h){return h.loai==='nhom'?h.ten:nameOf(other(h))}
 
@@ -365,9 +379,11 @@ function merge(o){
  if(o.tep)o.tep.forEach(function(t){ST.tep[t.id]=t});
  if(o.tin&&o.tin.length){o.tin.forEach(addMsg);ch.tin=1}
  if(o.viec){ST.viec=o.viec;ch.viec=1}
+ if(o.online){ST.online=o.online;ST.skew=Date.now()-o.bay_gio}
  ST.v=o.v;
  if(firstSync){firstSync=false;if(!ST.conv||!ST.ht.some(function(h){return h.id===ST.conv})){var l=sortedConvs()[0];ST.conv=l?l.id:null}render();remindOnOpen();if(ST.toi.vai_tro==='quan_tri')maintenance();return}
  if(ch.nguoi||ch.ht||ch.tin||ch.viec)refresh(ch);
+ updatePresence();
 }
 function addMsg(t){var a=ST.tin[t.hoi_thoai]||(ST.tin[t.hoi_thoai]=[]);if(a.some(function(x){return x.id===t.id}))return;a.push(t);if(a.length>1&&a[a.length-2].id>t.id)a.sort(function(x,y){return x.id-y.id});if(t.id>ST.sauTin)ST.sauTin=t.id}
 function lastMsg(h){var a=ST.tin[h.id];return a&&a.length?a[a.length-1]:null}
@@ -438,7 +454,7 @@ function drawConvs(){
  var h='<div class="conv-acts"><button class="btn sm" type="button" data-act="new-dm">＋ Nhắn riêng</button><button class="btn sm" type="button" data-act="new-grp">＋ Tạo nhóm</button></div>';
  var L=sortedConvs();
  if(!L.length)h+='<div class="empty">Chưa có cuộc trò chuyện nào. Bấm Nhắn riêng hoặc Tạo nhóm để bắt đầu nha.</div>';
- L.forEach(function(c){var l=lastMsg(c),u=c.id===ST.conv&&ST.open?0:unread(c);h+='<button type="button" class="conv" data-conv="'+esc(c.id)+'"'+(c.id===ST.conv?' aria-current="true"':'')+'>'+avConv(c,40)+'<span style="min-width:0;flex:1"><span class="nm">'+esc(convName(c))+'</span><small>'+(l?esc((l.loai==='tep'?'📎 ':'')+(l.loai==='he_thong'?'':nameOf(l.nguoi_gui)+': ')+l.noi_dung):(c.loai==='nhom'?c.thanh_vien.length+' người':'Bắt đầu trò chuyện'))+'</small></span>'+(u?'<span class="bdg">'+u+'</span>':'')+'</button>'});
+ L.forEach(function(c){var l=lastMsg(c),u=c.id===ST.conv&&ST.open?0:unread(c);h+='<button type="button" class="conv" data-conv="'+esc(c.id)+'"'+(c.id===ST.conv?' aria-current="true"':'')+'>'+avConv(c,40,true)+'<span style="min-width:0;flex:1"><span class="nm">'+esc(convName(c))+'</span><small>'+(l?esc((l.loai==='tep'?'📎 ':'')+(l.loai==='he_thong'?'':nameOf(l.nguoi_gui)+': ')+l.noi_dung):(c.loai==='nhom'?c.thanh_vien.length+' người':'Bắt đầu trò chuyện'))+'</small></span>'+(u?'<span class="bdg">'+u+'</span>':'')+'</button>'});
  el.innerHTML=h;
  el.querySelectorAll('[data-conv]').forEach(function(b){b.onclick=function(){openConv(b.dataset.conv)}});
  el.querySelector('[data-act=new-dm]').onclick=dlgNewDm;
@@ -449,7 +465,7 @@ function drawThread(){
  var el=document.getElementById('thread');if(!el)return;
   var c=curConv();el.dataset.conv=c?c.id:'';
  if(!c){el.innerHTML='<div class="empty" style="margin:auto">'+pig('sleep',80)+'<p>Chọn một cuộc trò chuyện bên trái nha.</p></div>';return}
- el.innerHTML='<div class="thread-h"><button class="icon-btn back" type="button" data-act="back" aria-label="Quay lại danh sách">‹</button>'+avConv(c,30)+'<span style="min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(convName(c))+(c.loai==='nhom'?' <span class="hint">· '+c.thanh_vien.length+' người</span>':'')+'</span>'+(c.loai==='nhom'?'<button class="btn sm" type="button" data-act="edit-grp">Sửa nhóm</button>':'')+'</div>'
+ el.innerHTML='<div class="thread-h"><button class="icon-btn back" type="button" data-act="back" aria-label="Quay lại danh sách">‹</button>'+avConv(c,30,true)+'<span style="min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.25">'+esc(convName(c))+(c.loai==='nhom'?' <span class="hint">· '+c.thanh_vien.length+' người</span><br><span class="seen" data-gseen>'+groupSeen(c)+'</span>':'<br>'+seenSpan(other(c)))+'</span>'+(c.loai==='nhom'?'<button class="btn sm" type="button" data-act="edit-grp">Sửa nhóm</button>':'')+'</div>'
  +'<div class="msgs" id="msgs" aria-live="polite"></div><div id="upl"></div>'
  +'<form class="compose" id="cmp-f"><label class="icon-btn" title="Gửi tệp (dưới 1 GB)" style="cursor:pointer"><input type="file" id="cmp-file" hidden multiple><span aria-hidden="true">📎</span><span style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Gửi tệp</span></label><textarea id="cmp" rows="1" placeholder="Nhắn tin..." aria-label="Nội dung tin nhắn"></textarea><button class="btn solid" type="submit">Gửi</button></form>';
  el.querySelector('[data-act=back]').onclick=function(){ST.open=false;document.getElementById('chat').classList.remove('open');drawConvs();refreshBadges()};
@@ -534,7 +550,7 @@ function closeModal(){var m=document.getElementById('modal');if(m)m.remove();if(
 function people(){return Object.keys(ST.nguoi).filter(function(k){return!ST.nguoi[k].khoa}).sort(function(a,b){return ST.nguoi[a].ho_ten.localeCompare(ST.nguoi[b].ho_ten,'vi')})}
 function dlgNewDm(){
  var L=people().filter(function(k){return k!==me()});
- openModal('<h3>Nhắn riêng với</h3>'+(L.length?'<div class="pick">'+L.map(function(k){return'<button type="button" class="conv" data-u="'+esc(k)+'">'+av(k,32)+'<span class="nm">'+esc(ST.nguoi[k].ho_ten)+'</span></button>'}).join('')+'</div>':'<p class="hint">Chưa có ai khác trong app. Quản trị cấp tài khoản ở mục Quản trị nha.</p>')+'<div class="row"><button class="btn" type="button" data-x>Thôi</button></div>',function(m){
+ openModal('<h3>Nhắn riêng với</h3>'+(L.length?'<div class="pick">'+L.map(function(k){return'<button type="button" class="conv" data-u="'+esc(k)+'">'+av(k,32,true)+'<span style="min-width:0"><span class="nm">'+esc(ST.nguoi[k].ho_ten)+'</span><small>'+seenSpan(k)+'</small></span></button>'}).join('')+'</div>':'<p class="hint">Chưa có ai khác trong app. Quản trị cấp tài khoản ở mục Quản trị nha.</p>')+'<div class="row"><button class="btn" type="button" data-x>Thôi</button></div>',function(m){
   m.querySelector('[data-x]').onclick=closeModal;
   m.querySelectorAll('[data-u]').forEach(function(b){b.onclick=function(){b.disabled=true;call('moRieng',{voi:b.dataset.u}).then(function(o){closeModal();if(!ST.ht.some(function(h){return h.id===o.id}))ST.ht.push({id:o.id,loai:'rieng',ten:'',thanh_vien:[me(),b.dataset.u].sort(),tao_luc:Date.now()});ST.tab='chat';render();openConv(o.id);schedule(1000)}).catch(function(e){b.disabled=false;fail(e)})}});
  });
@@ -699,7 +715,7 @@ function doLogout(){var t=ST.token;call('dangXuat',{}).catch(function(){});logou
 function maintenance(){var k='oheo_baotri';if(SS.get(k))return;SS.set(k,'1');call('baoTri',{}).then(function(o){ST.adminInfo=o;if(o.cat_tin)toast('Đã cất '+o.cat_tin+' tin cũ sang thư mục lưu trữ');if(ST.tab==='admin')renderMain()}).catch(function(){})}
 function viewAdmin(){
  if(!ST.users){call('dsNguoiDung',{}).then(function(o){ST.users=o.nguoi;if(ST.tab==='admin')renderMain()}).catch(fail);return'<p class="hint">Đang tải danh sách...</p>'}
- var h='<div class="two"><section class="card stack"><h2>Tài khoản ('+ST.users.length+')</h2>'+ST.users.map(function(u){return'<div class="urow">'+av(u.ten_dn,34)+'<div class="who"><b>'+esc(u.ho_ten)+'</b><div class="hint">'+esc(u.ten_dn)+' · '+(u.vai_tro==='quan_tri'?'quản trị':'thành viên')+(u.khoa?' <span class="tag red">đã khóa</span>':'')+(u.doi_mk?' <span class="tag">chưa đổi mật khẩu</span>':'')+(u.dang_nhap_cuoi?' · vào lần cuối '+fmtTime(u.dang_nhap_cuoi):'')+'</div></div><div class="acts"><button class="btn sm" type="button" data-rn="'+esc(u.ten_dn)+'">Đổi tên</button><button class="btn sm" type="button" data-rs="'+esc(u.ten_dn)+'">Đặt lại mật khẩu</button>'+(u.ten_dn!==me()?'<button class="btn sm" type="button" data-lk="'+esc(u.ten_dn)+'" data-on="'+(u.khoa?0:1)+'">'+(u.khoa?'Mở khóa':'Khóa')+'</button>':'')+(u.ten_dn!==me()&&u.ten_dn!=='takikj02'?'<button class="btn sm" type="button" data-del="'+esc(u.ten_dn)+'" style="background:var(--no-bg);color:var(--no)">Xóa tài khoản</button>':'')+'</div></div>'}).join('')+'<div id="pw-out"></div></section>';
+ var h='<div class="two"><section class="card stack"><h2>Tài khoản ('+ST.users.length+')</h2>'+ST.users.map(function(u){return'<div class="urow">'+av(u.ten_dn,34,true)+'<div class="who"><b>'+esc(u.ho_ten)+'</b><div class="hint">'+esc(u.ten_dn)+' · '+(u.vai_tro==='quan_tri'?'quản trị':'thành viên')+(u.khoa?' <span class="tag red">đã khóa</span>':'')+(u.doi_mk?' <span class="tag">chưa đổi mật khẩu</span>':'')+'<br>'+(u.khoa?'':seenSpan(u.ten_dn))+(u.dang_nhap_cuoi?' · đăng nhập lần cuối '+fmtTime(u.dang_nhap_cuoi):'')+'</div></div><div class="acts"><button class="btn sm" type="button" data-rn="'+esc(u.ten_dn)+'">Đổi tên</button><button class="btn sm" type="button" data-rs="'+esc(u.ten_dn)+'">Đặt lại mật khẩu</button>'+(u.ten_dn!==me()?'<button class="btn sm" type="button" data-lk="'+esc(u.ten_dn)+'" data-on="'+(u.khoa?0:1)+'">'+(u.khoa?'Mở khóa':'Khóa')+'</button>':'')+(u.ten_dn!==me()&&u.ten_dn!=='takikj02'?'<button class="btn sm" type="button" data-del="'+esc(u.ten_dn)+'" style="background:var(--no-bg);color:var(--no)">Xóa tài khoản</button>':'')+'</div></div>'}).join('')+'<div id="pw-out"></div></section>';
  h+='<div class="stack"><form class="card stack" id="nu-f"><h2>Cấp tài khoản mới</h2><label for="nu-n">Họ tên</label><input type="text" id="nu-n" maxlength="60" placeholder="Ví dụ: Nguyễn Minh Thư" required><label for="nu-u">Tên đăng nhập (chữ thường không dấu)</label><input type="text" id="nu-u" maxlength="30" placeholder="Ví dụ: thu.nm" autocapitalize="none" spellcheck="false" required><button class="btn solid" type="submit" style="align-self:flex-start">Cấp tài khoản</button><div class="err" role="alert"></div><div id="nu-out"></div></form>';
  var a=ST.adminInfo;
  h+='<section class="card stack"><h2>Tình trạng dữ liệu</h2>'+(a?('<p>Google Sheet: '+(a.o_sheet?Math.round(a.o_sheet/1e5)/100+' triệu ô / 10 triệu ô':'?')+'</p><p>Drive: '+(a.drive_tong?fmtSize(a.drive_dung)+' / '+fmtSize(a.drive_tong)+(a.drive_dung/a.drive_tong>.8?' <span class="tag red">gần đầy, nên nâng cấp gói hoặc dời tệp cũ</span>':''):'?')+'</p><p class="hint">Tin cũ hơn tháng trước tự cất sang "02 Lưu trữ tin nhắn" mỗi tháng; Google Sheet tự sao lưu mỗi 7 ngày vào "04 Sao lưu" (giữ 8 bản), khi quản trị mở app.'+(a.sao_luu?' Vừa sao lưu xong.':'')+'</p>'):'<p class="hint">Đang kiểm tra...</p>')+'</section></div></div>';

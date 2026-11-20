@@ -35,7 +35,7 @@ const OH = {
   BAM_LAP: 300,
   SAO_LUU_NGAY: 7, SAO_LUU_GIU: 8,
   COT: {
-    NguoiDung: ['ten_dn', 'ho_ten', 'vai_tro', 'muoi', 'bam', 'avatar', 'trang_thai', 'doi_mk', 'tao_luc', 'dang_nhap_cuoi'],
+    NguoiDung: ['ten_dn', 'ho_ten', 'vai_tro', 'muoi', 'bam', 'avatar', 'trang_thai', 'doi_mk', 'tao_luc', 'dang_nhap_cuoi', 'hoat_dong'],
     Phien: ['bam_token', 'ten_dn', 'het_han', 'tao_luc'],
     HoiThoai: ['id', 'loai', 'ten', 'thanh_vien', 'tao_boi', 'tao_luc', 'thu_muc_id'],
     TinNhan: ['id', 'hoi_thoai', 'nguoi_gui', 'noi_dung', 'loai', 'tep_id', 'luc'],
@@ -44,7 +44,7 @@ const OH = {
     DaDoc: ['ten_dn', 'hoi_thoai', 'tin_id'],
     CaiDat: ['khoa', 'gia_tri']
   },
-  SO: { het_han: 1, tao_luc: 1, dang_nhap_cuoi: 1, luc: 1, xong_luc: 1, sua_luc: 1, id: 1, tin_id: 1, han: 1, kich_thuoc: 1 },
+  SO: { het_han: 1, tao_luc: 1, dang_nhap_cuoi: 1, hoat_dong: 1, luc: 1, xong_luc: 1, sua_luc: 1, id: 1, tin_id: 1, han: 1, kich_thuoc: 1 },
   UU_TIEN: ['hi', 'imp', 'mid', 'lo'],
   COT_VIEC: ['todo', 'doing', 'done'],
   AVATAR: ['none', 'bow', 'hat', 'bunny', 'bee', 'scarf']
@@ -171,7 +171,7 @@ API_.doiAvatar = function (d, me) {
 };
 
 /* ---------- quản trị ---------- */
-API_.dsNguoiDung = function () { return { nguoi: bang_('NguoiDung').rows.filter(function (u) { return u.trang_thai !== 'da_xoa'; }).map(function (u) { const c = congKhai_(u); c.trang_thai = u.trang_thai; c.doi_mk = u.doi_mk === '1'; c.dang_nhap_cuoi = u.dang_nhap_cuoi; return c; }) }; };
+API_.dsNguoiDung = function () { return { nguoi: bang_('NguoiDung').rows.filter(function (u) { return u.trang_thai !== 'da_xoa'; }).map(function (u) { const c = congKhai_(u); c.trang_thai = u.trang_thai; c.doi_mk = u.doi_mk === '1'; c.dang_nhap_cuoi = u.dang_nhap_cuoi; c.hoat_dong = u.hoat_dong; return c; }) }; };
 API_.dsNguoiDung.quanTri = true;
 API_.capTaiKhoan = function (d) {
   const ten = String(d.ten_dn || '').trim().toLowerCase(), hoTen = String(d.ho_ten || '').trim();
@@ -258,7 +258,8 @@ API_.baoTri.quanTri = true;
 
 /* ---------- đồng bộ: trang gọi mỗi vài giây ---------- */
 API_.dongBo = function (d, me) {
-  const v = phienBan_(), kq = { v: v };
+  ghiHoatDong_(me);
+  const v = phienBan_(), kq = { v: v, online: hoatDong_(), bay_gio: Date.now() };
   const can = d.v || {};
   const dau = !d.v;
   if (dau || can.v_nguoi !== v.v_nguoi) kq.nguoi = bang_('NguoiDung').rows.map(congKhai_);
@@ -681,5 +682,23 @@ function saoLuu_() {
   ds.sort(function (a, b) { return b.getDateCreated() - a.getDateCreated(); }).slice(OH.SAO_LUU_GIU).forEach(function (x) { x.setTrashed(true); });
   khoa_(function () { caiDatSet_('sao_luu_cuoi', Date.now()); });
   return true;
+}
+/* trạng thái online: mỗi lần trang đồng bộ ghi giờ vào chỗ nhớ tạm; 10 phút mới ghi xuống sheet một lần */
+function ghiHoatDong_(me) {
+  const c = CacheService.getScriptCache(), now = Date.now();
+  c.put('on:' + me.ten_dn, String(now), 21600);
+  if (c.get('luu:' + me.ten_dn)) return;
+  c.put('luu:' + me.ten_dn, '1', 600);
+  try {
+    const sh = ss_().getSheetByName('NguoiDung'), col = OH.COT.NguoiDung.indexOf('hoat_dong') + 1;
+    if (!String(sh.getRange(1, col, 1, 1).getValues()[0][0])) sh.getRange(1, col, 1, 1).setValues([['hoat_dong']]);
+    sh.getRange(me._r, col, 1, 1).setValues([[String(now)]]);
+  } catch (e) {}
+}
+function hoatDong_() {
+  const ds = bang_('NguoiDung').rows.filter(function (u) { return u.trang_thai === 'dang_dung'; });
+  const got = CacheService.getScriptCache().getAll(ds.map(function (u) { return 'on:' + u.ten_dn; })), kq = {};
+  ds.forEach(function (u) { const x = Number(got['on:' + u.ten_dn] || 0) || u.hoat_dong || u.dang_nhap_cuoi || 0; if (x) kq[u.ten_dn] = x; });
+  return kq;
 }
 function soO_() { let n = 0; ss_().getSheets().forEach(function (s) { n += s.getMaxRows() * s.getMaxColumns(); }); return n; }
