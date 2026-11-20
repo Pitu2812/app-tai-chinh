@@ -41,10 +41,10 @@ const OH = {
     TinNhan: ['id', 'hoi_thoai', 'nguoi_gui', 'noi_dung', 'loai', 'tep_id', 'luc'],
     Viec: ['id', 'tieu_de', 'nguoi_giao', 'nguoi_nhan', 'hoi_thoai', 'tin_id', 'han', 'uu_tien', 'cot', 'tao_luc', 'xong_luc', 'sua_luc'],
     Tep: ['id', 'hoi_thoai', 'ten', 'mime', 'kich_thuoc', 'drive_id', 'nguoi_gui', 'luc', 'link'],
-    DaDoc: ['ten_dn', 'hoi_thoai', 'tin_id'],
+    DaDoc: ['ten_dn', 'hoi_thoai', 'tin_id', 'an_den'],
     CaiDat: ['khoa', 'gia_tri']
   },
-  SO: { het_han: 1, tao_luc: 1, dang_nhap_cuoi: 1, hoat_dong: 1, luc: 1, xong_luc: 1, sua_luc: 1, id: 1, tin_id: 1, han: 1, kich_thuoc: 1 },
+  SO: { het_han: 1, tao_luc: 1, dang_nhap_cuoi: 1, hoat_dong: 1, luc: 1, xong_luc: 1, sua_luc: 1, id: 1, tin_id: 1, han: 1, kich_thuoc: 1, an_den: 1 },
   UU_TIEN: ['hi', 'imp', 'mid', 'lo'],
   COT_VIEC: ['todo', 'doing', 'done'],
   AVATAR: ['none', 'bow', 'hat', 'bunny', 'bee', 'scarf']
@@ -267,7 +267,7 @@ API_.dongBo = function (d, me) {
   if (dau || can.v_ht !== v.v_ht || can.v_tin !== v.v_tin || can.v_viec !== v.v_viec) ht = hoiThoaiCua_(me.ten_dn);
   if (dau || can.v_ht !== v.v_ht) {
     kq.hoi_thoai = ht.map(function (h) { return { id: h.id, loai: h.loai, ten: h.ten, thanh_vien: h.thanh_vien.split(','), tao_boi: h.tao_boi, tao_luc: h.tao_luc }; });
-    kq.da_doc = bang_('DaDoc').rows.filter(function (r) { return r.ten_dn === me.ten_dn; }).map(function (r) { return [r.hoi_thoai, r.tin_id]; });
+    kq.da_doc = bang_('DaDoc').rows.filter(function (r) { return r.ten_dn === me.ten_dn; }).map(function (r) { return [r.hoi_thoai, r.tin_id, r.an_den || 0]; });
   }
   if (dau || can.v_tin !== v.v_tin) {
     const sau = Number(d.sau_tin || 0), ids = {};
@@ -364,6 +364,72 @@ API_.guiTin = function (d, me) {
   if (nd.length > 20000) loi_('Tin nhắn dài quá 20.000 ký tự, bạn chia nhỏ giúp mình nha.');
   return { tin: themTin_(h.id, me.ten_dn, nd, 'chu', '') };
 };
+
+/* ---------- xóa tin, xóa cuộc trò chuyện, rời nhóm, xóa nhóm ---------- */
+/* thu hồi tin: người gửi (hoặc quản trị) xóa với mọi người; thêm 1 dòng 'xoa_tin' để máy khác biết mà ẩn */
+API_.xoaTin = function (d, me) {
+  const id = Number(d.id || 0);
+  let hId = '';
+  khoa_(function () {
+    const T = bang_('TinNhan'), t = T.rows.filter(function (r) { return r.id === id; })[0];
+    if (!t) loi_('Không thấy tin này, có thể đã cất vào lưu trữ.');
+    hId = hoiThoai_(t.hoi_thoai, me).id;
+    if (t.loai === 'he_thong' || t.loai === 'xoa_tin') loi_('Tin thông báo của app không xóa được.');
+    if (t.loai === 'da_xoa') return;
+    if (t.nguoi_gui !== me.ten_dn && me.vai_tro !== 'quan_tri') loi_('Bạn chỉ xóa được tin của mình.');
+    if (t.loai === 'tep' && t.tep_id !== '') {
+      const f = bang_('Tep').rows.filter(function (x) { return x.id === Number(t.tep_id); })[0];
+      if (f && f.drive_id) { try { DriveApp.getFileById(f.drive_id).setTrashed(true); } catch (e) {} }
+    }
+    t.loai = 'da_xoa'; t.noi_dung = ''; t.tep_id = '';
+    ghiDong_(T, t);
+  });
+  themTin_(hId, me.ten_dn, String(id), 'xoa_tin', '');
+  return {};
+};
+/* xóa cuộc trò chuyện ở phía mình: ẩn tin cũ, ẩn khỏi danh sách tới khi có tin mới */
+API_.anHoiThoai = function (d, me) {
+  const h = hoiThoai_(d.hoi_thoai, me);
+  khoa_(function () {
+    const den = Number(caiDatGet_('so_tin') || 0) || 1;
+    damBaoCot_('DaDoc', 'an_den');
+    const T = bang_('DaDoc'), r = T.rows.filter(function (x) { return x.ten_dn === me.ten_dn && x.hoi_thoai === h.id; })[0];
+    if (r) { r.an_den = den; r.tin_id = Math.max(Number(r.tin_id || 0), den); ghiDong_(T, r); }
+    else them_('DaDoc', { ten_dn: me.ten_dn, hoi_thoai: h.id, tin_id: den, an_den: den });
+  });
+  danhDau_('v_ht');
+  return {};
+};
+API_.roiNhom = function (d, me) {
+  const h = hoiThoai_(d.id, me);
+  if (h.loai !== 'nhom') loi_('Chỉ rời được nhóm.');
+  khoa_(function () {
+    const T = bang_('HoiThoai'), x = T.rows.filter(function (r) { return r.id === h.id; })[0];
+    x.thanh_vien = x.thanh_vien.split(',').filter(function (t) { return t !== me.ten_dn; }).join(',');
+    ghiDong_(T, x);
+  });
+  tinHeThong_(h.id, me.ten_dn, ten_(me) + ' đã rời nhóm');
+  danhDau_('v_ht');
+  return {};
+};
+/* xóa nhóm với mọi người: chỉ người tạo nhóm hoặc quản trị; tệp trên Drive vẫn giữ */
+API_.xoaNhom = function (d, me) {
+  const h = hoiThoai_(d.id, me);
+  if (h.loai !== 'nhom') loi_('Chỉ xóa được nhóm.');
+  if (h.tao_boi !== me.ten_dn && me.vai_tro !== 'quan_tri') loi_('Chỉ người tạo nhóm hoặc quản trị mới xóa được nhóm.');
+  khoa_(function () {
+    const T = bang_('HoiThoai'), x = T.rows.filter(function (r) { return r.id === h.id; })[0];
+    x.loai = 'nhom_da_xoa';
+    ghiDong_(T, x);
+  });
+  danhDau_('v_ht'); danhDau_('v_viec');
+  return {};
+};
+/* cột mới thêm sau khi đã cài đặt: ghi tiêu đề nếu còn trống */
+function damBaoCot_(ten, c) {
+  const sh = ss_().getSheetByName(ten), col = OH.COT[ten].indexOf(c) + 1, o = sh.getRange(1, col, 1, 1);
+  if (!String(o.getValues()[0][0])) o.setValues([[c]]);
+}
 
 /* ---------- việc ---------- */
 API_.giaoViec = function (d, me) {
@@ -598,10 +664,10 @@ function xoaPhien_(list) {
 }
 function ten_(u) { return u.ho_ten || u.ten_dn; }
 function tenCua_(t) { const u = bang_('NguoiDung').rows.filter(function (r) { return r.ten_dn === t; })[0]; return u ? ten_(u) : t; }
-function hoiThoaiCua_(ten) { return bang_('HoiThoai').rows.filter(function (h) { return h.thanh_vien.split(',').indexOf(ten) >= 0; }); }
+function hoiThoaiCua_(ten) { return bang_('HoiThoai').rows.filter(function (h) { return h.loai !== 'nhom_da_xoa' && h.thanh_vien.split(',').indexOf(ten) >= 0; }); }
 function hoiThoai_(id, me) {
   const h = bang_('HoiThoai').rows.filter(function (r) { return r.id === String(id); })[0];
-  if (!h || h.thanh_vien.split(',').indexOf(me.ten_dn) < 0) loi_('Bạn không ở trong cuộc trò chuyện này.');
+  if (!h || h.loai === 'nhom_da_xoa' || h.thanh_vien.split(',').indexOf(me.ten_dn) < 0) loi_('Bạn không ở trong cuộc trò chuyện này.');
   return h;
 }
 function themTin_(hId, ai, nd, loai, tepId) {
@@ -690,9 +756,8 @@ function ghiHoatDong_(me) {
   if (c.get('luu:' + me.ten_dn)) return;
   c.put('luu:' + me.ten_dn, '1', 600);
   try {
-    const sh = ss_().getSheetByName('NguoiDung'), col = OH.COT.NguoiDung.indexOf('hoat_dong') + 1;
-    if (!String(sh.getRange(1, col, 1, 1).getValues()[0][0])) sh.getRange(1, col, 1, 1).setValues([['hoat_dong']]);
-    sh.getRange(me._r, col, 1, 1).setValues([[String(now)]]);
+    damBaoCot_('NguoiDung', 'hoat_dong');
+    ss_().getSheetByName('NguoiDung').getRange(me._r, OH.COT.NguoiDung.indexOf('hoat_dong') + 1, 1, 1).setValues([[String(now)]]);
   } catch (e) {}
 }
 function hoatDong_() {
