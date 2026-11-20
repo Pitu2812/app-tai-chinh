@@ -292,6 +292,9 @@ textarea{resize:vertical}
 .tbrow.keo{opacity:.85;box-shadow:0 6px 18px rgba(61,43,53,.25);z-index:3}
 .ghb{margin:14px 10px 0 0;white-space:nowrap;background:#fff8;color:#3d2b35}
 @media (max-width:520px){.tbline{flex-wrap:wrap}.ghb{margin:0 0 8px 30px}}
+.tbbar{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin:2px 0 4px}
+.tbcka{display:flex;gap:6px;align-items:center;font-size:13px;font-weight:600;cursor:pointer}.tbcka input,.tbck{width:18px;height:18px;accent-color:var(--pink-deep);cursor:pointer;flex:none}
+.tbck{margin:0 0 0 10px}.tbck0{width:28px;flex:none}
 </style>
 </head>
 <body>
@@ -311,7 +314,7 @@ var TEP_LINK=50*1024*1024, TEP_TOI_DA=1024*1024*1024-1;
 var TABS=[['chat','Nhắn tin','💬'],['tb','Thông báo','bell'],['board','Bảng việc','📋'],['today','Hôm nay','☀️'],['stats','Thống kê','📊'],['lk','Liên kết','🔗']];
 
 /* ================= trạng thái ================= */
-var ST={token:null,toi:null,nguoi:{},ht:[],tin:{},tep:{},viec:[],v:null,sauTin:0,daDoc:{},anDen:{},anh:{},anhLon:{},anhDang:{},nhan:{},xem:{},go:null,goAt:0,goConv:null,tab:'chat',conv:null,open:false,boardMode:'mine',rf:'all',het:{},busy:0,uploads:[],sp:[],openTask:null,adminInfo:null,users:null,mood:null};
+var ST={token:null,toi:null,nguoi:{},ht:[],tin:{},tep:{},viec:[],chon:{},v:null,sauTin:0,daDoc:{},anDen:{},anh:{},anhLon:{},anhDang:{},nhan:{},xem:{},go:null,goAt:0,goConv:null,tab:'chat',conv:null,open:false,boardMode:'mine',rf:'all',het:{},busy:0,uploads:[],sp:[],openTask:null,adminInfo:null,users:null,mood:null};
 var LS={get:function(k){try{return localStorage.getItem(k)}catch(e){return null}},set:function(k,v){try{localStorage.setItem(k,v)}catch(e){}},del:function(k){try{localStorage.removeItem(k)}catch(e){}}};
 ST.fai=LS.get('oheo_fai')||'all';ST.thu=(function(){try{return JSON.parse(LS.get('oheo_thu')||'{}')}catch(e){return{}}})();ST.lg=LS.get('oheo_lg')||'0';ST.floc='all';ST.fng='';ST.sc=LS.get('oheo_sc')||'all';ST.tbng='';ST.cmode=null;ST.tbv=[];ST.tinViec={};
 var SS={get:function(k){try{return sessionStorage.getItem(k)}catch(e){return null}},set:function(k,v){try{sessionStorage.setItem(k,v)}catch(e){}},del:function(k){try{sessionStorage.removeItem(k)}catch(e){}}};
@@ -1180,8 +1183,10 @@ function viewTb(){
  var tc=ST.tbc||'',L2=theoThuTu((tc==='cho'?cho:tc==='tre'?tre:tc?AL.filter(function(t){return t.cot===tc}):AL).slice().sort(function(a,b){return(a.cot==='done')-(b.cot==='done')||(a.cot==='done'?(+b.xong_luc||0)-(+a.xong_luc||0):srtB(a,b))}));
  h+='<div class="tiles tiles6" role="group" aria-label="Lọc theo cột" style="margin-bottom:10px">'+TC.map(function(x){return'<button type="button" class="tile" data-tbc="'+x[0]+'" aria-pressed="'+(tc===x[0])+'"><b'+(x[3]?' style="color:'+x[3]+'"':'')+'>'+x[2]+'</b><span>'+x[1]+'</span></button>'}).join('')+'</div>';
  h+='<section class="card stack" style="margin-bottom:10px"><div class="bar-h" style="margin:0"><h2 style="margin:0;flex:1">Tất cả công việc'+(seeAll()?' <span class="hint">· toàn bộ app</span>':'')+'</h2><label class="hint" for="tb-ng">Người</label><select id="tb-ng" style="width:auto"><option value="">Mọi người</option>'+people().map(function(u){return'<option value="'+esc(u)+'"'+(u===ST.tbng?' selected':'')+'>'+esc(u===me()?'Bạn':ST.nguoi[u].ho_ten)+'</option>'}).join('')+'</select></div>'
+  +(function(){var cl=L2.filter(function(t){return t.cot==='todo'&&onBoard(t)&&canWork(t)}),nc=Object.keys(ST.chon).filter(function(k){var t=findTask(k);return t&&t.cot!=='done'}).length,all=cl.length&&cl.every(function(t){return ST.chon[t.id]});
+   return'<div class="tbbar"><button type="button" class="btn sm solid" data-ghn'+(nc?'':' disabled')+'>⏩ Gia hạn đồng thời +1 ngày'+(nc?' ('+nc+' việc)':'')+'</button><label class="tbcka"><input type="checkbox" data-cka'+(all?' checked':'')+(cl.length?'':' disabled')+'> Chọn tất cả việc cần làm ('+cl.length+')</label>'+(nc?'<button type="button" class="btn sm ghost" data-ckx>Bỏ chọn</button>':'')+'</div>'})()
   +(L2.length?'<div class="tblist">'+L2.map(function(t){var ok=onBoard(t),o=ST.tbOpen===t.id&&ok;
-   return'<div class="tbrow st-'+t.cot+(o?' on':'')+'" data-tbr="'+t.id+'"><span class="stchip">'+COLS[t.cot]+'</span><div class="tbline">'+(isQT()?'<span class="grip" data-grip tabindex="0" role="button" aria-label="Nắm kéo để đổi thứ tự: '+esc(t.tieu_de)+' (hoặc dùng phím mũi tên lên xuống)" title="Nắm kéo để sắp xếp (thứ tự chung cho mọi tài khoản)">⠿</span>':'')
+   return'<div class="tbrow st-'+t.cot+(o?' on':'')+'" data-tbr="'+t.id+'"><span class="stchip">'+COLS[t.cot]+'</span><div class="tbline">'+(t.cot!=='done'&&ok&&canWork(t)?'<input type="checkbox" class="tbck" data-ck="'+t.id+'"'+(ST.chon[t.id]?' checked':'')+' aria-label="Chọn việc: '+esc(t.tieu_de)+'">':'<span class="tbck0"></span>')+(isQT()?'<span class="grip" data-grip tabindex="0" role="button" aria-label="Nắm kéo để đổi thứ tự: '+esc(t.tieu_de)+' (hoặc dùng phím mũi tên lên xuống)" title="Nắm kéo để sắp xếp (thứ tự chung cho mọi tài khoản)">⠿</span>':'')
    +'<button type="button" class="tbhd" data-tbo="'+t.id+'" aria-expanded="'+o+'"'+(ok?'':' disabled')+' title="'+(ok?(o?'Thu gọn':'Bấm để hiện các nút như ở Bảng việc'):'Bạn không có quyền với việc này')+'"><span class="cdot" style="background:'+(PRC[t.uu_tien]||PRC.mid)[0]+'" title="'+(PRC[t.uu_tien]||PRC.mid)[2]+'"></span><span class="ct"><span class="ctt">'+esc(t.tieu_de)+'</span><span class="csub">'+esc(nameOf(t.nguoi_nhan))+' làm'+(t.nguoi_giao!==t.nguoi_nhan?' · '+esc(nameOf(t.nguoi_giao))+' giao':'')+' · '+(t.cot==='done'?'xong'+(t.xong_luc?' '+fmtTime(+t.xong_luc):''):dueTxt(t))+'</span></span><span class="tdo">'+tienDo(t)+'</span></button>'+(ok&&t.cot!=='done'&&canWork(t)?'<button type="button" class="btn sm ghb" data-gh="'+t.id+'" title="Gia hạn thêm 1 ngày (hạn hiện tại: '+esc(fmtDue(t.han))+')">⏩ +1 ngày</button>':'')+'</div>'
    +(o?'<div class="tbx">'+tcard(t)+'<div class="row" style="justify-content:flex-end;margin:6px 0 0"><button type="button" class="btn sm solid" data-ct="'+t.id+'">↗ Chi tiết trong Bảng việc</button></div></div>':'')+'</div>'}).join('')+'</div>':'<p class="hint">Không có việc nào ở mục này.</p>')+'</section>';
  h+='<h2 style="margin:4px 0 8px">Việc bạn làm</h2>';
@@ -1198,6 +1203,12 @@ BIND.tb=function(m){m.querySelectorAll('[data-gotask]').forEach(function(b){b.on
  var bx=m.querySelector('.tbx');if(bx){BIND.board(bx);bx.querySelectorAll('[data-open]').forEach(function(b){b.onclick=function(){ST.tbOpen=null;renderMain()}})}
  m.querySelectorAll('[data-tbo]').forEach(function(b){b.onclick=function(){var t=findTask(b.dataset.tbo);if(!t)return;if(ST.tbOpen===t.id){ST.tbOpen=null}else{ST.tbOpen=t.id;moViec(t)}renderMain();var r=m.querySelector('[data-tbr="'+t.id+'"]');if(r&&ST.tbOpen)r.scrollIntoView({block:'nearest'})}});
  m.querySelectorAll('[data-ct]').forEach(function(b){b.onclick=function(){moViecTu(+b.dataset.ct)}});
+ m.querySelectorAll('[data-ck]').forEach(function(c){c.onclick=function(e){e.stopPropagation()};c.onchange=function(){if(c.checked)ST.chon[c.dataset.ck]=1;else delete ST.chon[c.dataset.ck];renderMain()}});
+ var cka=m.querySelector('[data-cka]');if(cka)cka.onchange=function(){var tc=ST.tbc||'',AL=ST.viec.filter(function(t){return(!ST.tbng||t.nguoi_nhan===ST.tbng||t.nguoi_giao===ST.tbng)&&t.cot==='todo'&&onBoard(t)&&canWork(t)});AL.forEach(function(t){if(cka.checked)ST.chon[t.id]=1;else delete ST.chon[t.id]});renderMain()};
+ var ckx=m.querySelector('[data-ckx]');if(ckx)ckx.onclick=function(){ST.chon={};renderMain()};
+ var ghn=m.querySelector('[data-ghn]');if(ghn)ghn.onclick=function(){var ids=Object.keys(ST.chon).map(Number).filter(function(id){var t=findTask(id);return t&&t.cot!=='done'});if(!ids.length)return;var cu={};ids.forEach(function(id){cu[id]=findTask(id).han});ghn.disabled=true;
+  call('giaHanNhieu',{ids:ids}).then(function(r){r.viec.forEach(function(v){var t=findTask(v.id);if(t)Object.assign(t,v)});ST.chon={};render();
+   undoToast('Đã gia hạn thêm 1 ngày cho '+r.viec.length+' việc'+(r.bo_qua?' (bỏ qua '+r.bo_qua+')':''),function(){Promise.all(r.viec.map(function(v){return call('suaViec',{id:v.id,han:cu[v.id]||''}).then(function(x){var t=findTask(v.id);if(t)Object.assign(t,x.viec)})})).then(function(){render();toast('Đã trả lại hạn cũ')}).catch(fail)});schedule(800)}).catch(function(e){ghn.disabled=false;fail(e)})};
  m.querySelectorAll('.tbline [data-gh]').forEach(function(b){b.onclick=function(){giaHan(findTask(b.dataset.gh))}});
  bindKeo(m);
  m.querySelectorAll('[data-nd]').forEach(function(b){b.onclick=function(){xongHoacBao(findTask(b.dataset.nd),function(){toast('Giỏi quá, xong thêm 1 việc rồi!')})}});

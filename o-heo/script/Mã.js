@@ -604,6 +604,22 @@ API_.suaViec = function (d, me) {
   danhDau_('v_viec');
   return { viec: v };
 };
+/* ⏩ gia hạn đồng thời: mỗi việc đã tích cộng thêm 1 ngày (chưa có hạn thì hạn = ngày mai); bỏ qua việc Xong hoặc không có quyền */
+function congNgay_(n) { const d = n ? new Date(Math.floor(n / 10000), Math.floor(n / 100) % 100 - 1, n % 100) : new Date(); d.setDate(d.getDate() + 1); return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate(); }
+API_.giaHanNhieu = function (d, me) {
+  const ids = (Array.isArray(d.ids) ? d.ids : []).map(Number).slice(0, 500), xong = [];
+  let bo = 0;
+  khoa_(function () {
+    const T = bang_('Viec');
+    T.rows.forEach(function (v) {
+      if (ids.indexOf(v.id) < 0) return;
+      if (v.cot === 'done' || !(v.nguoi_nhan === me.ten_dn || v.nguoi_giao === me.ten_dn || xemHet_(me))) { bo++; return; }
+      v.han = congNgay_(Number(v.han) || 0); v.sua_luc = Date.now(); ghiDong_(T, v); xong.push(v);
+    });
+  });
+  if (xong.length) danhDau_('v_viec');
+  return { viec: xong, bo_qua: bo };
+};
 API_.xoaViec = function (d, me) {
   khoa_(function () {
     const T = bang_('Viec'), v = T.rows.filter(function (r) { return r.id === Number(d.id); })[0];
