@@ -954,8 +954,14 @@ BIND.admin=function(m){
 };
 
 /* ================= liên kết ================= */
-var LIEN_KET=[['💰','App tài chính','Mở App tài chính ở tab mới','https://script.google.com/macros/s/AKfycbxoUmOzXZFN1EXGTfe7SsriHl2zpQfXVndLwqQeZKBmjMS28BYe2GsVS9sdklrcG6P5/exec']];
-function viewLk(){return'<div class="hello">'+pig('happy',44,null,ST.toi.avatar)+'<b>Các app hay dùng, bấm là mở ở tab mới</b></div><div class="lklist">'+LIEN_KET.map(function(l){return'<a class="lkcard" href="'+esc(l[3])+'" target="_blank" rel="noopener"><span class="ic" aria-hidden="true">'+l[0]+'</span><span><b>'+esc(l[1])+'</b><span class="hint">'+esc(l[2])+'</span></span><span class="go" aria-hidden="true">↗</span></a>'}).join('')+'</div>'}
+var LIEN_KET=[['💰','App tài chính','Vào thẳng, không đăng nhập lại','https://script.google.com/macros/s/AKfycbxoUmOzXZFN1EXGTfe7SsriHl2zpQfXVndLwqQeZKBmjMS28BYe2GsVS9sdklrcG6P5/exec']];
+function viewLk(){return'<div class="hello">'+pig('happy',44,null,ST.toi.avatar)+'<b>Các app hay dùng, bấm là mở ở tab mới, vào thẳng bằng tài khoản Ổ Heo</b></div><div class="lklist">'+LIEN_KET.map(function(l,i){return'<a class="lkcard" data-lk="'+i+'" href="'+esc(l[3])+'" target="_blank" rel="noopener"><span class="ic" aria-hidden="true">'+l[0]+'</span><span><b>'+esc(l[1])+'</b><span class="hint">'+esc(l[2])+'</span></span><span class="go" aria-hidden="true">↗</span></a>'}).join('')+'</div>'}
+
+/* App tài chính: xin vé dùng một lần rồi mở; mở cửa sổ ngay lúc bấm để trình duyệt không chặn */
+BIND.lk=function(m){m.querySelectorAll('[data-lk]').forEach(function(a){a.onclick=function(e){e.preventDefault();var w=null;try{w=window.open('','_blank')}catch(x){}
+ if(w){try{w.opener=null;w.document.title='Đang mở...';w.document.body.innerHTML='<p style="font:16px system-ui;padding:24px">Đang mở App tài chính...</p>'}catch(x){}}
+ call('veAppTaiChinh',{}).then(function(o){if(w&&!w.closed){w.location.href=o.url}else openModal('<h3>Mở App tài chính</h3><p>Trình duyệt vừa chặn mở tab mới. Bạn bấm nút dưới đây nha (link dùng được trong 2 phút).</p><div class="row"><button class="btn" type="button" data-x>Thôi</button><a class="btn solid" href="'+esc(o.url)+'" target="_blank" rel="noopener" data-go>Mở App tài chính</a></div>',function(md){md.querySelector('[data-x]').onclick=closeModal;md.querySelector('[data-go]').onclick=function(){setTimeout(closeModal,300)}})})
+ .catch(function(x){if(w&&!w.closed)w.location.href=a.href;fail(x)})}})};
 
 /* phân quyền một tài khoản: chọn nhanh mẫu rồi bật tắt từng quyền */
 function dlgQuyen(u,done){
