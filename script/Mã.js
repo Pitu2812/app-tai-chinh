@@ -27,12 +27,13 @@ var CFG = {
 function doGet(e) {
   var app = (e && e.parameter && e.parameter.app) || '';
   var name = CFG.APPS[app];
+  var oh = (e && e.parameter && e.parameter.oh) || '';
   if (!name) return HtmlService.createHtmlOutput('Không có ứng dụng này.');
   if (CFG.GATED[app]) return gatePage_(app);
   /* mặc định nạp qua loader (google.script.run) để HtmlService không cắt mã trang; ?mode=direct để nạp thẳng như cũ */
-  if (!(e && e.parameter && e.parameter.mode === 'direct')) return loaderPage_(name);
+  if (!(e && e.parameter && e.parameter.mode === 'direct')) return loaderPage_(name, oh);
   var html = readApp_(name);
-  html = autoLogin_(html);
+  html = ohOrAuto_(html, oh);
   html = '<script>window.TC_EXEC=' + JSON.stringify(ScriptApp.getService().getUrl()) + '<\/script>' + html;
   var out = HtmlService.createHtmlOutput(html)
     .setTitle(CFG.TITLES[app] || CFG.TITLE)
@@ -89,19 +90,19 @@ function readApp_(name) {
   return best.getBlob().getDataAsString('UTF-8');
 }
 /* dự phòng nếu trang quá nặng: tải nội dung qua google.script.run rồi ghi vào trang (mở bằng ?mode=loader) */
-function getApp(name) {
+function getApp(name, oh) {
   for (var k in CFG.GATED) if (CFG.APPS[k] === name) throw new Error('Cần đăng nhập để mở ứng dụng này.');
-  var html = autoLogin_(readApp_(name));
+  var html = ohOrAuto_(readApp_(name), oh);
   return '<script>window.TC_EXEC=' + JSON.stringify(ScriptApp.getService().getUrl()) + '<\/script>' + html;
 }
 /* D2 (H duyệt 06/11/2026): gửi web ở dạng nén (gzip + base64, đúng bản robot đã cất), trình duyệt tự giải nén; không có bản nén thì trả html thường */
-function getAppZ(name) {
+function getAppZ(name, oh) {
   for (var k in CFG.GATED) if (CFG.APPS[k] === name) throw new Error('Cần đăng nhập để mở ứng dụng này.');
   var e = EMB[name], raw = '';
   try { if (e) raw = HtmlService.createTemplateFromFile('w64_' + e).getRawContent().trim(); } catch (x) {}
-  if (!raw) return { html: getApp(name) };
+  if (!raw) return { html: getApp(name, oh) };
   var pre = '<script>window.TC_EXEC=' + JSON.stringify(ScriptApp.getService().getUrl()) + '<\/script>';
-  return { pre: autoLogin_(pre), z: raw };
+  return { pre: ohOrAuto_(pre, oh), z: raw };
 }
 /* D3 (KK01): các phần web tải sau (thư viện, ảnh nền...). Robot cất web/parts/<tên>.js thành tệp w64_part_<tên>.html (gzip + base64), không để trong .js để máy chủ khỏi nạp mỗi lần chạy */
 function partRaw_(n) {
@@ -146,14 +147,16 @@ function getGated(app, token) {
   var html = '<script>window.TC_EXEC=' + JSON.stringify(ScriptApp.getService().getUrl()) + '<\/script>' + readApp_(name);
   return { ok: true, html: html, token: newTok };
 }
-function loaderPage_(name) {
+function loaderPage_(name, oh) {
+  /* vé Ổ Heo (nếu có) chỉ gửi kèm lời gọi đầu tiên; vé dùng một lần nên lời gọi dự phòng P() không kèm */
+  var ohArg = /^[A-Za-z0-9_.-]{30,1700}$/.test(String(oh || '')) ? ',' + JSON.stringify(String(oh)) : '';
   var t = '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><body style="font:16px system-ui;padding:24px">Đang tải ứng dụng…<script>' +
     'function W(h){document.open();document.write(h);document.close()}function F(e){document.body.textContent="Không tải được: "+e.message}' +
     'function P(){google.script.run.withSuccessHandler(W).withFailureHandler(F).getApp(' + JSON.stringify(name) + ')}' +
     'if(window.DecompressionStream&&window.Response&&window.Blob){google.script.run.withSuccessHandler(function(r){' +
     'if(!r||!r.z)return W(r&&r.html||"");try{var b=atob(r.z),u=new Uint8Array(b.length);for(var i=0;i<b.length;i++)u[i]=b.charCodeAt(i);' +
     'new Response(new Blob([u]).stream().pipeThrough(new DecompressionStream("gzip"))).text().then(function(t){W(r.pre+t)},P)}catch(x){P()}' +
-    '}).withFailureHandler(F).getAppZ(' + JSON.stringify(name) + ')}else P()<\/script>';
+    '}).withFailureHandler(F).getAppZ(' + JSON.stringify(name) + ohArg + ')}else{google.script.run.withSuccessHandler(W).withFailureHandler(F).getApp(' + JSON.stringify(name) + ohArg + ')}<\/script>';
   return HtmlService.createHtmlOutput(t).setTitle(CFG.TITLE).setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
@@ -720,4 +723,67 @@ function fDel_(q) {
 function kiemQuyenDrive() {
   var d = storeDir_();
   Logger.log('Thư mục lưu: ' + d.getName() + ' | đã dùng ' + DriveApp.getStorageUsed() + ' byte');
+}
+
+/* ===================== vào thẳng từ Ổ Heo (vé dùng một lần, H duyệt vòng 7 PA2 lúc 11:46 20/11/2026) ===================== */
+var OH_LK = { FILE: 'o-heo-khoa-lien-ket.txt', ROLE: 'editor' };
+/* khóa chung với Ổ Heo: tệp cũ nhất cùng tên, CHỈ lấy tệp do chính takikj02 sở hữu (không tin tệp người khác chia sẻ vào) */
+function ohKhoa_() {
+  var c = CacheService.getScriptCache(), k = c.get('oh_khoa');
+  if (k) return k;
+  var me = String(Session.getEffectiveUser().getEmail() || '').toLowerCase();
+  var it = DriveApp.getFilesByName(OH_LK.FILE), f = null;
+  while (it.hasNext()) {
+    var x = it.next();
+    if (x.isTrashed()) continue;
+    var ow = null; try { ow = x.getOwner(); } catch (e) {}
+    if (!me || !ow || String(ow.getEmail() || '').toLowerCase() !== me) continue;
+    if (!f || x.getDateCreated() < f.getDateCreated()) f = x;
+  }
+  k = f ? f.getBlob().getDataAsString().trim() : '';
+  if (k.length < 32) return '';
+  c.put('oh_khoa', k, 21600);
+  return k;
+}
+function ohPad_(s) { s = String(s); while (s.length % 4) s += '='; return s; }
+/* vé hợp lệ thì trả token phiên App tài chính (1 ngày), không thì trả '' */
+function ohLogin_(ve) {
+  try {
+    ve = String(ve || '');
+    if (!/^[A-Za-z0-9_-]{10,1500}\.[A-Za-z0-9_-]{20,100}$/.test(ve)) return '';
+    var p = ve.split('.'), k = ohKhoa_();
+    if (!k) return '';
+    var ky = Utilities.base64EncodeWebSafe(Utilities.computeHmacSha256Signature(p[0], k)).replace(/=+$/, '');
+    if (ky !== p[1]) return '';
+    var o = JSON.parse(Utilities.newBlob(Utilities.base64DecodeWebSafe(ohPad_(p[0]))).getDataAsString('UTF-8'));
+    var now = Date.now();
+    if (!o || !(o.t > now) || o.t > now + 5 * 60000 || !o.r) return '';
+    var c = CacheService.getScriptCache();
+    if (c.get('ohv:' + o.r)) return '';
+    c.put('ohv:' + o.r, '1', 600);
+    var name = String(o.u || '').trim().toLowerCase();
+    if (!/^[a-z0-9._-]{3,30}$/.test(name)) return '';
+    var ss = ss_(), u, lock = LockService.getScriptLock();
+    lock.waitLock(20000);
+    try {
+      u = findUser_(ss, name);
+      if (!u) {
+        var salt = Utilities.getUuid().replace(/-/g, '').slice(0, 12), pass = Utilities.getUuid() + Utilities.getUuid();
+        ss.getSheetByName('users').appendRow([name, String(o.n || name).slice(0, 60), OH_LK.ROLE, salt, hash_(salt, pass), true, false, false, '', new Date().toISOString()]);
+        usersDrop_();
+        u = findUser_(ss, name);
+      }
+    } finally { lock.releaseLock(); }
+    if (!u || !u.active) return '';
+    /* tài khoản Quản trị khác takikj02 không vào thẳng bằng vé, phải gõ mật khẩu (tránh trùng tên đăng nhập giữa 2 app) */
+    if (u.role === 'admin' && u.username !== CFG.ADMIN_USER) return '';
+    setUserCell_(ss, u.row, 9, new Date().toISOString());
+    try { ss.getSheetByName('log').appendRow([new Date().toISOString(), u.username, 'Vào từ Ổ Heo', '']); } catch (e) {}
+    return startSession_(ss, u.username, false);
+  } catch (e) { return ''; }
+}
+/* gắn token vào trang; vé không hợp lệ thì giữ cách cũ (autoLogin_ cho chủ script) */
+function ohOrAuto_(html, ve) {
+  var t = ve ? ohLogin_(ve) : '';
+  return t ? '<script>try{localStorage.setItem("tc_tok","' + t + '")}catch(e){}<\/script>' + html : autoLogin_(html);
 }
