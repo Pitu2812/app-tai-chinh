@@ -342,6 +342,14 @@ API_.baoTri = function () {
   return kq;
 };
 API_.baoTri.quanTri = true;
+/* chỉ đọc tình trạng dữ liệu (số ô Sheet, dung lượng Drive), không cất tin hay sao lưu */
+API_.tinhTrang = function () {
+  const kq = {};
+  try { kq.o_sheet = soO_(); } catch (e) { kq.loi_sheet = e.message; }
+  try { kq.drive_dung = DriveApp.getStorageUsed(); kq.drive_tong = DriveApp.getStorageLimit(); } catch (e) { kq.loi_drive = e.message; }
+  return kq;
+};
+API_.tinhTrang.quanTri = true;
 
 /* ---------- đồng bộ: trang gọi mỗi vài giây ---------- */
 API_.dongBo = function (d, me) {
@@ -382,10 +390,9 @@ API_.dongBo = function (d, me) {
   bienNhan_(d, me, v, kq, ht);
   return kq;
 };
-/* thứ tự dòng việc ở tab Thông báo: CHUNG cho mọi tài khoản, chỉ quản trị kéo xếp; lưu ở Script Properties (khóa TT_CHUNG) */
+/* thứ tự dòng việc ở tab Thông báo: CHUNG cho mọi tài khoản, ai cũng kéo xếp được; lưu ở Script Properties (khóa TT_CHUNG) */
 function thuTu_() { try { return JSON.parse(PropertiesService.getScriptProperties().getProperty('TT_CHUNG') || '[]'); } catch (e) { return []; } }
 API_.luuThuTu = function (d, me) {
-  if (me.vai_tro !== 'quan_tri') loi_('Chỉ quản trị sắp xếp thứ tự việc được.');
   const ids = (Array.isArray(d.ids) ? d.ids : []).map(Number).filter(function (x, i, a) { return x > 0 && a.indexOf(x) === i; }).slice(0, 1500);
   PropertiesService.getScriptProperties().setProperty('TT_CHUNG', JSON.stringify(ids));
   danhDau_('v_viec');
