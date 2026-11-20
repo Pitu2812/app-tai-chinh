@@ -55,6 +55,9 @@ const OH = {
     co_ban: ['nhan_rieng', 'gui_tep', 'giao_viec', 'thu_hoi', 'thong_ke'],
     chi_nhan: ['nhan_rieng', 'gui_tep', 'thu_hoi']
   },
+  /* liên kết App tài chính: link chính, tên tệp khóa bí mật ở gốc Drive takikj02 (không nằm trong thư mục chia sẻ), vé hết hạn sau 2 phút */
+  APP_TC: 'https://script.google.com/macros/s/AKfycbxoUmOzXZFN1EXGTfe7SsriHl2zpQfXVndLwqQeZKBmjMS28BYe2GsVS9sdklrcG6P5/exec',
+  KHOA_LK: 'o-heo-khoa-lien-ket.txt', VE_HAN: 2 * 60 * 1000,
   DK_CHO_TOI_DA: 20, DK_MOI_MAY_GIO: 3, DK_HET_HAN: 7 * 864e5
 };
 
@@ -620,6 +623,35 @@ API_.goSanPham = function (d, me) {
   danhDau_('v_viec');
   return {};
 };
+
+/* ---------- liên kết App tài chính: vé dùng một lần ký HMAC, App tài chính kiểm bằng cùng khóa ---------- */
+API_.veAppTaiChinh = function (d, me) {
+  const k = khoaLienKet_();
+  const tai = b64Url_(Utilities.base64EncodeWebSafe(JSON.stringify({ u: me.ten_dn, n: ten_(me), t: Date.now() + OH.VE_HAN, r: Utilities.getUuid() }), Utilities.Charset.UTF_8));
+  const ky = b64Url_(Utilities.base64EncodeWebSafe(Utilities.computeHmacSha256Signature(tai, k)));
+  return { url: OH.APP_TC + '?oh=' + tai + '.' + ky };
+};
+function b64Url_(s) { return String(s).replace(/=+$/, ''); }
+function docKhoaLienKet_() {
+  const it = DriveApp.getFilesByName(OH.KHOA_LK); let f = null;
+  while (it.hasNext()) { const x = it.next(); if (x.isTrashed()) continue; if (!f || x.getDateCreated() < f.getDateCreated()) f = x; }
+  return f ? f.getBlob().getDataAsString().trim() : '';
+}
+/* khóa tạo một lần ở gốc Drive; cả hai app lấy tệp cũ nhất cùng tên */
+function khoaLienKet_() {
+  const c = CacheService.getScriptCache();
+  let k = c.get('khoa_lk');
+  if (k) return k;
+  k = docKhoaLienKet_();
+  if (!k) {
+    const L = LockService.getScriptLock();
+    if (!L.tryLock(20000)) loi_('App đang bận, bạn thử lại sau vài giây nha.');
+    try { k = docKhoaLienKet_(); if (!k) { k = (Utilities.getUuid() + Utilities.getUuid()).replace(/-/g, ''); DriveApp.createFile(OH.KHOA_LK, k); } }
+    finally { L.releaseLock(); }
+  }
+  c.put('khoa_lk', k, 21600);
+  return k;
+}
 
 /* ---------- tệp gửi kèm: gửi từng phần vào Drive ---------- */
 API_.batDauGuiTep = function (d, me) {
