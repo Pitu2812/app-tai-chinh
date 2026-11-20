@@ -133,6 +133,7 @@ API_.dangNhap = function (d) {
   if (sai >= 5) loi_('Sai mật khẩu nhiều lần, bạn chờ 5 phút rồi thử lại nha.');
   const u = bang_('NguoiDung').rows.filter(function (r) { return r.ten_dn === ten; })[0];
   if (!u || u.bam !== bam_(u.muoi, mk)) { cache.put(kSai, String(sai + 1), 300); loi_('Tên đăng nhập hoặc mật khẩu chưa đúng.'); }
+  if (u.trang_thai === 'da_xoa') loi_('Tên đăng nhập hoặc mật khẩu chưa đúng.');
   if (u.trang_thai === 'khoa') loi_('Tài khoản đang bị khóa, bạn nhắn quản trị nha.');
   cache.remove(kSai);
   const token = Utilities.getUuid() + Utilities.getUuid(), now = Date.now();
@@ -170,7 +171,7 @@ API_.doiAvatar = function (d, me) {
 };
 
 /* ---------- quản trị ---------- */
-API_.dsNguoiDung = function () { return { nguoi: bang_('NguoiDung').rows.map(function (u) { const c = congKhai_(u); c.trang_thai = u.trang_thai; c.doi_mk = u.doi_mk === '1'; c.dang_nhap_cuoi = u.dang_nhap_cuoi; return c; }) }; };
+API_.dsNguoiDung = function () { return { nguoi: bang_('NguoiDung').rows.filter(function (u) { return u.trang_thai !== 'da_xoa'; }).map(function (u) { const c = congKhai_(u); c.trang_thai = u.trang_thai; c.doi_mk = u.doi_mk === '1'; c.dang_nhap_cuoi = u.dang_nhap_cuoi; return c; }) }; };
 API_.dsNguoiDung.quanTri = true;
 API_.capTaiKhoan = function (d) {
   const ten = String(d.ten_dn || '').trim().toLowerCase(), hoTen = String(d.ho_ten || '').trim();
@@ -178,7 +179,8 @@ API_.capTaiKhoan = function (d) {
   if (!hoTen) loi_('Bạn nhập họ tên nha.');
   const mk = matKhauTam_();
   khoa_(function () {
-    if (bang_('NguoiDung').rows.some(function (r) { return r.ten_dn === ten; })) loi_('Tên đăng nhập này đã có.');
+    const cu = bang_('NguoiDung').rows.filter(function (r) { return r.ten_dn === ten; })[0];
+    if (cu) loi_(cu.trang_thai === 'da_xoa' ? 'Tên này thuộc một tài khoản đã xóa (để giữ đúng tin nhắn cũ), bạn chọn tên khác nha.' : 'Tên đăng nhập này đã có.');
     them_('NguoiDung', taoNguoi_(ten, hoTen.slice(0, 60), 'thanh_vien', mk));
   });
   danhDau_('v_nguoi');
@@ -208,6 +210,33 @@ API_.khoaTaiKhoan = function (d, me) {
   return {};
 };
 API_.khoaTaiKhoan.quanTri = true;
+/* xóa tài khoản: không xóa dòng (giữ tên cho tin nhắn, việc cũ), chỉ đánh dấu da_xoa, xóa mật khẩu và phiên,
+   rút khỏi các nhóm; tin nhắn, tệp, việc vẫn giữ nguyên; tên đăng nhập không cấp lại cho người khác */
+API_.xoaTaiKhoan = function (d, me) {
+  const ten = String(d.ten_dn || '');
+  if (ten === me.ten_dn) loi_('Không tự xóa tài khoản của mình được.');
+  if (ten === OH.QUAN_TRI) loi_('Không xóa được tài khoản quản trị ' + OH.QUAN_TRI + '.');
+  let hoTen = '', nhom = [];
+  khoa_(function () {
+    const T = bang_('NguoiDung'), u = T.rows.filter(function (r) { return r.ten_dn === ten; })[0];
+    if (!u || u.trang_thai === 'da_xoa') loi_('Không thấy tài khoản.');
+    hoTen = u.ho_ten;
+    u.trang_thai = 'da_xoa'; u.bam = ''; u.muoi = ''; u.doi_mk = ''; ghiDong_(T, u);
+    xoaPhienCua_(ten);
+    const H = bang_('HoiThoai');
+    H.rows.forEach(function (h) {
+      if (h.loai !== 'nhom') return;
+      const tv = h.thanh_vien.split(',');
+      if (tv.indexOf(ten) < 0) return;
+      const con = tv.filter(function (x) { return x !== ten; });
+      h.thanh_vien = (con.length ? con : [me.ten_dn]).join(','); ghiDong_(H, h); nhom.push(h.id);
+    });
+  });
+  nhom.forEach(function (id) { tinHeThong_(id, me.ten_dn, hoTen + ' đã rời nhóm (tài khoản đã xóa)'); });
+  danhDau_('v_nguoi'); danhDau_('v_ht');
+  return { nhom: nhom.length };
+};
+API_.xoaTaiKhoan.quanTri = true;
 API_.doiTen = function (d) {
   const hoTen = String(d.ho_ten || '').trim().slice(0, 60);
   if (!hoTen) loi_('Bạn nhập họ tên nha.');
@@ -265,7 +294,7 @@ API_.tinCu = function (d, me) {
 API_.moRieng = function (d, me) {
   const ban = String(d.voi || '');
   if (ban === me.ten_dn) loi_('Không nhắn riêng cho chính mình được.');
-  if (!bang_('NguoiDung').rows.some(function (r) { return r.ten_dn === ban && r.trang_thai !== 'khoa'; })) loi_('Không thấy người này.');
+  if (!bang_('NguoiDung').rows.some(function (r) { return r.ten_dn === ban && r.trang_thai === 'dang_dung'; })) loi_('Không thấy người này.');
   const id = 'd:' + [me.ten_dn, ban].sort().join(':');
   let moi = false;
   khoa_(function () {
@@ -278,7 +307,7 @@ API_.moRieng = function (d, me) {
 };
 API_.taoNhom = function (d, me) {
   const ten = String(d.ten || '').trim().slice(0, 60) || 'Nhóm mới';
-  const nguoi = bang_('NguoiDung').rows.map(function (r) { return r.ten_dn; });
+  const nguoi = bang_('NguoiDung').rows.filter(function (r) { return r.trang_thai === 'dang_dung'; }).map(function (r) { return r.ten_dn; });
   const tv = [me.ten_dn].concat((d.thanh_vien || []).filter(function (x) { return x !== me.ten_dn && nguoi.indexOf(x) >= 0; }));
   let id;
   khoa_(function () {
@@ -292,7 +321,7 @@ API_.taoNhom = function (d, me) {
 API_.suaNhom = function (d, me) {
   const h = hoiThoai_(d.id, me);
   if (h.loai !== 'nhom') loi_('Chỉ sửa được nhóm.');
-  const nguoi = bang_('NguoiDung').rows.map(function (r) { return r.ten_dn; });
+  const nguoi = bang_('NguoiDung').rows.filter(function (r) { return r.trang_thai === 'dang_dung'; }).map(function (r) { return r.ten_dn; });
   let ghi = [];
   khoa_(function () {
     const T = bang_('HoiThoai'), x = T.rows.filter(function (r) { return r.id === h.id; })[0];
@@ -340,7 +369,7 @@ API_.giaoViec = function (d, me) {
   const tieuDe = String(d.tieu_de || '').trim().slice(0, 500);
   if (!tieuDe) loi_('Bạn ghi tên việc nha.');
   const nhan = String(d.nguoi_nhan || me.ten_dn);
-  if (!bang_('NguoiDung').rows.some(function (r) { return r.ten_dn === nhan; })) loi_('Không thấy người nhận.');
+  if (!bang_('NguoiDung').rows.some(function (r) { return r.ten_dn === nhan && r.trang_thai === 'dang_dung'; })) loi_('Người nhận không còn dùng app.');
   let h = null;
   if (d.hoi_thoai) { h = hoiThoai_(d.hoi_thoai, me); if (h.thanh_vien.split(',').indexOf(nhan) < 0) loi_('Người nhận không ở trong cuộc trò chuyện này.'); }
   const uu = OH.UU_TIEN.indexOf(d.uu_tien) >= 0 ? d.uu_tien : 'mid';
@@ -542,7 +571,7 @@ function bam_(muoi, mk) {
 }
 function matKhauTam_() { const c = 'abcdefghjkmnpqrstuvwxyz23456789'; let s = ''; const u = Utilities.getUuid().replace(/-/g, ''); for (let i = 0; i < 10; i++) s += c.charAt(parseInt(u.substr(i * 3, 3), 16) % c.length); return s; }
 function taoNguoi_(ten, hoTen, vai, mk) { const m = Utilities.getUuid(); return { ten_dn: ten, ho_ten: hoTen, vai_tro: vai, muoi: m, bam: bam_(m, mk), avatar: 'bow', trang_thai: 'dang_dung', doi_mk: '1', tao_luc: Date.now(), dang_nhap_cuoi: '' }; }
-function congKhai_(u) { return { ten_dn: u.ten_dn, ho_ten: u.ho_ten, vai_tro: u.vai_tro, avatar: u.avatar || 'none', khoa: u.trang_thai === 'khoa' }; }
+function congKhai_(u) { return { ten_dn: u.ten_dn, ho_ten: u.ho_ten, vai_tro: u.vai_tro, avatar: u.avatar || 'none', khoa: u.trang_thai !== 'dang_dung', da_xoa: u.trang_thai === 'da_xoa' }; }
 function tepCongKhai_(t) { return { id: t.id, ten: t.ten, mime: t.mime, kich_thuoc: t.kich_thuoc, nguoi_gui: t.nguoi_gui, luc: t.luc, link: t.kich_thuoc >= OH.TEP_LINK ? (t.link || ('https://drive.google.com/file/d/' + t.drive_id + '/view')) : '' }; }
 function xacThuc_(token) {
   if (!token) return null;
@@ -554,7 +583,7 @@ function xacThuc_(token) {
     ten = p.ten_dn; c.put(k, ten, 600);
   }
   const u = bang_('NguoiDung').rows.filter(function (r) { return r.ten_dn === ten; })[0];
-  if (!u || u.trang_thai === 'khoa') { c.remove(k); return null; }
+  if (!u || u.trang_thai !== 'dang_dung') { c.remove(k); return null; }
   u._bam = b;
   return u;
 }
