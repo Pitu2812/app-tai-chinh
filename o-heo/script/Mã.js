@@ -667,8 +667,8 @@ function trongNhom_(v, u) {
 }
 /* ai thấy được việc: người giao, người nhận, người được nhắc tới, nhóm của việc, quản trị, người có quyền xem tất cả */
 function thayViec_(v, me) { return benViec_(v, me.ten_dn) || xemHet_(me) || theoDoi_(v, me.ten_dn) || trongNhom_(v, me.ten_dn); }
-/* phê duyệt (chốt), mở lại: người giao việc, quản trị, người có quyền Xem tất cả các việc (trừ việc mình là người làm); việc tự ghi thì chính người đó */
-function chotDuoc_(v, me) { return me.vai_tro === 'quan_tri' || v.nguoi_giao === me.ten_dn || (coQuyen_(me, 'xem_het') && v.nguoi_nhan !== me.ten_dn); }
+/* phê duyệt (chốt), mở lại: người giao việc, quản trị, người có quyền Xem tất cả các việc (như quản trị); việc tự ghi thì chính người đó */
+function chotDuoc_(v, me) { return me.vai_tro === 'quan_tri' || v.nguoi_giao === me.ten_dn || coQuyen_(me, 'xem_het'); }
 /* người xét sản phẩm (người giao hoặc quản trị, không phải người làm) */
 function nguoiXet_(v, me) { return me.ten_dn !== v.nguoi_nhan && chotDuoc_(v, me); }
 function spCua_(vid) { return bang_('Tep').rows.filter(function (r) { return r.viec_id === Number(vid); }).sort(function (a, b) { return a.luc - b.luc || a.id - b.id; }); }
