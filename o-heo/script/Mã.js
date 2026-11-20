@@ -4,7 +4,8 @@
  *
  * Cài lần đầu (trong trình soạn script, chạy bằng takikj02):
  *   1. (không bắt buộc) Cài đặt dự án > Thuộc tính tập lệnh: THU_MUC_CHA = ID thư mục cha trên Drive
- *      (ví dụ thư mục "01 CHUNG - Công việc cơ quan"). Bỏ trống thì đặt ở thư mục gốc Drive.
+ *      (thư mục "01 CHUNG - Công việc cơ quan": 18UwO26VS6dFHE8RiMIr_RbmSMnNCETKo). Có thư mục cha thì
+ *      thư mục app tên "10 Ổ Heo"; bỏ trống thì tên "Ổ Heo" ở thư mục gốc Drive.
  *   2. Chạy hàm caiDat: tạo thư mục "Ổ Heo", Google Sheet dữ liệu, tài khoản quản trị takikj02.
  *      Mật khẩu tạm của takikj02 hiện ở Nhật ký thực thi; đăng nhập lần đầu phải đổi.
  *   3. Chạy hàm capQuyen (tệp CapQuyen.js) một lần để cấp quyền gửi tệp lớn.
@@ -67,9 +68,11 @@ function caiDat() {
   if (props.getProperty('SS_ID')) { Logger.log('Đã cài rồi. Sheet dữ liệu: ' + props.getProperty('SS_ID')); return 'da_cai'; }
   const chaId = props.getProperty('THU_MUC_CHA');
   const cha = chaId ? DriveApp.getFolderById(chaId) : DriveApp.getRootFolder();
-  const goc = cha.createFolder(OH.TEN_APP);
+  // nằm trong thư mục cha của KK19 thì đặt tên "10 Ổ Heo" để xếp đúng thứ tự; có sẵn thư mục cùng tên thì dùng luôn
+  const tenGoc = props.getProperty('TEN_THU_MUC') || (chaId ? '10 ' + OH.TEN_APP : OH.TEN_APP);
+  const goc = thuMucCon_(cha, tenGoc);
   const ids = {};
-  OH.THU_MUC.forEach(function (t) { ids[t] = goc.createFolder(t).getId(); });
+  OH.THU_MUC.forEach(function (t) { ids[t] = thuMucCon_(goc, t).getId(); });
   const ss = SpreadsheetApp.create(OH.TEN_APP + ' - Dữ liệu chính');
   DriveApp.getFileById(ss.getId()).moveTo(goc);
   Object.keys(OH.COT).forEach(function (ten, i) {
