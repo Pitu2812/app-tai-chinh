@@ -201,6 +201,7 @@ textarea{resize:vertical}
 </head>
 <body>
 <div id="app"></div>
+<iframe name="oheo_sink" id="oheo_sink" src="about:blank" hidden title="khung ẩn để trình duyệt lưu mật khẩu" tabindex="-1"></iframe>
 <div class="toast" id="toast" role="status" hidden></div>
 <script>
 (function(){
@@ -304,14 +305,20 @@ function call(lenh,du_lieu){
 function fail(e){toast((e&&e.msg)||'Có lỗi, bạn thử lại nha.')}
 
 /* ================= đăng nhập ================= */
+/* để trình duyệt (Chrome, Safari, Edge) hỏi "Lưu mật khẩu?": sau khi đăng nhập hoặc đổi mật khẩu thành công,
+   gửi thật form vào khung ẩn (about:blank, không gửi đi đâu) và báo thêm qua Credential Management nếu có */
+function luuMatKhau(f,ten,mk,hoTen){
+ try{if(window.PasswordCredential&&navigator.credentials&&navigator.credentials.store)navigator.credentials.store(new PasswordCredential({id:ten,password:mk,name:hoTen||ten})).catch(function(){})}catch(e){}
+ try{f.submit()}catch(e){}
+}
 function loadSession(){ST.token=LS.get('oheo_token')||SS.get('oheo_token');try{ST.toi=JSON.parse(LS.get('oheo_toi')||SS.get('oheo_toi')||'null')}catch(e){ST.toi=null}if(!ST.toi)ST.token=null}
 function saveSession(nho){var S=nho?LS:SS;S.set('oheo_token',ST.token);S.set('oheo_toi',JSON.stringify(ST.toi))}
 function saveToi(){if(LS.get('oheo_token'))LS.set('oheo_toi',JSON.stringify(ST.toi));else SS.set('oheo_toi',JSON.stringify(ST.toi))}
 function logoutLocal(msg){LS.del('oheo_token');LS.del('oheo_toi');SS.del('oheo_token');SS.del('oheo_toi');stopPoll();ST.token=null;ST.toi=null;ST.v=null;ST.tin={};ST.ht=[];ST.viec=[];ST.sauTin=0;ST.nguoi={};ST.daDoc={};ST.users=null;ST.adminInfo=null;closeModal();render();if(msg)toast(msg)}
 function viewLogin(){
- return '<div class="login-wrap"><form class="card login" id="lg-f" autocomplete="on">'+pig('happy',96,null,'bow')+'<h1 class="logo">Ổ Heo</h1><p class="hint" style="text-align:center">Nhắn tin và theo dõi việc</p>'
- +'<label for="lg-u">Tên đăng nhập</label><input type="text" id="lg-u" autocomplete="username" autocapitalize="none" spellcheck="false" required value="'+esc(LS.get('oheo_last_user')||'')+'">'
- +'<label for="lg-p">Mật khẩu</label><input type="password" id="lg-p" autocomplete="current-password" required>'
+ return '<div class="login-wrap"><form class="card login" id="lg-f" autocomplete="on" method="post" action="about:blank" target="oheo_sink">'+pig('happy',96,null,'bow')+'<h1 class="logo">Ổ Heo</h1><p class="hint" style="text-align:center">Nhắn tin và theo dõi việc</p>'
+ +'<label for="lg-u">Tên đăng nhập</label><input type="text" id="lg-u" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" required value="'+esc(LS.get('oheo_last_user')||'')+'">'
+ +'<label for="lg-p">Mật khẩu</label><input type="password" id="lg-p" name="password" autocomplete="current-password" required>'
  +'<label class="rem"><input type="checkbox" id="lg-r" checked> Ghi nhớ đăng nhập trên máy này (30 ngày)</label>'
  +'<button class="btn solid" type="submit" id="lg-b">Đăng nhập</button><div class="err" id="lg-e" role="alert"></div><p class="hint" style="text-align:center">Chưa có tài khoản hoặc quên mật khẩu? Bạn nhắn quản trị nha.</p></form></div>';
 }
@@ -319,13 +326,13 @@ function bindLogin(){
  var f=document.getElementById('lg-f');
  f.onsubmit=function(e){e.preventDefault();var b=document.getElementById('lg-b'),er=document.getElementById('lg-e'),u=document.getElementById('lg-u').value.trim(),p=document.getElementById('lg-p').value,nho=document.getElementById('lg-r').checked;
   b.disabled=true;b.textContent='Đang vào...';er.textContent='';
-  call('dangNhap',{ten_dn:u,mat_khau:p,nho:nho}).then(function(o){ST.token=o.token;ST.toi=o.toi;ST.toi.doi_mk=o.phai_doi_mk;LS.set('oheo_last_user',o.toi.ten_dn);saveSession(nho);render();if(!o.phai_doi_mk)startApp()}).catch(function(e){b.disabled=false;b.textContent='Đăng nhập';er.textContent=e.msg||'Chưa vào được.'})};
+  call('dangNhap',{ten_dn:u,mat_khau:p,nho:nho}).then(function(o){ST.token=o.token;ST.toi=o.toi;ST.toi.doi_mk=o.phai_doi_mk;LS.set('oheo_last_user',o.toi.ten_dn);saveSession(nho);if(!o.phai_doi_mk)luuMatKhau(f,o.toi.ten_dn,p,o.toi.ho_ten);render();if(!o.phai_doi_mk)startApp()}).catch(function(e){b.disabled=false;b.textContent='Đăng nhập';er.textContent=e.msg||'Chưa vào được.'})};
  var u=document.getElementById('lg-u');(u.value?document.getElementById('lg-p'):u).focus();
 }
 function viewForcePw(){
- return '<div class="login-wrap"><form class="card login" id="pw-f">'+pig('normal',80,null,ST.toi.avatar)+'<h2 style="text-align:center">Chào '+esc(ST.toi.ho_ten)+'</h2><p class="hint" style="text-align:center">Đây là lần đầu bạn vào app (hoặc vừa được cấp lại mật khẩu). Bạn đặt mật khẩu riêng của mình nha.</p>'
- +'<label for="pw-o">Mật khẩu tạm</label><input type="password" id="pw-o" autocomplete="current-password" required>'
- +'<label for="pw-n">Mật khẩu mới (ít nhất 8 ký tự)</label><input type="password" id="pw-n" autocomplete="new-password" minlength="8" required>'
+ return '<div class="login-wrap"><form class="card login" id="pw-f" method="post" action="about:blank" target="oheo_sink"><input type="text" name="username" autocomplete="username" value="'+esc(ST.toi.ten_dn)+'" hidden readonly>'+pig('normal',80,null,ST.toi.avatar)+'<h2 style="text-align:center">Chào '+esc(ST.toi.ho_ten)+'</h2><p class="hint" style="text-align:center">Đây là lần đầu bạn vào app (hoặc vừa được cấp lại mật khẩu). Bạn đặt mật khẩu riêng của mình nha.</p>'
+ +'<label for="pw-o">Mật khẩu tạm</label><input type="password" id="pw-o" name="current-password" autocomplete="current-password" required>'
+ +'<label for="pw-n">Mật khẩu mới (ít nhất 8 ký tự)</label><input type="password" id="pw-n" name="new-password" autocomplete="new-password" minlength="8" required>'
  +'<label for="pw-n2">Nhập lại mật khẩu mới</label><input type="password" id="pw-n2" autocomplete="new-password" minlength="8" required>'
  +'<button class="btn solid" type="submit">Lưu và vào app</button><button class="btn ghost" type="button" id="pw-out">Đăng xuất</button><div class="err" id="pw-e" role="alert"></div></form></div>';
 }
@@ -335,7 +342,7 @@ function bindPwForm(id,onDone){
   if(n!==n2){er.textContent='Hai lần nhập mật khẩu mới chưa giống nhau.';return}
   if(n.length<8){er.textContent='Mật khẩu mới cần ít nhất 8 ký tự.';return}
   var b=f.querySelector('[type=submit]');b.disabled=true;
-  call('doiMatKhau',{cu:o,moi:n}).then(function(){b.disabled=false;f.reset();er.textContent='';onDone()}).catch(function(x){b.disabled=false;er.textContent=x.msg})};
+  call('doiMatKhau',{cu:o,moi:n}).then(function(){b.disabled=false;luuMatKhau(f,ST.toi.ten_dn,n,ST.toi.ho_ten);f.reset();er.textContent='';onDone()}).catch(function(x){b.disabled=false;er.textContent=x.msg})};
 }
 
 /* ================= đồng bộ ================= */
@@ -677,7 +684,7 @@ function viewMe(){
  return '<div class="two"><section class="card stack"><h2>'+esc(ST.toi.ho_ten)+'</h2><p class="hint">Tên đăng nhập: '+esc(me())+(ST.toi.vai_tro==='quan_tri'?' · quản trị':'')+'</p><label>Avatar heo của bạn</label><div class="avpick">'+AVS.map(function(a){return'<button type="button" class="avopt" data-av="'+a[0]+'" aria-pressed="'+(a[0]===ST.toi.avatar)+'">'+pig('happy',54,null,a[0])+'<span>'+a[1]+'</span></button>'}).join('')+'</div>'
  +'<label for="th">Giao diện</label><div class="seg" role="group" id="th">'+[['auto','Theo máy'],['light','Sáng'],['dark','Tối']].map(function(x){return'<button type="button" data-th="'+x[0]+'" aria-pressed="'+(t===x[0])+'">'+x[1]+'</button>'}).join('')+'</div>'
  +'<button class="btn" type="button" data-act="logout" style="align-self:flex-start;margin-top:8px">Đăng xuất</button></section>'
- +'<form class="card stack" id="mp-f"><h2>Đổi mật khẩu</h2><label for="mp-o">Mật khẩu hiện tại</label><input type="password" id="mp-o" autocomplete="current-password" required><label for="mp-n">Mật khẩu mới (ít nhất 8 ký tự)</label><input type="password" id="mp-n" autocomplete="new-password" minlength="8" required><label for="mp-n2">Nhập lại mật khẩu mới</label><input type="password" id="mp-n2" autocomplete="new-password" minlength="8" required><button class="btn solid" type="submit" style="align-self:flex-start">Lưu mật khẩu</button><div class="err" role="alert"></div><p class="hint">Đổi mật khẩu xong, các máy khác đang đăng nhập tài khoản này sẽ phải đăng nhập lại.</p></form></div>';
+ +'<form class="card stack" id="mp-f" method="post" action="about:blank" target="oheo_sink"><input type="text" name="username" autocomplete="username" value="'+esc(me())+'" hidden readonly><h2>Đổi mật khẩu</h2><label for="mp-o">Mật khẩu hiện tại</label><input type="password" id="mp-o" name="current-password" autocomplete="current-password" required><label for="mp-n">Mật khẩu mới (ít nhất 8 ký tự)</label><input type="password" id="mp-n" name="new-password" autocomplete="new-password" minlength="8" required><label for="mp-n2">Nhập lại mật khẩu mới</label><input type="password" id="mp-n2" autocomplete="new-password" minlength="8" required><button class="btn solid" type="submit" style="align-self:flex-start">Lưu mật khẩu</button><div class="err" role="alert"></div><p class="hint">Đổi mật khẩu xong, các máy khác đang đăng nhập tài khoản này sẽ phải đăng nhập lại.</p></form></div>';
 }
 BIND.me=function(m){
  m.querySelectorAll('[data-av]').forEach(function(b){b.onclick=function(){var old=ST.toi.avatar;ST.toi.avatar=b.dataset.av;saveToi();render();call('doiAvatar',{avatar:b.dataset.av}).then(function(){toast('Đã đổi avatar')}).catch(function(e){ST.toi.avatar=old;saveToi();render();fail(e)})}});
