@@ -633,11 +633,19 @@ API_.veAppTaiChinh = function (d, me) {
 };
 function b64Url_(s) { return String(s).replace(/=+$/, ''); }
 function docKhoaLienKet_() {
+  /* chỉ nhận tệp do chính tài khoản chạy script sở hữu: tệp người khác chia sẻ vào cùng tên bị bỏ qua */
+  const me = String(Session.getEffectiveUser().getEmail() || '').toLowerCase();
   const it = DriveApp.getFilesByName(OH.KHOA_LK); let f = null;
-  while (it.hasNext()) { const x = it.next(); if (x.isTrashed()) continue; if (!f || x.getDateCreated() < f.getDateCreated()) f = x; }
+  while (it.hasNext()) {
+    const x = it.next();
+    if (x.isTrashed()) continue;
+    let ow = null; try { ow = x.getOwner(); } catch (e) {}
+    if (!me || !ow || String(ow.getEmail() || '').toLowerCase() !== me) continue;
+    if (!f || x.getDateCreated() < f.getDateCreated()) f = x;
+  }
   return f ? f.getBlob().getDataAsString().trim() : '';
 }
-/* khóa tạo một lần ở gốc Drive; cả hai app lấy tệp cũ nhất cùng tên */
+/* khóa tạo một lần ở gốc Drive; cả hai app lấy tệp cũ nhất cùng tên do takikj02 sở hữu, dài ít nhất 32 ký tự */
 function khoaLienKet_() {
   const c = CacheService.getScriptCache();
   let k = c.get('khoa_lk');
@@ -649,6 +657,7 @@ function khoaLienKet_() {
     try { k = docKhoaLienKet_(); if (!k) { k = (Utilities.getUuid() + Utilities.getUuid()).replace(/-/g, ''); DriveApp.createFile(OH.KHOA_LK, k); } }
     finally { L.releaseLock(); }
   }
+  if (k.length < 32) loi_('Tệp khóa liên kết không hợp lệ, nhờ quản trị kiểm tra tệp ' + OH.KHOA_LK + ' trên Drive.');
   c.put('khoa_lk', k, 21600);
   return k;
 }
