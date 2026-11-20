@@ -376,10 +376,18 @@ API_.dongBo = function (d, me) {
     kq.viec = bang_('Viec').rows.filter(function (t) { return het || t.nguoi_nhan === me.ten_dn || t.nguoi_giao === me.ten_dn || theoDoi_(t, me.ten_dn) || (t.hoi_thoai && ids2[t.hoi_thoai] && t.hoi_thoai.indexOf('g') === 0); });
     const vIds = {}; kq.viec.forEach(function (t) { vIds[t.id] = 1; });
     kq.sp = bang_('Tep').rows.filter(function (t) { return t.viec_id && vIds[t.viec_id]; }).map(tepCongKhai_);
+    kq.thu_tu = thuTu_(me);
     kq.tbv = bangTBV_().rows.filter(function (r) { return vIds[r.viec_id] || r.nguoi_nhan === me.ten_dn; }).map(function (r) { return { id: r.id, viec_id: r.viec_id, nguoi_gui: r.nguoi_gui, nguoi_nhan: r.nguoi_nhan, noi_dung: r.noi_dung, luc: r.luc, xem_luc: r.xem_luc }; });
   }
   bienNhan_(d, me, v, kq, ht);
   return kq;
+};
+/* thứ tự dòng việc ở tab Thông báo: riêng từng người, lưu ở Script Properties (khóa TT_ten_dn) */
+function thuTu_(me) { try { return JSON.parse(PropertiesService.getScriptProperties().getProperty('TT_' + me.ten_dn) || '[]'); } catch (e) { return []; } }
+API_.luuThuTu = function (d, me) {
+  const ids = (Array.isArray(d.ids) ? d.ids : []).map(Number).filter(function (x, i, a) { return x > 0 && a.indexOf(x) === i; }).slice(0, 1500);
+  PropertiesService.getScriptProperties().setProperty('TT_' + me.ten_dn, JSON.stringify(ids));
+  return { thu_tu: ids };
 };
 /* tin cũ hơn (cuộn lên trên) */
 API_.tinCu = function (d, me) {
