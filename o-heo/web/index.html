@@ -98,6 +98,13 @@ textarea{resize:vertical}
 .optlist{display:flex;flex-direction:column;gap:8px}.optlist .btn{justify-content:flex-start;text-align:left}
 .msg.me{align-self:flex-end;align-items:flex-end}.msg.me .bubble{background:var(--pink-soft);border-radius:18px 18px 6px 18px}
 .msg .act{display:flex;gap:6px;align-items:center}
+.imgbub{display:block;padding:0;border:0;border-radius:16px;overflow:hidden;background:var(--soft);cursor:zoom-in;min-width:120px;min-height:80px;max-width:min(300px,68vw)}
+.imgbub img{display:block;max-width:100%;max-height:300px;object-fit:contain}
+.imgph{display:grid;place-items:center;width:200px;max-width:100%;height:140px;font-size:13px;color:var(--mute)}
+.imgcap{font-size:12px;color:var(--mute)}
+.modal.lbx{max-width:min(96vw,1100px)}.lbx .lbimg{display:grid;place-items:center;background:var(--soft);border-radius:14px;min-height:200px;overflow:auto;max-height:calc(100vh - 170px)}
+.lbx .lbimg img{max-width:100%;max-height:calc(100vh - 180px);object-fit:contain}
+.thread.drop{outline:3px dashed var(--pink);outline-offset:-6px}
 .rcpt{font-size:12px;color:var(--mute);margin-top:-2px}.rcpt.seen{color:var(--ok);font-weight:600}
 .typing .bubble{align-self:flex-start;display:flex;gap:4px;align-items:center;padding:12px 14px}
 .typing .bubble i{width:7px;height:7px;border-radius:50%;background:var(--mute);animation:tdot 1.2s infinite}
@@ -227,7 +234,7 @@ var TEP_LINK=50*1024*1024, TEP_TOI_DA=1024*1024*1024-1;
 var TABS=[['chat','Nhắn tin','💬'],['board','Bảng việc','📋'],['today','Hôm nay','☀️'],['stats','Thống kê','📊'],['tb','Thông báo','bell']];
 
 /* ================= trạng thái ================= */
-var ST={token:null,toi:null,nguoi:{},ht:[],tin:{},tep:{},viec:[],v:null,sauTin:0,daDoc:{},anDen:{},nhan:{},xem:{},go:null,goAt:0,goConv:null,tab:'chat',conv:null,open:false,boardMode:'mine',rf:'all',het:{},busy:0,uploads:[],adminInfo:null,users:null,mood:null};
+var ST={token:null,toi:null,nguoi:{},ht:[],tin:{},tep:{},viec:[],v:null,sauTin:0,daDoc:{},anDen:{},anh:{},anhLon:{},anhDang:{},nhan:{},xem:{},go:null,goAt:0,goConv:null,tab:'chat',conv:null,open:false,boardMode:'mine',rf:'all',het:{},busy:0,uploads:[],adminInfo:null,users:null,mood:null};
 var LS={get:function(k){try{return localStorage.getItem(k)}catch(e){return null}},set:function(k,v){try{localStorage.setItem(k,v)}catch(e){}},del:function(k){try{localStorage.removeItem(k)}catch(e){}}};
 var SS={get:function(k){try{return sessionStorage.getItem(k)}catch(e){return null}},set:function(k,v){try{sessionStorage.setItem(k,v)}catch(e){}},del:function(k){try{sessionStorage.removeItem(k)}catch(e){}}};
 var app=document.getElementById('app');
@@ -473,7 +480,7 @@ function drawConvs(){
  var h='<div class="conv-acts"><button class="btn sm" type="button" data-act="new-dm">＋ Nhắn riêng</button><button class="btn sm" type="button" data-act="new-grp">＋ Tạo nhóm</button></div>';
  var L=sortedConvs();
  if(!L.length)h+='<div class="empty">Chưa có cuộc trò chuyện nào. Bấm Nhắn riêng hoặc Tạo nhóm để bắt đầu nha.</div>';
- L.forEach(function(c){var l=lastMsg(c),u=c.id===ST.conv&&ST.open?0:unread(c);h+='<button type="button" class="conv" data-conv="'+esc(c.id)+'"'+(c.id===ST.conv?' aria-current="true"':'')+'>'+avConv(c,40,true)+'<span style="min-width:0;flex:1"><span class="nm">'+esc(convName(c))+'</span><small>'+(l?esc((l.loai==='tep'?'📎 ':'')+(l.loai==='he_thong'?'':nameOf(l.nguoi_gui)+': ')+(l.loai==='da_xoa'?'tin nhắn đã thu hồi':l.noi_dung)):(c.loai==='nhom'?c.thanh_vien.length+' người':'Bắt đầu trò chuyện'))+'</small></span>'+(u?'<span class="bdg">'+u+'</span>':'')+'</button>'});
+ L.forEach(function(c){var l=lastMsg(c),u=c.id===ST.conv&&ST.open?0:unread(c);h+='<button type="button" class="conv" data-conv="'+esc(c.id)+'"'+(c.id===ST.conv?' aria-current="true"':'')+'>'+avConv(c,40,true)+'<span style="min-width:0;flex:1"><span class="nm">'+esc(convName(c))+'</span><small>'+(l?esc((l.loai==='tep'&&!isImg(ST.tep[l.tep_id])?'📎 ':'')+(l.loai==='he_thong'?'':nameOf(l.nguoi_gui)+': ')+(l.loai==='da_xoa'?'tin nhắn đã thu hồi':l.loai==='tep'&&isImg(ST.tep[l.tep_id])?'🖼️ Ảnh':l.noi_dung)):(c.loai==='nhom'?c.thanh_vien.length+' người':'Bắt đầu trò chuyện'))+'</small></span>'+(u?'<span class="bdg">'+u+'</span>':'')+'</button>'});
  el.innerHTML=h;
  el.querySelectorAll('[data-conv]').forEach(function(b){b.onclick=function(){openConv(b.dataset.conv)}});
  el.querySelector('[data-act=new-dm]').onclick=dlgNewDm;
@@ -498,6 +505,11 @@ function drawThread(){
   call('guiTin',{hoi_thoai:cid,noi_dung:v}).then(function(o){var a=ST.tin[cid];a.splice(a.indexOf(tmp),1);addMsg(o.tin);ST.daDoc[cid]=Math.max(ST.daDoc[cid]||0,o.tin.id);if(ST.conv===cid)drawMsgs(false,true);drawConvs();schedule(1500)})
   .catch(function(x){var a=ST.tin[cid];a.splice(a.indexOf(tmp),1);if(ST.conv===cid){drawMsgs();var t2=document.getElementById('cmp');if(t2&&!t2.value)t2.value=v}fail(x)})};
  document.getElementById('cmp-file').onchange=function(e){[].slice.call(e.target.files).forEach(function(file){queueUpload(c.id,file)});e.target.value=''};
+ /* dán ảnh (Ctrl+V) vào ô nhắn tin, kéo thả tệp vào khung chat */
+ ta.onpaste=function(e){var cd=e.clipboardData;if(!cd)return;var fs=[].slice.call(cd.files||[]).filter(function(f){return/^image\//.test(f.type)});if(!fs.length||(cd.getData('text/plain')||'').trim())return;e.preventDefault();fs.forEach(function(f){queueUpload(c.id,namePasted(f))});toast(fs.length>1?'Đang gửi '+fs.length+' ảnh':'Đang gửi ảnh')};
+ el.ondragover=function(e){if(e.dataTransfer&&[].indexOf.call(e.dataTransfer.types||[],'Files')>=0){e.preventDefault();el.classList.add('drop')}};
+ el.ondragleave=function(e){if(e.target===el||!el.contains(e.relatedTarget))el.classList.remove('drop')};
+ el.ondrop=function(e){el.classList.remove('drop');var fs=e.dataTransfer&&e.dataTransfer.files;if(!fs||!fs.length)return;e.preventDefault();[].slice.call(fs).forEach(function(f){queueUpload(c.id,f)})};
  drawMsgs(false,true);drawUploads();
  if(window.innerWidth>700)ta.focus();
 }
@@ -513,7 +525,8 @@ function drawMsgs(keepPos,toBottom){
   if(t.loai==='he_thong'){h+='<div class="sysmsg">'+esc(t.noi_dung)+' · '+fmtTime(t.luc)+'</div>';return}
   var mineM=t.nguoi_gui===me(),task=ST.viec.filter(function(v){return v.tin_id===t.id})[0];
   var body;
-  if(t.loai==='tep'){var f=ST.tep[t.tep_id]||{ten:t.noi_dung,kich_thuoc:0};body='<div class="bubble filebub"><span class="fi" aria-hidden="true">'+fileIcon(f)+'</span><span><b>'+esc(f.ten)+'</b><span class="hint">'+(f.kich_thuoc?fmtSize(f.kich_thuoc):'')+'</span><br>'+(f.link?'<a class="btn sm" href="'+esc(f.link)+'" target="_blank" rel="noopener">Mở bằng Drive</a>':'<button class="btn sm" type="button" data-dl="'+t.tep_id+'">Tải về</button>')+'</span></div>'}
+  if(t.loai==='tep'&&isImg(ST.tep[t.tep_id])){var fi=ST.tep[t.tep_id];body='<div><button type="button" class="imgbub" data-img="'+t.tep_id+'" aria-label="Xem ảnh '+esc(fi.ten)+'">'+(ST.anh[t.tep_id]?'<img src="'+ST.anh[t.tep_id]+'" alt="'+esc(fi.ten)+'">':'<span class="imgph">🖼️ Đang tải ảnh...</span>')+'</button><span class="imgcap">'+esc(fi.ten)+' · '+fmtSize(fi.kich_thuoc)+'</span></div>'}
+  else if(t.loai==='tep'){var f=ST.tep[t.tep_id]||{ten:t.noi_dung,kich_thuoc:0};body='<div class="bubble filebub"><span class="fi" aria-hidden="true">'+fileIcon(f)+'</span><span><b>'+esc(f.ten)+'</b><span class="hint">'+(f.kich_thuoc?fmtSize(f.kich_thuoc):'')+'</span><br>'+(f.link?'<a class="btn sm" href="'+esc(f.link)+'" target="_blank" rel="noopener">Mở bằng Drive</a>':'<button class="btn sm" type="button" data-dl="'+t.tep_id+'">Tải về</button>')+'</span></div>'}
   else if(t.loai==='da_xoa')body='<div class="bubble gone">'+(mineM?'Bạn đã thu hồi tin nhắn này':'Tin nhắn đã được thu hồi')+'</div>';
   else body='<div class="bubble">'+esc(t.noi_dung)+'</div>';
   var canRm=!t._tam&&t.loai!=='da_xoa'&&(mineM||ST.toi.vai_tro==='quan_tri');
@@ -527,6 +540,8 @@ function drawMsgs(keepPos,toBottom){
  var ol=el.querySelector('[data-act=older]');if(ol)ol.onclick=function(){ol.disabled=true;call('tinCu',{hoi_thoai:c.id,truoc:a[0].id}).then(function(o){(o.tep||[]).forEach(function(t){ST.tep[t.id]=t});o.tin.forEach(addMsg);if(o.het)ST.het[c.id]=true;var h0=el.scrollHeight;drawMsgs();el.scrollTop=el.scrollHeight-h0}).catch(function(e){ol.disabled=false;fail(e)})};
  el.querySelectorAll('[data-mk]').forEach(function(b){b.onclick=function(){var t=a.filter(function(x){return x.id===+b.dataset.mk})[0];dlgTask({msg:t,conv:c})}});
  el.querySelectorAll('[data-dl]').forEach(function(b){b.onclick=function(){download(+b.dataset.dl,b)}});
+ el.querySelectorAll('[data-img]').forEach(function(b){b.onclick=function(){dlgImg(+b.dataset.img)}});
+ loadImgs();
  el.querySelectorAll('[data-rm]').forEach(function(b){b.onclick=function(){var t=a.filter(function(x){return x.id===+b.dataset.rm})[0];if(t)dlgDelMsg(t,c)}});
  if(ST.tab==='chat'&&ST.open!==false&&!document.hidden)markRead();
 }
@@ -582,7 +597,7 @@ function readPart(file,a,b){return new Promise(function(res,rej){var r=new FileR
 function runUpload(u){
  u.st='đang gửi';u.t0=Date.now()-1;u.base=u.sent;drawUploads();
  var start=u.ma?call('trangThaiTep',{ma:u.ma}).then(function(o){if(o.xong)return o;u.sent=o.tiep;return null}):call('batDauGuiTep',{hoi_thoai:u.cid,ten:u.file.name,mime:u.file.type||'application/octet-stream',kich_thuoc:u.file.size}).then(function(o){u.ma=o.ma;u.phan=o.phan;return null});
- start.then(function(done){if(done)return done;return step()}).then(function(o){if(u.huy)return;u.st='xong';u.sent=u.file.size;if(o&&o.tep){ST.tep[o.tep.id]=o.tep;addMsg(o.tin)}drawUploads();if(ST.conv===u.cid)drawMsgs(false,true);drawConvs();setTimeout(function(){ST.uploads.splice(ST.uploads.indexOf(u),1);drawUploads()},1500);toast('Đã gửi '+u.file.name);nextUpload()})
+ start.then(function(done){if(done)return done;return step()}).then(function(o){if(u.huy)return;u.st='xong';u.sent=u.file.size;if(o&&o.tep){ST.tep[o.tep.id]=o.tep;if(isImg(o.tep)){ST.anh[o.tep.id]=URL.createObjectURL(u.file);ST.anhLon[o.tep.id]=u.file}addMsg(o.tin)}drawUploads();if(ST.conv===u.cid)drawMsgs(false,true);drawConvs();setTimeout(function(){ST.uploads.splice(ST.uploads.indexOf(u),1);drawUploads()},1500);toast('Đã gửi '+u.file.name);nextUpload()})
  .catch(function(e){if(u.huy)return;u.st='lỗi';drawUploads();fail(e);nextUpload()});
  function step(tries){
   tries=tries||0;if(u.huy)return Promise.resolve(null);
@@ -592,6 +607,33 @@ function runUpload(u){
  }
 }
 var dut=0;function drawUploadsThrottled(){var n=Date.now();if(n-dut>500){dut=n;drawUploads()}}
+function isImg(f){return!!f&&/^image\/(png|jpe?g|gif|webp|bmp)$/i.test(f.mime||'')&&!f.link}
+function namePasted(f){var d=new Date(),p=function(n){return('0'+n).slice(-2)},ext=(f.type.split('/')[1]||'png').replace('jpeg','jpg');var n=(!f.name||/^image\.\w+$/i.test(f.name))?'Anh-'+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+'-'+p(d.getHours())+p(d.getMinutes())+p(d.getSeconds())+'.'+ext:f.name;try{return new File([f],n,{type:f.type})}catch(x){f.name2=n;return f}}
+/* ảnh xem trước: tải lần lượt từng ảnh, giữ trong bộ nhớ trang */
+var imgQ=[],imgBusy=false;
+function loadImgs(){document.querySelectorAll('[data-img]').forEach(function(b){var id=+b.dataset.img;if(!ST.anh[id]&&!ST.anhDang[id]){ST.anhDang[id]=1;imgQ.push(id)}});if(!imgBusy)nextImg()}
+function nextImg(){var id=imgQ.pop();if(id==null){imgBusy=false;return}imgBusy=true;
+ call('anhNho',{id:id}).then(function(o){if(o.chua){ST.anhDang[id]=0;setImg(id,null);return}var blob=new Blob([b64ToBytes(o.b64)],{type:o.mime||'image/jpeg'});ST.anh[id]=URL.createObjectURL(blob);if(!o.nho)ST.anhLon[id]=blob;setImg(id,ST.anh[id])})
+ .catch(function(){ST.anhDang[id]=0;setImg(id,null)}).then(nextImg)}
+function setImg(id,url){var el=document.getElementById('msgs'),near=el&&el.scrollHeight-el.scrollTop-el.clientHeight<120;document.querySelectorAll('[data-img="'+id+'"]').forEach(function(b){var f=ST.tep[id]||{};b.innerHTML=url?'<img src="'+url+'" alt="'+esc(f.ten||'ảnh')+'">':'<span class="imgph">🖼️ Bấm để xem ảnh</span>';var im=b.querySelector('img');if(im&&near)im.onload=function(){el.scrollTop=el.scrollHeight}})}
+/* lấy nguyên tệp về máy dạng Blob, từng phần 8 MB; tệp từ 50 MB trả về link Drive */
+function getBlob(id,prog){var parts=[];function next(start){return call('taiPhanTep',{id:id,bat_dau:start}).then(function(o){if(o.link)return{link:o.link};parts.push(b64ToBytes(o.b64));if(prog)prog(Math.min(1,(o.tiep||o.tong)/o.tong));if(o.tiep!=null)return next(o.tiep);return{blob:new Blob(parts,{type:o.mime||'application/octet-stream'}),ten:o.ten}})}return next(0)}
+function saveBlob(blob,name){var url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=name||'tep';document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url)},60000)}
+function fullImg(id){if(ST.anhLon[id])return Promise.resolve(ST.anhLon[id]);return getBlob(id).then(function(r){if(r.link){window.open(r.link,'_blank','noopener');throw{msg:'Ảnh lớn, đã mở bằng Drive.'}}ST.anhLon[id]=r.blob;return r.blob})}
+function toPng(blob){if(blob.type==='image/png')return Promise.resolve(blob);return new Promise(function(ok,no){var im=new Image(),u=URL.createObjectURL(blob);im.onload=function(){var cv=document.createElement('canvas');cv.width=im.naturalWidth;cv.height=im.naturalHeight;cv.getContext('2d').drawImage(im,0,0);URL.revokeObjectURL(u);cv.toBlob(function(b){b?ok(b):no()},'image/png')};im.onerror=no;im.src=u})}
+function dlgImg(id){
+ var f=ST.tep[id]||{ten:'ảnh'};
+ openModal('<h3 style="overflow-wrap:anywhere">'+esc(f.ten)+'</h3><div class="lbimg">'+(ST.anh[id]?'<img id="lb-img" src="'+ST.anh[id]+'" alt="'+esc(f.ten)+'">':'<span class="hint" id="lb-img">Đang tải ảnh...</span>')+'</div><p class="hint" id="lb-st">'+(ST.anhLon[id]?'':'Đang tải ảnh cỡ thật...')+'</p><div class="row"><button class="btn" type="button" data-copy>📋 Chép ảnh</button><button class="btn" type="button" data-save>⬇ Tải về</button><button class="btn solid" type="button" data-x>Đóng</button></div>',function(m){
+  m.classList.add('lbx');
+  m.querySelector('[data-x]').onclick=closeModal;
+  var st=m.querySelector('#lb-st');
+  fullImg(id).then(function(b){var u=URL.createObjectURL(b),old=m.querySelector('#lb-img');if(!old)return;var im=document.createElement('img');im.id='lb-img';im.alt=f.ten;im.src=u;old.replaceWith(im);st.textContent='Bấm chuột phải vào ảnh để chép hoặc lưu, hoặc dùng nút bên dưới.'}).catch(function(e){st.textContent=(e&&e.msg)||'Chưa tải được ảnh cỡ thật, bạn thử lại nha.'});
+  m.querySelector('[data-save]').onclick=function(){var b=this;b.disabled=true;fullImg(id).then(function(bl){saveBlob(bl,f.ten);b.disabled=false}).catch(function(e){b.disabled=false;fail(e)})};
+  m.querySelector('[data-copy]').onclick=function(){var b=this;b.disabled=true;
+   if(!(navigator.clipboard&&window.ClipboardItem)){b.disabled=false;toast('Trình duyệt này chưa cho chép ảnh bằng nút. Bạn bấm chuột phải vào ảnh, chọn Sao chép hình ảnh nha.');return}
+   fullImg(id).then(toPng).then(function(png){return navigator.clipboard.write([new ClipboardItem({'image/png':png})])}).then(function(){b.disabled=false;toast('Đã chép ảnh, dán (Ctrl+V) vào đâu cũng được')}).catch(function(e){b.disabled=false;toast((e&&e.msg)||'Trình duyệt chặn chép ảnh. Bạn bấm chuột phải vào ảnh, chọn Sao chép hình ảnh nha.')})};
+ });
+}
 function download(id,btn){
  var t=ST.tep[id];btn.disabled=true;var parts=[],old=btn.textContent;
  function next(start){return call('taiPhanTep',{id:id,bat_dau:start}).then(function(o){if(o.link){window.open(o.link,'_blank','noopener');return null}parts.push(b64ToBytes(o.b64));btn.textContent=Math.floor(Math.min(1,(o.tiep||o.tong)/o.tong)*100)+'%';if(o.tiep!=null)return next(o.tiep);return o})}
