@@ -543,6 +543,34 @@ function xongTep_(s, driveId, link, me) {
   const tin = themTin_(s.h, me.ten_dn, s.ten, 'tep', tep.id);
   return { xong: true, tin: tin, tep: tepCongKhai_(tep) };
 }
+/* ảnh xem trước trong khung chat: ảnh lớn lấy bản thu nhỏ của Drive, ảnh nhỏ gửi nguyên; giữ trong chỗ nhớ tạm 6 giờ */
+API_.anhNho = function (d, me) {
+  const t = bang_('Tep').rows.filter(function (r) { return r.id === Number(d.id); })[0];
+  if (!t) loi_('Không thấy ảnh.');
+  hoiThoai_(t.hoi_thoai, me);
+  if (!/^image\//.test(t.mime)) loi_('Tệp này không phải ảnh.');
+  const c = CacheService.getScriptCache(), k = 'an:' + t.id, x = c.get(k);
+  if (x) { try { return JSON.parse(x); } catch (e) {} }
+  const tk = { Authorization: 'Bearer ' + ScriptApp.getOAuthToken() };
+  let kq = null;
+  if (t.kich_thuoc > 600 * 1024) {
+    try {
+      const m = UrlFetchApp.fetch('https://www.googleapis.com/drive/v3/files/' + t.drive_id + '?fields=thumbnailLink', { muteHttpExceptions: true, headers: tk });
+      const l = m.getResponseCode() === 200 ? JSON.parse(m.getContentText()).thumbnailLink : '';
+      if (l) {
+        const r = UrlFetchApp.fetch(String(l).replace(/=s\d+$/, '') + '=s800', { muteHttpExceptions: true, headers: tk });
+        if (r.getResponseCode() === 200) kq = { b64: Utilities.base64Encode(r.getContent()), mime: 'image/jpeg', nho: true };
+      }
+    } catch (e) {}
+  }
+  if (!kq && t.kich_thuoc <= 4 * 1024 * 1024) {
+    const r = UrlFetchApp.fetch('https://www.googleapis.com/drive/v3/files/' + t.drive_id + '?alt=media', { muteHttpExceptions: true, headers: Object.assign({ Range: 'bytes=0-' + (t.kich_thuoc - 1) }, tk) });
+    if (r.getResponseCode() === 200 || r.getResponseCode() === 206) kq = { b64: Utilities.base64Encode(r.getContent()), mime: t.mime };
+  }
+  if (!kq) return { chua: true };
+  try { const sx = JSON.stringify(kq); if (sx.length < 95000) c.put(k, sx, 21600); } catch (e) {}
+  return kq;
+};
 /* tải tệp dưới 50 MB qua app, từng phần 8 MB */
 API_.taiPhanTep = function (d, me) {
   const t = bang_('Tep').rows.filter(function (r) { return r.id === Number(d.id); })[0];
