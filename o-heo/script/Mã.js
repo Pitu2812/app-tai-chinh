@@ -39,19 +39,21 @@ const OH = {
     Phien: ['bam_token', 'ten_dn', 'het_han', 'tao_luc'],
     HoiThoai: ['id', 'loai', 'ten', 'thanh_vien', 'tao_boi', 'tao_luc', 'thu_muc_id'],
     TinNhan: ['id', 'hoi_thoai', 'nguoi_gui', 'noi_dung', 'loai', 'tep_id', 'luc'],
-    Viec: ['id', 'tieu_de', 'nguoi_giao', 'nguoi_nhan', 'hoi_thoai', 'tin_id', 'han', 'uu_tien', 'cot', 'tao_luc', 'xong_luc', 'sua_luc'],
+    Viec: ['id', 'tieu_de', 'nguoi_giao', 'nguoi_nhan', 'hoi_thoai', 'tin_id', 'han', 'uu_tien', 'cot', 'tao_luc', 'xong_luc', 'sua_luc', 'nac', 'tep_chot', 'theo_doi'],
     Tep: ['id', 'hoi_thoai', 'ten', 'mime', 'kich_thuoc', 'drive_id', 'nguoi_gui', 'luc', 'link', 'viec_id', 'ghi_chu'],
     DaDoc: ['ten_dn', 'hoi_thoai', 'tin_id', 'an_den'],
-    CaiDat: ['khoa', 'gia_tri']
+    CaiDat: ['khoa', 'gia_tri'],
+    /* thông báo trong thẻ việc: ai gửi, gửi ai, câu, giờ gửi, giờ người nhận mở thẻ việc */
+    ThongBaoViec: ['id', 'viec_id', 'nguoi_gui', 'nguoi_nhan', 'noi_dung', 'luc', 'xem_luc']
   },
-  SO: { het_han: 1, tao_luc: 1, dang_nhap_cuoi: 1, hoat_dong: 1, luc: 1, xong_luc: 1, sua_luc: 1, id: 1, tin_id: 1, han: 1, kich_thuoc: 1, an_den: 1, viec_id: 1 },
+  SO: { het_han: 1, tao_luc: 1, dang_nhap_cuoi: 1, hoat_dong: 1, luc: 1, xong_luc: 1, sua_luc: 1, id: 1, tin_id: 1, han: 1, kich_thuoc: 1, an_den: 1, viec_id: 1, nac: 1, tep_chot: 1, xem_luc: 1 },
   UU_TIEN: ['hi', 'imp', 'mid', 'lo'],
   COT_VIEC: ['todo', 'doing', 'done'],
   AVATAR: ['none', 'bow', 'hat', 'bunny', 'bee', 'scarf'],
   /* phân quyền: cột quyen trống = Đầy đủ (tài khoản cũ); phu_qt luôn bật riêng */
-  QUYEN: ['nhan_rieng', 'tao_nhom', 'sua_nhom', 'gui_tep', 'giao_viec', 'thu_hoi', 'thong_ke', 'xuat_excel', 'phu_qt'],
+  QUYEN: ['nhan_rieng', 'tao_nhom', 'sua_nhom', 'gui_tep', 'giao_viec', 'thu_hoi', 'thong_ke', 'xuat_excel', 'xem_het', 'tb_het', 'phu_qt'],
   MAU: {
-    du: ['nhan_rieng', 'tao_nhom', 'sua_nhom', 'gui_tep', 'giao_viec', 'thu_hoi', 'thong_ke', 'xuat_excel'],
+    du: ['nhan_rieng', 'tao_nhom', 'sua_nhom', 'gui_tep', 'giao_viec', 'thu_hoi', 'thong_ke', 'xuat_excel', 'xem_het', 'tb_het'],
     co_ban: ['nhan_rieng', 'gui_tep', 'giao_viec', 'thu_hoi', 'thong_ke'],
     chi_nhan: ['nhan_rieng', 'gui_tep', 'thu_hoi']
   },
@@ -268,7 +270,7 @@ API_.capTaiKhoan = function (d, me) {
   danhDau_('v_nguoi');
   return { ten_dn: ten, mat_khau_tam: mk };
 };
-API_.capTaiKhoan.quanTri = true; API_.capTaiKhoan.phuQt = true;
+API_.capTaiKhoan.quanTri = true;
 API_.datLaiMatKhau = function (d, me) {
   const mk = matKhauTam_();
   khoa_(function () {
@@ -280,7 +282,7 @@ API_.datLaiMatKhau = function (d, me) {
   });
   return { ten_dn: d.ten_dn, mat_khau_tam: mk };
 };
-API_.datLaiMatKhau.quanTri = true; API_.datLaiMatKhau.phuQt = true;
+API_.datLaiMatKhau.quanTri = true;
 API_.khoaTaiKhoan = function (d, me) {
   if (d.ten_dn === me.ten_dn) loi_('Không tự khóa tài khoản của mình được.');
   khoa_(function () {
@@ -343,6 +345,7 @@ API_.baoTri.quanTri = true;
 /* ---------- đồng bộ: trang gọi mỗi vài giây ---------- */
 API_.dongBo = function (d, me) {
   ghiHoatDong_(me);
+  nangCapV8_();
   const v = phienBan_(), kq = { v: v, online: hoatDong_(), bay_gio: Date.now() };
   const can = d.v || {};
   const dau = !d.v;
@@ -367,9 +370,12 @@ API_.dongBo = function (d, me) {
   }
   if (dau || can.v_viec !== v.v_viec) {
     const ids2 = {}; (ht || hoiThoaiCua_(me.ten_dn)).forEach(function (h) { ids2[h.id] = 1; });
-    kq.viec = bang_('Viec').rows.filter(function (t) { return t.nguoi_nhan === me.ten_dn || t.nguoi_giao === me.ten_dn || (t.hoi_thoai && ids2[t.hoi_thoai] && t.hoi_thoai.indexOf('g') === 0); });
+    // quyền Thông báo tất cả các việc cũng cần cả danh sách việc cho tab Thông báo (Bảng việc vẫn lọc ở trang)
+    const het = xemHet_(me) || coQuyen_(me, 'tb_het');
+    kq.viec = bang_('Viec').rows.filter(function (t) { return het || t.nguoi_nhan === me.ten_dn || t.nguoi_giao === me.ten_dn || theoDoi_(t, me.ten_dn) || (t.hoi_thoai && ids2[t.hoi_thoai] && t.hoi_thoai.indexOf('g') === 0); });
     const vIds = {}; kq.viec.forEach(function (t) { vIds[t.id] = 1; });
     kq.sp = bang_('Tep').rows.filter(function (t) { return t.viec_id && vIds[t.viec_id]; }).map(tepCongKhai_);
+    kq.tbv = bangTBV_().rows.filter(function (r) { return vIds[r.viec_id] || r.nguoi_nhan === me.ten_dn; }).map(function (r) { return { id: r.id, viec_id: r.viec_id, nguoi_gui: r.nguoi_gui, nguoi_nhan: r.nguoi_nhan, noi_dung: r.noi_dung, luc: r.luc, xem_luc: r.xem_luc }; });
   }
   bienNhan_(d, me, v, kq, ht);
   return kq;
@@ -480,7 +486,7 @@ API_.xoaTin = function (d, me) {
     if (t.loai === 'tep' && t.tep_id !== '') {
       const f = bang_('Tep').rows.filter(function (x) { return x.id === Number(t.tep_id); })[0];
       if (f && f.drive_id) { try { DriveApp.getFileById(f.drive_id).setTrashed(true); } catch (e) {} }
-      if (f && f.viec_id) { const TT = bang_('Tep'); f.viec_id = ''; ghiDong_(TT, f); goSp = true; }
+      if (f && f.viec_id) { boSpKhoiViec_(f); goSp = true; }
     }
     t.loai = 'da_xoa'; t.noi_dung = ''; t.tep_id = '';
     ghiDong_(T, t);
@@ -549,11 +555,16 @@ API_.giaoViec = function (d, me) {
   if (nhan === me.ten_dn && d.giao_boi && h && h.thanh_vien.split(',').indexOf(d.giao_boi) >= 0) giao = d.giao_boi;
   let v;
   khoa_(function () {
-    v = { id: soMoi_('viec'), tieu_de: tieuDe, nguoi_giao: giao, nguoi_nhan: nhan, hoi_thoai: h ? h.id : '', tin_id: Number(d.tin_id || 0) || '', han: han, uu_tien: uu, cot: 'todo', tao_luc: Date.now(), xong_luc: '', sua_luc: Date.now() };
+    v = { id: soMoi_('viec'), tieu_de: tieuDe, nguoi_giao: giao, nguoi_nhan: nhan, hoi_thoai: h ? h.id : '', tin_id: Number(d.tin_id || 0) || '', han: han, uu_tien: uu, cot: 'todo', tao_luc: Date.now(), xong_luc: '', sua_luc: Date.now(), nac: 1, tep_chot: '', theo_doi: '' };
     them_('Viec', v);
   });
   danhDau_('v_viec');
-  if (h) tinHeThong_(h.id, me.ten_dn, nhan === me.ten_dn ? ten_(me) + ' nhận việc: ' + tieuDe : ten_(me) + ' giao cho ' + tenCua_(nhan) + ': ' + tieuDe, v.id);
+  // giao ở Bảng việc (chưa có khung chat): dùng khung nhắn riêng với người nhận để tin giao việc hiện ở đó
+  if (!h && nhan !== me.ten_dn) {
+    h = hoiThoaiViec_(v, me);
+    khoa_(function () { damBaoCot_('Viec', 'nac'); const V = bang_('Viec'), x = V.rows.filter(function (r) { return r.id === v.id; })[0]; x.hoi_thoai = h.id; x.nac = 1; ghiDong_(V, x); v = x; });
+  }
+  if (h) tinHeThong_(h.id, me.ten_dn, nhan === me.ten_dn ? ten_(me) + ' nhận việc: ' + tieuDe : ten_(me) + ' giao việc cho ' + tenCua_(nhan) + ' thực hiện: ' + tieuDe, v.id);
   return { viec: v };
 };
 API_.suaViec = function (d, me) {
@@ -563,7 +574,14 @@ API_.suaViec = function (d, me) {
     if (!v) loi_('Không thấy việc này.');
     const duocSua = v.nguoi_nhan === me.ten_dn || v.nguoi_giao === me.ten_dn || me.vai_tro === 'quan_tri';
     if (!duocSua) loi_('Bạn không sửa được việc này.');
-    if (d.cot && OH.COT_VIEC.indexOf(d.cot) >= 0 && d.cot !== v.cot) { v.cot = d.cot; v.xong_luc = d.cot === 'done' ? Date.now() : ''; }
+    if (d.cot && OH.COT_VIEC.indexOf(d.cot) >= 0 && d.cot !== v.cot) {
+      if ((d.cot === 'done' || v.cot === 'done') && !chotDuoc_(v, me)) loi_('Chỉ người giao việc hoặc quản trị chuyển việc sang Xong. Bạn bấm “Báo đã xong” để người giao chốt nha.');
+      damBaoCot_('Viec', 'nac'); damBaoCot_('Viec', 'tep_chot');
+      const sp = spCua_(v.id);
+      v.cot = d.cot; v.xong_luc = d.cot === 'done' ? Date.now() : '';
+      if (d.cot === 'done') { if (sp.length && !v.tep_chot) v.tep_chot = sp[sp.length - 1].id; v.nac = 4; }
+      else { v.tep_chot = ''; v.nac = sp.length ? 2 : 1; }
+    }
     if (d.tieu_de !== undefined && String(d.tieu_de).trim()) v.tieu_de = String(d.tieu_de).trim().slice(0, 500);
     if (d.han !== undefined) v.han = /^\d{8}$/.test(String(d.han)) ? Number(d.han) : '';
     if (d.uu_tien && OH.UU_TIEN.indexOf(d.uu_tien) >= 0) v.uu_tien = d.uu_tien;
@@ -596,30 +614,225 @@ function hoiThoaiViec_(v, me) {
   if (v.hoi_thoai) { const h = bangNhanh_('HoiThoai').filter(function (r) { return r.id === v.hoi_thoai && r.loai !== 'nhom_da_xoa'; })[0]; if (h) return h; }
   if (v.nguoi_giao === v.nguoi_nhan) return null;
   const tv = [v.nguoi_giao, v.nguoi_nhan].sort(), id = 'd:' + tv.join(':');
-  let h = bangNhanh_('HoiThoai').filter(function (r) { return r.id === id; })[0];
+  let moi = false, h = bangNhanh_('HoiThoai').filter(function (r) { return r.id === id; })[0];
   if (!h) {
     khoa_(function () {
       h = bang_('HoiThoai').rows.filter(function (r) { return r.id === id; })[0];
-      if (!h) h = them_('HoiThoai', { id: id, loai: 'rieng', ten: '', thanh_vien: tv.join(','), tao_boi: me.ten_dn, tao_luc: Date.now(), thu_muc_id: '' });
+      if (!h) { h = them_('HoiThoai', { id: id, loai: 'rieng', ten: '', thanh_vien: tv.join(','), tao_boi: me.ten_dn, tao_luc: Date.now(), thu_muc_id: '' }); moi = true; }
     });
+    if (moi) danhDau_('v_ht');
   }
   return h;
 }
 function xemTep_(t, me) {
   if (t.viec_id) {
     const v = bang_('Viec').rows.filter(function (r) { return r.id === t.viec_id; })[0];
-    if (v && (v.nguoi_nhan === me.ten_dn || v.nguoi_giao === me.ten_dn || me.vai_tro === 'quan_tri')) return;
+    if (v && thayViec_(v, me)) return;
   }
   hoiThoai_(t.hoi_thoai, me);
 }
-/* gỡ sản phẩm nộp nhầm: tệp vẫn ở khung chat, chỉ bỏ khỏi danh sách sản phẩm */
+/* bỏ tệp khỏi danh sách sản phẩm; tệp đang là bản chốt thì bỏ chốt; hết sản phẩm thì về nấc 1 */
+function boSpKhoiViec_(f) {
+  const vid = f.viec_id; f.viec_id = ''; ghiDong_(bang_('Tep'), f);
+  const V = bang_('Viec'), v = V.rows.filter(function (r) { return r.id === vid; })[0];
+  if (!v) return;
+  let doi = false;
+  if (v.tep_chot === f.id) { v.tep_chot = ''; doi = true; }
+  if (v.cot !== 'done' && !spCua_(vid).length && v.nac !== 1) { v.nac = 1; doi = true; }
+  if (doi) ghiDong_(V, v);
+}
+/* xóa sản phẩm nộp nhầm khỏi danh sách sản phẩm: tệp vẫn ở khung chat */
 API_.goSanPham = function (d, me) {
   khoa_(function () {
     const T = bang_('Tep'), t = T.rows.filter(function (r) { return r.id === Number(d.id); })[0];
-    if (!t || !t.viec_id) loi_('Sản phẩm này đã được gỡ rồi.');
-    if (t.nguoi_gui !== me.ten_dn && me.vai_tro !== 'quan_tri') loi_('Chỉ người nộp hoặc quản trị gỡ được.');
-    t.viec_id = ''; ghiDong_(T, t);
+    if (!t || !t.viec_id) loi_('Sản phẩm này đã được xóa rồi.');
+    if (t.nguoi_gui !== me.ten_dn && me.vai_tro !== 'quan_tri') loi_('Chỉ người nộp hoặc quản trị xóa được.');
+    boSpKhoiViec_(t);
   });
+  danhDau_('v_viec');
+  return {};
+};
+
+/* ---------- vòng 8: xem hết việc, thông báo trong thẻ việc, trao đổi, chốt ---------- */
+function xemHet_(me) { return me.vai_tro === 'quan_tri' || coQuyen_(me, 'xem_het'); }
+function benViec_(v, u) { return v.nguoi_giao === u || v.nguoi_nhan === u; }
+function theoDoi_(v, u) { return !!v.theo_doi && String(v.theo_doi).split(',').indexOf(u) >= 0; }
+function trongNhom_(v, u) {
+  if (!v.hoi_thoai || String(v.hoi_thoai).indexOf('g') !== 0) return false;
+  const h = bangNhanh_('HoiThoai').filter(function (r) { return r.id === v.hoi_thoai; })[0];
+  return !!h && h.loai !== 'nhom_da_xoa' && h.thanh_vien.split(',').indexOf(u) >= 0;
+}
+/* ai thấy được việc: người giao, người nhận, người được nhắc tới, nhóm của việc, quản trị, người có quyền xem tất cả */
+function thayViec_(v, me) { return benViec_(v, me.ten_dn) || xemHet_(me) || theoDoi_(v, me.ten_dn) || trongNhom_(v, me.ten_dn); }
+/* chốt, hoàn thành, mở lại: người giao việc hoặc quản trị (việc tự ghi thì chính người đó) */
+function chotDuoc_(v, me) { return me.vai_tro === 'quan_tri' || v.nguoi_giao === me.ten_dn; }
+/* người xét sản phẩm (người giao hoặc quản trị, không phải người làm) */
+function nguoiXet_(v, me) { return me.ten_dn !== v.nguoi_nhan && chotDuoc_(v, me); }
+function spCua_(vid) { return bang_('Tep').rows.filter(function (r) { return r.viec_id === Number(vid); }).sort(function (a, b) { return a.luc - b.luc || a.id - b.id; }); }
+function viec_(id) { const v = bang_('Viec').rows.filter(function (r) { return r.id === Number(id); })[0]; if (!v) loi_('Không thấy việc này.'); return v; }
+/* khung chat của việc; việc chưa ghi khung chat thì ghi vào */
+function khungViec_(v, me) {
+  const h = hoiThoaiViec_(v, me);
+  if (h && v.hoi_thoai !== h.id) khoa_(function () { const V = bang_('Viec'), x = V.rows.filter(function (r) { return r.id === v.id; })[0]; if (x && !x.hoi_thoai) { x.hoi_thoai = h.id; ghiDong_(V, x); } });
+  return h;
+}
+function taoBangTBV_() {
+  const ss = ss_();
+  if (ss.getSheetByName('ThongBaoViec')) return;
+  const sh = ss.insertSheet('ThongBaoViec');
+  sh.getRange(1, 1, sh.getMaxRows(), sh.getMaxColumns()).setNumberFormat('@');
+  sh.getRange(1, 1, 1, OH.COT.ThongBaoViec.length).setValues([OH.COT.ThongBaoViec]).setFontWeight('bold');
+  sh.setFrozenRows(1);
+}
+function bangTBV_() { nangCapV8_(); return bang_('ThongBaoViec'); }
+function themTBV_(v, gui, nhan, nd) { return them_('ThongBaoViec', { id: soMoi_('tbv'), viec_id: v.id, nguoi_gui: gui, nguoi_nhan: nhan, noi_dung: nd, luc: Date.now(), xem_luc: '' }); }
+/* nâng cấp một lần khi có bản vòng 8: tạo sheet ThongBaoViec, cột mới, quyền mới cho tài khoản Đầy đủ, tin giao việc cho việc giao ở Bảng việc */
+function nangCapV8_() {
+  const P = PropertiesService.getScriptProperties();
+  if (P.getProperty('MIG_V8')) return;
+  let bu = [];
+  khoa_(function () {
+    if (P.getProperty('MIG_V8')) return;
+    taoBangTBV_();
+    ['nac', 'tep_chot', 'theo_doi'].forEach(function (c) { damBaoCot_('Viec', c); });
+    cotQuyen_();
+    const cu = ['nhan_rieng', 'tao_nhom', 'sua_nhom', 'gui_tep', 'giao_viec', 'thu_hoi', 'thong_ke', 'xuat_excel'], N = bang_('NguoiDung');
+    N.rows.forEach(function (u) {
+      if (u.vai_tro === 'quan_tri' || !u.quyen || u.quyen === 'khong') return;
+      const q = String(u.quyen).split(',');
+      if (!cu.every(function (k) { return q.indexOf(k) >= 0; })) return;
+      let doi = false;
+      ['xem_het', 'tb_het'].forEach(function (k) { if (q.indexOf(k) < 0) { q.splice(q.indexOf('phu_qt') >= 0 ? q.indexOf('phu_qt') : q.length, 0, k); doi = true; } });
+      if (doi) { u.quyen = q.join(','); ghiDong_(N, u); }
+    });
+    const daCo = {};
+    bang_('TinNhan').rows.forEach(function (t) { if (String(t.tep_id).charAt(0) === 'v') daCo[String(t.tep_id).slice(1)] = 1; });
+    bu = bang_('Viec').rows.filter(function (v) { return v.cot !== 'done' && !v.hoi_thoai && v.nguoi_giao !== v.nguoi_nhan && !daCo[v.id]; })
+      .map(function (v) { return { id: v.id, tieu_de: v.tieu_de, nguoi_giao: v.nguoi_giao, nguoi_nhan: v.nguoi_nhan, hoi_thoai: '' }; });
+    P.setProperty('MIG_V8', String(Date.now()));
+  });
+  bu.forEach(function (v) {
+    try {
+      const h = khungViec_(v, { ten_dn: v.nguoi_giao });
+      if (h) tinHeThong_(h.id, v.nguoi_giao, tenCua_(v.nguoi_giao) + ' giao việc cho ' + tenCua_(v.nguoi_nhan) + ' thực hiện: ' + v.tieu_de, v.id);
+    } catch (e) {}
+  });
+  danhDau_('v_viec'); danhDau_('v_nguoi');
+}
+/* 🔔 thông báo trong thẻ việc: người giao, người nhận, quản trị gửi cho nhiều người */
+API_.thongBaoViec = function (d, me) {
+  nangCapV8_();
+  const nd = String(d.noi_dung || '').trim().slice(0, 300);
+  if (!nd) loi_('Bạn chọn hoặc ghi câu thông báo nha.');
+  const dang = {}; nguoi_().forEach(function (u) { if (u.trang_thai === 'dang_dung') dang[u.ten_dn] = 1; });
+  const den = (Array.isArray(d.den) ? d.den : []).map(String).filter(function (x, i, a) { return dang[x] && x !== me.ten_dn && a.indexOf(x) === i; }).slice(0, 30);
+  if (!den.length) loi_('Bạn chọn người nhận thông báo nha.');
+  let v;
+  khoa_(function () {
+    const V = bang_('Viec'); v = V.rows.filter(function (r) { return r.id === Number(d.viec_id); })[0];
+    if (!v) loi_('Không thấy việc này.');
+    if (!benViec_(v, me.ten_dn) && me.vai_tro !== 'quan_tri') loi_('Chỉ người giao, người nhận việc hoặc quản trị gửi được thông báo.');
+    den.forEach(function (x) { themTBV_(v, me.ten_dn, x, nd); });
+    const td = v.theo_doi ? String(v.theo_doi).split(',') : [];
+    den.forEach(function (x) { if (!benViec_(v, x) && td.indexOf(x) < 0) td.push(x); });
+    v.theo_doi = td.join(',');
+    if (v.cot !== 'done' && nguoiXet_(v, me) && /sửa|ý kiến/i.test(nd) && spCua_(v.id).length) v.nac = 3;
+    ghiDong_(V, v);
+  });
+  const h = khungViec_(v, me);
+  if (h) tinHeThong_(h.id, me.ten_dn, '🔔 ' + ten_(me) + ' thông báo cho ' + den.map(tenCua_).join(', ') + ': ' + nd, v.id);
+  danhDau_('v_viec');
+  return { viec: v };
+};
+/* người nhận thông báo mở thẻ việc: ghi đã xem */
+API_.xemViecTB = function (d, me) {
+  nangCapV8_();
+  let n = 0;
+  khoa_(function () {
+    const T = bang_('ThongBaoViec');
+    T.rows.forEach(function (r) { if (r.viec_id === Number(d.viec_id) && r.nguoi_nhan === me.ten_dn && !r.xem_luc) { r.xem_luc = Date.now(); ghiDong_(T, r); n++; } });
+  });
+  if (n) danhDau_('v_viec');
+  return { so: n };
+};
+/* tin trao đổi của một việc (cả người được nhắc tới, người xem tất cả không ở trong khung chat) */
+API_.tinViec = function (d, me) {
+  const v = viec_(d.viec_id);
+  if (!thayViec_(v, me)) loi_('Bạn không xem được việc này.');
+  const k = 'v' + v.id;
+  const tin = v.hoi_thoai ? bang_('TinNhan').rows.filter(function (t) { return t.hoi_thoai === v.hoi_thoai && t.tep_id === k; }).map(function (t) { const o = Object.assign({}, t); delete o._r; return chuanTin_(o); }) : [];
+  return { tin: tin.slice(-300) };
+};
+API_.guiTinViec = function (d, me) {
+  const nd = String(d.noi_dung || '').trim();
+  if (!nd) loi_('Tin nhắn trống.');
+  if (nd.length > 5000) loi_('Tin trao đổi dài quá 5.000 ký tự.');
+  let v = viec_(d.viec_id);
+  if (!thayViec_(v, me)) loi_('Bạn không xem được việc này.');
+  const h = khungViec_(v, me);
+  if (!h) loi_('Việc tự ghi cho mình chưa có khung trao đổi.');
+  const tin = themTin_(h.id, me.ten_dn, nd, 'chu', 'v' + v.id);
+  if (v.cot !== 'done' && nguoiXet_(v, me)) khoa_(function () {
+    const V = bang_('Viec'); v = V.rows.filter(function (r) { return r.id === Number(d.viec_id); })[0];
+    if (v && v.cot !== 'done' && Number(v.nac || 0) !== 3 && spCua_(v.id).length) { damBaoCot_('Viec', 'nac'); v.nac = 3; ghiDong_(V, v); danhDau_('v_viec'); }
+  });
+  return { tin: tin };
+};
+/* ✔ chốt bản này: việc sang Xong, chỉ giữ tệp chốt */
+API_.chotTep = function (d, me) {
+  nangCapV8_();
+  let v, t, lan = 0;
+  khoa_(function () {
+    t = bang_('Tep').rows.filter(function (r) { return r.id === Number(d.tep_id); })[0];
+    if (!t || !t.viec_id) loi_('Không thấy sản phẩm này.');
+    const V = bang_('Viec'); v = V.rows.filter(function (r) { return r.id === t.viec_id; })[0];
+    if (!v) loi_('Không thấy việc này.');
+    if (!chotDuoc_(v, me)) loi_('Chỉ người giao việc hoặc quản trị chốt được. Bạn bấm “Báo đã xong” để người giao chốt nha.');
+    lan = spCua_(v.id).map(function (r) { return r.id; }).indexOf(t.id) + 1;
+    v.tep_chot = t.id; v.cot = 'done'; v.xong_luc = Date.now(); v.nac = 4; v.sua_luc = Date.now();
+    ghiDong_(V, v);
+    if (t.nguoi_gui !== me.ten_dn) themTBV_(v, me.ten_dn, t.nguoi_gui, 'đã chốt lần ' + lan + ': ' + t.ten);
+  });
+  const h = khungViec_(v, me);
+  if (h) tinHeThong_(h.id, me.ten_dn, '✔ ' + ten_(me) + ' đã chốt lần ' + lan + ': ' + t.ten, v.id);
+  danhDau_('v_viec');
+  return { viec: v, lan: lan };
+};
+/* mở lại việc đã chốt (hoặc hoàn tác ngay sau khi bấm Hoàn thành) */
+API_.boChot = function (d, me) {
+  nangCapV8_();
+  let v, cu = '';
+  khoa_(function () {
+    const V = bang_('Viec'); v = V.rows.filter(function (r) { return r.id === Number(d.viec_id); })[0];
+    if (!v) loi_('Không thấy việc này.');
+    if (!chotDuoc_(v, me)) loi_('Chỉ người giao việc hoặc quản trị mở lại được.');
+    if (v.cot !== 'done') return;
+    cu = v.tep_chot;
+    const sp = spCua_(v.id).length;
+    v.cot = 'doing'; v.xong_luc = ''; v.tep_chot = ''; v.nac = !sp ? 1 : d.hoan_tac ? 2 : 3; v.sua_luc = Date.now();
+    ghiDong_(V, v);
+    if (d.hoan_tac && cu) {
+      const T = bang_('ThongBaoViec'), bo = T.rows.filter(function (r) { return r.viec_id === v.id && r.nguoi_gui === me.ten_dn && /^đã chốt lần/.test(r.noi_dung) && !r.xem_luc; });
+      if (bo.length) xoaDong_(T, bo.slice(-1));
+    }
+  });
+  const h = khungViec_(v, me);
+  if (h) tinHeThong_(h.id, me.ten_dn, ten_(me) + (d.hoan_tac ? ' hoàn tác chốt' : ' mở lại việc') + ': ' + v.tieu_de, v.id);
+  danhDau_('v_viec');
+  return { viec: v };
+};
+/* 📣 người nhận báo đã xong: nhắc người giao kiểm tra và chốt */
+API_.baoXong = function (d, me) {
+  nangCapV8_();
+  let v;
+  khoa_(function () {
+    v = viec_(d.viec_id);
+    if (v.nguoi_nhan !== me.ten_dn) loi_('Chỉ người nhận việc báo đã xong.');
+    if (v.nguoi_giao === me.ten_dn) loi_('Việc tự ghi thì bạn bấm Hoàn thành luôn nha.');
+    themTBV_(v, me.ten_dn, v.nguoi_giao, 'báo đã xong, đề nghị bạn kiểm tra và chốt');
+  });
+  const h = khungViec_(v, me);
+  if (h) tinHeThong_(h.id, me.ten_dn, '📣 ' + ten_(me) + ' báo đã xong, đề nghị ' + tenCua_(v.nguoi_giao) + ' kiểm tra và chốt: ' + v.tieu_de, v.id);
   danhDau_('v_viec');
   return {};
 };
@@ -719,13 +932,18 @@ function xongTep_(s, driveId, link, me) {
   const tin = s.h ? themTin_(s.h, me.ten_dn, s.ten, 'tep', tep.id) : null;
   const kq = { xong: true, tin: tin, tep: tepCongKhai_(tep) };
   if (s.v) {
-    let v, lan = 0;
+    let v, lan = 0, chuyen = false;
     khoa_(function () {
       lan = bang_('Tep').rows.filter(function (r) { return r.viec_id === s.v; }).length;
       const V = bang_('Viec'); v = V.rows.filter(function (r) { return r.id === s.v; })[0];
-      if (v && s.xong && v.cot !== 'done') { v.cot = 'done'; v.xong_luc = Date.now(); v.sua_luc = Date.now(); ghiDong_(V, v); }
+      if (v) {
+        damBaoCot_('Viec', 'nac');
+        if (v.cot === 'todo') { v.cot = 'doing'; chuyen = true; }
+        if (v.cot !== 'done') v.nac = 2;
+        v.sua_luc = Date.now(); ghiDong_(V, v);
+      }
     });
-    if (v && s.h) kq.he_thong = tinHeThong_(s.h, me.ten_dn, ten_(me) + ' nộp sản phẩm lần ' + lan + ' cho việc: ' + v.tieu_de + (s.gc ? ' · ' + s.gc : '') + (s.xong ? ' · đã chuyển sang Xong' : ''), v.id);
+    if (v && s.h) kq.he_thong = tinHeThong_(s.h, me.ten_dn, ten_(me) + ' nộp sản phẩm lần ' + lan + ' cho việc: ' + v.tieu_de + (s.gc ? ' · ' + s.gc : '') + (chuyen ? ' · việc sang Đang làm' : ''), v.id);
     kq.lan = lan; kq.viec = v || null;
     danhDau_('v_viec');
   }
@@ -774,7 +992,7 @@ API_.taiPhanTep = function (d, me) {
 /* ---------- xuất Excel thống kê việc ---------- */
 API_.xuatThongKe = function (d, me) {
   canQuyen_(me, 'xuat_excel', 'xuất Excel thống kê');
-  const rows = bang_('Viec').rows.filter(function (t) { return me.vai_tro === 'quan_tri' || t.nguoi_nhan === me.ten_dn || t.nguoi_giao === me.ten_dn; });
+  const rows = bang_('Viec').rows.filter(function (t) { return xemHet_(me) || t.nguoi_nhan === me.ten_dn || t.nguoi_giao === me.ten_dn; });
   const now = new Date(), thang = Utilities.formatDate(now, 'Asia/Ho_Chi_Minh', 'MM-yyyy');
   const ss = SpreadsheetApp.create('Thong-ke-viec-' + thang + '-' + me.ten_dn);
   const sh = ss.getSheets()[0].setName('Việc');
