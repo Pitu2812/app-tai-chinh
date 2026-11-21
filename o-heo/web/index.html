@@ -313,6 +313,10 @@ body.dangkeo{cursor:grabbing;user-select:none}body.dangkeo *{cursor:grabbing!imp
 .tbtg{display:inline-flex;gap:6px;align-items:center}.tbtg select{width:auto;padding:4px 8px;font-size:13px}
 .tglist{display:flex;flex-direction:column;gap:4px;margin:6px 0}
 .tgopt{display:flex;gap:8px;align-items:center;flex-wrap:wrap;width:100%;text-align:left;font:inherit;color:inherit;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:7px 10px;cursor:pointer}
+.gtag{flex:none;max-width:38%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media (max-width:560px){.gtag .gtx,.gtag.ro{display:none}}
+.tgc{padding:0 8px;font-size:13px;line-height:1.4;vertical-align:middle}
+.tgnew{display:flex;gap:8px;align-items:flex-start;background:var(--soft);border-radius:12px;padding:8px 10px;font-size:14px;margin-top:6px}.tgnew input{margin-top:4px;accent-color:var(--pink-deep)}
 .tgopt[aria-pressed=true]{border-color:var(--pink-deep);background:var(--pink-soft)}.tgck{width:14px;font-weight:700;color:var(--pink-deep)}
 .tgrows{display:flex;flex-direction:column;gap:8px;margin:8px 0}
 .tgrow{display:grid;grid-template-columns:40px minmax(0,1fr) minmax(0,1.2fr) auto;gap:6px;align-items:center}
@@ -646,11 +650,12 @@ function drawThread(){
  var el=document.getElementById('thread');if(!el)return;
   var c=curConv();el.dataset.conv=c?c.id:'';
  if(!c){el.innerHTML='<div class="empty" style="margin:auto">'+pig('sleep',80)+'<p>Chọn một cuộc trò chuyện bên trái nha.</p></div>';return}
- el.innerHTML='<div class="thread-h"><button class="icon-btn back" type="button" data-act="back" aria-label="Quay lại danh sách">‹</button>'+avConv(c,30,true)+'<span style="min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.25">'+esc(convName(c))+(c.loai==='nhom'?' <span class="hint">· '+c.thanh_vien.length+' người</span><br><span class="seen" data-gseen>'+groupSeen(c)+'</span>':'<br>'+seenSpan(other(c)))+'</span>'+'<button class="btn sm" type="button" data-act="opts" aria-label="Tùy chọn: sửa, xóa cuộc trò chuyện">⋯ Tùy chọn</button></div>'
+ el.innerHTML='<div class="thread-h"><button class="icon-btn back" type="button" data-act="back" aria-label="Quay lại danh sách">‹</button>'+avConv(c,30,true)+'<span style="min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.25">'+esc(convName(c))+(c.loai==='nhom'?' <span class="hint">· '+c.thanh_vien.length+' người</span><br><span class="seen" data-gseen>'+groupSeen(c)+'</span>':'<br>'+seenSpan(other(c)))+'</span>'+(c.loai==='nhom'?gTagBtn(c):'')+'<button class="btn sm" type="button" data-act="opts" aria-label="Tùy chọn: sửa, xóa cuộc trò chuyện">⋯ Tùy chọn</button></div>'
  +'<div class="msgs" id="msgs" aria-live="polite"></div><div id="upl"></div>'
  +'<form class="compose" id="cmp-f">'+(can('gui_tep')?'<label class="icon-btn" title="Gửi tệp (dưới 1 GB)" style="cursor:pointer"><input type="file" id="cmp-file" hidden multiple><span aria-hidden="true">📎</span><span style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Gửi tệp</span></label>':'')+'<textarea id="cmp" rows="1" placeholder="Nhắn tin..." aria-label="Nội dung tin nhắn"></textarea><button class="btn solid" type="submit">Gửi</button></form>';
  el.querySelector('[data-act=back]').onclick=function(){ST.open=false;document.getElementById('chat').classList.remove('open');drawConvs();refreshBadges()};
  el.querySelector('[data-act=opts]').onclick=function(){dlgConvOpts(c)};
+ var gtb=el.querySelector('[data-act=gtag]');if(gtb)gtb.onclick=function(){dlgGroupTag(c)};
  var f=document.getElementById('cmp-f'),ta=document.getElementById('cmp');
  ta.value=ST.draft||'';ST.draft='';
  ta.oninput=function(){ta.style.height='auto';ta.style.height=Math.min(140,ta.scrollHeight)+'px';if(ta.value.trim()){var n=Date.now();if(ST.goConv!==c.id||n-ST.goAt>3500){ST.goConv=c.id;ST.goAt=n;call('dangGo',{hoi_thoai:c.id}).catch(function(){})}}};
@@ -678,7 +683,7 @@ function drawMsgs(keepPos,toBottom){
  a.forEach(function(t){
   var d=ymd(new Date(t.luc));if(d!==lastDay){lastDay=d;var dd=new Date(t.luc);h+='<div class="daygap">'+(d===todayN()?'Hôm nay':dd.getDate()+'/'+(dd.getMonth()+1)+'/'+dd.getFullYear())+'</div>'}
   var tv=t.viec_id?findTask(t.viec_id):null;
-  if(t.loai==='he_thong'){h+='<div class="sysmsg">'+esc(t.noi_dung)+' · '+fmtTime(t.luc)+(tv?' · <button type="button" class="lnk" data-gotask="'+tv.id+'">Mở việc</button>':'')+'</div>';return}
+  if(t.loai==='he_thong'){h+='<div class="sysmsg">'+esc(t.noi_dung)+' · '+fmtTime(t.luc)+(tv?' · <button type="button" class="lnk" data-gotask="'+tv.id+'">Mở việc</button>'+tagInChat(tv):'')+'</div>';return}
   var mineM=t.nguoi_gui===me(),task=ST.viec.filter(function(v){return v.tin_id===t.id})[0];
   var body;
   if(t.loai==='tep'&&isImg(ST.tep[t.tep_id])){var fi=ST.tep[t.tep_id];body='<div><button type="button" class="imgbub" data-img="'+t.tep_id+'" aria-label="Xem ảnh '+esc(fi.ten)+'">'+(ST.anh[t.tep_id]?'<img src="'+ST.anh[t.tep_id]+'" alt="'+esc(fi.ten)+'">':'<span class="imgph">🖼️ Đang tải ảnh...</span>')+'</button><span class="imgcap">'+esc(fi.ten)+' · '+fmtSize(fi.kich_thuoc)+'</span></div>'}
@@ -687,7 +692,7 @@ function drawMsgs(keepPos,toBottom){
   else body='<div class="bubble">'+esc(t.noi_dung)+(tv?'<br><button type="button" class="lnk" data-gotask="'+tv.id+'" title="Tin trao đổi của việc này">📌 '+esc(tv.tieu_de.length>40?tv.tieu_de.slice(0,40)+'…':tv.tieu_de)+'</button>':'')+'</div>';
   var canRm=!t._tam&&t.loai!=='da_xoa'&&((mineM&&can('thu_hoi'))||isQT());
   h+='<div class="msg'+(mineM?' me':'')+'"><span class="who">'+(mineM?'':av(t.nguoi_gui,22)+esc(nameOf(t.nguoi_gui))+' · ')+fmtTime(t.luc)+(t._tam?' · đang gửi':'')+'</span>'+body
-  +'<div class="act">'+(task?'<span class="hint" style="color:var(--ok);font-weight:600">✓ đã giao việc'+(task.nguoi_nhan!==me()?' cho '+esc(nameOf(task.nguoi_nhan)):'')+'</span>':t._tam||t.loai==='da_xoa'?'':'<button type="button" class="btn sm ghost" data-mk="'+t.id+'">'+(can('giao_viec')?'+ Giao việc':'+ Nhận việc')+'</button>')+(canRm?'<button type="button" class="btn sm ghost" data-rm="'+t.id+'" aria-label="Xóa tin nhắn này">🗑 Xóa</button>':'')+'</div>'+(t===myLast?'<div class="rcpt" id="rcpt" data-tin="'+t.id+'" aria-live="polite"></div>':'')+'</div>';
+  +'<div class="act">'+(task?'<span class="hint" style="color:var(--ok);font-weight:600">✓ đã giao việc'+(task.nguoi_nhan!==me()?' cho '+esc(nameOf(task.nguoi_nhan)):'')+'</span>'+tagInChat(task):t._tam||t.loai==='da_xoa'?'':'<button type="button" class="btn sm ghost" data-mk="'+t.id+'">'+(can('giao_viec')?'+ Giao việc':'+ Nhận việc')+'</button>')+(canRm?'<button type="button" class="btn sm ghost" data-rm="'+t.id+'" aria-label="Xóa tin nhắn này">🗑 Xóa</button>':'')+'</div>'+(t===myLast?'<div class="rcpt" id="rcpt" data-tin="'+t.id+'" aria-live="polite"></div>':'')+'</div>';
  });
  var oldH=el.scrollHeight,oldT=el.scrollTop;
  el.innerHTML=h;
@@ -697,6 +702,7 @@ function drawMsgs(keepPos,toBottom){
  el.querySelectorAll('[data-mk]').forEach(function(b){b.onclick=function(){var t=a.filter(function(x){return x.id===+b.dataset.mk})[0];dlgTask({msg:t,conv:c})}});
  el.querySelectorAll('[data-dl]').forEach(function(b){b.onclick=function(){download(+b.dataset.dl,b)}});
  el.querySelectorAll('[data-gotask]').forEach(function(b){b.onclick=function(){moViecTu(+b.dataset.gotask)}});
+ el.querySelectorAll('[data-tgc]').forEach(function(b){b.onclick=function(){dlgTagTask(findTask(+b.dataset.tgc))}});
  el.querySelectorAll('[data-img]').forEach(function(b){b.onclick=function(){dlgImg(+b.dataset.img)}});
  loadImgs();
  el.querySelectorAll('[data-rm]').forEach(function(b){b.onclick=function(){var t=a.filter(function(x){return x.id===+b.dataset.rm})[0];if(t)dlgDelMsg(t,c)}});
@@ -846,12 +852,12 @@ function dlgConvOpts(c){
 function dlgGroup(g){
  var L=people().filter(function(k){return k!==me()||(g&&ST.toi.vai_tro==='quan_tri')});
  var sel=g?g.thanh_vien:[];
- openModal('<h3>'+(g?'Sửa nhóm':'Tạo nhóm mới')+'</h3><label for="g-n">Tên nhóm (đặt theo việc)</label><input type="text" id="g-n" maxlength="60" placeholder="Ví dụ: Nhóm dự toán 2027" value="'+esc(g?g.ten:'')+'"><label>Ai trong nhóm</label><div class="pick">'+L.map(function(k){return'<label><input type="checkbox" value="'+esc(k)+'"'+(sel.indexOf(k)>=0?' checked':'')+'> '+av(k,26)+esc(k===me()?'Bạn':ST.nguoi[k].ho_ten)+'</label>'}).join('')+'</div><div class="err" id="g-e"></div><div class="row"><button class="btn" type="button" data-x>Hủy</button><button class="btn solid" type="button" data-ok>'+(g?'Lưu':'Tạo nhóm')+'</button></div>',function(m){
+ openModal('<h3>'+(g?'Sửa nhóm':'Tạo nhóm mới')+'</h3><label for="g-n">Tên nhóm (đặt theo việc)</label><input type="text" id="g-n" maxlength="60" placeholder="Ví dụ: Nhóm dự toán 2027" value="'+esc(g?g.ten:'')+'"><label>Ai trong nhóm</label><div class="pick">'+L.map(function(k){return'<label><input type="checkbox" value="'+esc(k)+'"'+(sel.indexOf(k)>=0?' checked':'')+'> '+av(k,26)+esc(k===me()?'Bạn':ST.nguoi[k].ho_ten)+'</label>'}).join('')+'</div>'+(!g&&canTag()?'<label class="tgnew"><input type="checkbox" id="g-tg" checked> <span>🏷 Tạo nhãn cùng tên và nối với nhóm này<br><span class="hint">Việc gắn nhãn này giao ở Bảng việc sẽ báo tin trong nhóm. Nhóm chỉ để nói chuyện thì bỏ tick.</span></span></label>':'')+'<div class="err" id="g-e"></div><div class="row"><button class="btn" type="button" data-x>Hủy</button><button class="btn solid" type="button" data-ok>'+(g?'Lưu':'Tạo nhóm')+'</button></div>',function(m){
   m.querySelector('[data-x]').onclick=closeModal;
   m.querySelector('[data-ok]').onclick=function(){var b=this,ten=m.querySelector('#g-n').value.trim(),tv=[].slice.call(m.querySelectorAll('.pick input:checked')).map(function(x){return x.value});
    if(!ten){m.querySelector('#g-e').textContent='Bạn đặt tên nhóm nha.';return}
    b.disabled=true;
-   (g?call('suaNhom',{id:g.id,ten:ten,thanh_vien:(g.thanh_vien.indexOf(me())>=0&&L.indexOf(me())<0?[me()]:[]).concat(tv)}):call('taoNhom',{ten:ten,thanh_vien:tv})).then(function(o){closeModal();toast(g?'Đã lưu nhóm':'Đã tạo nhóm '+ten);if(!g){ST.conv=o.id;ST.open=true}ST.v=Object.assign({},ST.v,{v_ht:'x'});poll()}).catch(function(e){b.disabled=false;fail(e)})};
+   (g?call('suaNhom',{id:g.id,ten:ten,thanh_vien:(g.thanh_vien.indexOf(me())>=0&&L.indexOf(me())<0?[me()]:[]).concat(tv)}):call('taoNhom',{ten:ten,thanh_vien:tv,tao_nhan:!!(m.querySelector('#g-tg')||{}).checked})).then(function(o){if(o&&o.nhan_ds)ST.tags=o.nhan_ds;closeModal();toast(g?'Đã lưu nhóm':'Đã tạo nhóm '+ten+(o&&o.nhan_ds?' và nhãn cùng tên':''));if(!g){ST.conv=o.id;ST.open=true}ST.v=Object.assign({},ST.v,{v_ht:'x'});poll()}).catch(function(e){b.disabled=false;fail(e)})};
  });
 }
 function dueSelect(cur){
@@ -910,6 +916,23 @@ function hoiNhom(h){if(!h||!h.thieu||!h.thieu.length)return;
  openModal('<h3>Thêm vào nhóm '+esc(h.ten)+'?</h3><p>'+h.thieu.map(function(u){return esc(nameOf(u))}).join(', ')+' chưa ở trong nhóm '+esc(h.ten)+'. Thêm vào nhóm để tin của '+(h.ids.length>1?h.ids.length+' việc này':'việc này')+' hiện trong nhóm?</p><p class="hint">Bấm Không thì tin vẫn đi tin nhắn riêng như cũ, nhãn vẫn giữ.</p><div class="err" id="hn-e"></div><div class="row"><button class="btn" type="button" data-x>Không, gửi tin riêng</button><button class="btn solid" type="button" data-ok>Thêm vào nhóm</button></div>',function(m){
   m.querySelector('[data-x]').onclick=closeModal;
   m.querySelector('[data-ok]').onclick=function(){var b=this;b.disabled=true;call('themVaoNhomNhan',{nhom:h.nhom,ids:h.ids}).then(function(r){capNhatViec(r.viec);closeModal();toast('Đã thêm vào nhóm '+h.ten);ST.v=Object.assign({},ST.v,{v_ht:'x'});render();poll()}).catch(function(e){b.disabled=false;m.querySelector('#hn-e').textContent=(e&&e.msg)||'Chưa thêm được, bạn thử lại nha.'})};
+ })}
+/* vòng 10: nhãn trong nhóm chat */
+function nhanCuaNhom(id){return tags().filter(function(n){return n.hoi_thoai===id})[0]||null}
+function gTagBtn(c){var n=nhanCuaNhom(c.id);
+ if(canTag())return'<button class="btn sm gtag" type="button" data-act="gtag" aria-label="Nhãn của nhóm: '+(n?esc(n.ten):'chưa nối')+'. Bấm để chọn">🏷<span class="gtx"> '+(n?esc(n.ten):'Nhãn')+'</span> ▾</button>';
+ return n?'<span class="gtag ro">'+chipTag(n.id,1)+'</span>':''}
+function tagInChat(t){if(!t)return'';var mine=t.nguoi_giao===me()||t.nguoi_nhan===me()||seeAll();
+ return(t.nhan&&tagById(t.nhan)?' '+chipTag(t.nhan,1):'')+(mine?' <button type="button" class="btn sm ghost tgc" data-tgc="'+t.id+'" aria-label="Chọn nhãn cho việc: '+esc(t.tieu_de)+'">⋯</button>':'')}
+function dlgGroupTag(c){var cur=nhanCuaNhom(c.id),trung=tags().some(function(n){return n.ten.toLowerCase()===String(c.ten).trim().toLowerCase()});
+ openModal('<h3>🏷 Nhãn của nhóm '+esc(c.ten)+'</h3><p class="hint">Nối nhãn với nhóm thì việc mang nhãn đó giao ở Bảng việc sẽ báo tin trong nhóm này. Việc giao ngay trong nhóm thì tin luôn ở lại nhóm, gắn nhãn nào cũng được.</p><div class="tglist" role="group" aria-label="Chọn nhãn nối với nhóm">'+tags().map(function(n){var on=cur&&n.id===cur.id;return'<button type="button" class="tgopt" data-gn="'+esc(n.id)+'" aria-pressed="'+!!on+'"><span class="tgck">'+(on?'✓':'')+'</span>'+chipTag(n.id)+'<span class="hint">'+(n.hoi_thoai&&n.hoi_thoai!==c.id?'đang nối nhóm '+esc(tenNhom(n.hoi_thoai))+', bấm là chuyển sang nhóm này':'')+'</span></button>'}).join('')
+  +(trung?'':'<button type="button" class="tgopt" data-gnew><span class="tgck">＋</span>Nhãn mới cùng tên nhóm: <b>'+esc(c.ten)+'</b></button>')
+  +(cur?'<button type="button" class="tgopt" data-gn=""><span class="tgck"></span>Bỏ nối nhãn</button>':'')+'</div><div class="err" id="gt-e"></div><div class="row"><button class="btn" type="button" data-x>Đóng</button></div>',function(m){
+  m.querySelector('[data-x]').onclick=closeModal;
+  var go=function(d,b){if(!d.tao_moi&&(cur?cur.id:'')===d.nhan){closeModal();return}m.querySelectorAll('.tgopt').forEach(function(x){x.disabled=true});
+   call('noiNhanNhom',Object.assign({nhom:c.id},d)).then(function(r){ST.tags=r.nhan_ds;closeModal();render();toast(r.nhan?'Đã nối nhãn '+r.nhan.ten+' với nhóm '+c.ten:'Đã bỏ nối nhãn');poll()}).catch(function(e){m.querySelectorAll('.tgopt').forEach(function(x){x.disabled=false});m.querySelector('#gt-e').textContent=(e&&e.msg)||'Chưa nối được, bạn thử lại nha.'})};
+  m.querySelectorAll('[data-gn]').forEach(function(b){b.onclick=function(){go({nhan:b.dataset.gn},b)}});
+  var nb=m.querySelector('[data-gnew]');if(nb)nb.onclick=function(){go({tao_moi:true},nb)};
  })}
 /* nút ⋯: chọn nhãn cho một việc, bỏ nhãn, thêm nhãn mới rồi gắn luôn */
 function dlgTagTask(t){if(!t)return;var cur=tagById(t.nhan)?t.nhan:'';

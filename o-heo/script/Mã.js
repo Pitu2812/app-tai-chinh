@@ -39,7 +39,7 @@ const OH = {
     Phien: ['bam_token', 'ten_dn', 'het_han', 'tao_luc'],
     HoiThoai: ['id', 'loai', 'ten', 'thanh_vien', 'tao_boi', 'tao_luc', 'thu_muc_id'],
     TinNhan: ['id', 'hoi_thoai', 'nguoi_gui', 'noi_dung', 'loai', 'tep_id', 'luc'],
-    Viec: ['id', 'tieu_de', 'nguoi_giao', 'nguoi_nhan', 'hoi_thoai', 'tin_id', 'han', 'uu_tien', 'cot', 'tao_luc', 'xong_luc', 'sua_luc', 'nac', 'tep_chot', 'theo_doi', 'nguoi_chot', 'nhan'],
+    Viec: ['id', 'tieu_de', 'nguoi_giao', 'nguoi_nhan', 'hoi_thoai', 'tin_id', 'han', 'uu_tien', 'cot', 'tao_luc', 'xong_luc', 'sua_luc', 'nac', 'tep_chot', 'theo_doi', 'nguoi_chot', 'nhan', 'theo_nhan'],
     Tep: ['id', 'hoi_thoai', 'ten', 'mime', 'kich_thuoc', 'drive_id', 'nguoi_gui', 'luc', 'link', 'viec_id', 'ghi_chu'],
     DaDoc: ['ten_dn', 'hoi_thoai', 'tin_id', 'an_den'],
     CaiDat: ['khoa', 'gia_tri'],
@@ -437,6 +437,8 @@ API_.taoNhom = function (d, me) {
   });
   tinHeThong_(id, me.ten_dn, ten_(me) + ' đã tạo nhóm "' + ten + '" với ' + (tv.length > 1 ? tv.slice(1).map(tenCua_).join(', ') : 'chỉ mình mình'));
   danhDau_('v_ht');
+  // vòng 10: Quản trị, Đầy đủ tick ô thì tạo nhãn cùng tên và nối với nhóm
+  if (d.tao_nhan && (me.vai_tro === 'quan_tri' || coQuyen_(me, 'xem_het'))) { const o = API_.noiNhanNhom({ nhom: id, tao_moi: true }, me); return { id: id, nhan_ds: o.nhan_ds }; }
   return { id: id };
 };
 API_.suaNhom = function (d, me) {
@@ -576,13 +578,14 @@ API_.giaoViec = function (d, me) {
   let v, hoi = null;
   // nhãn nối nhóm chat (H duyệt 20/11): giao ngoài khung chat mà nhãn có nhóm thì việc ghi vào nhóm của nhãn
   const nhanChon = nhanGiao_(d.nhan, h);
+  let theoNhan = '';
   if (!h && nhanChon) {
     const g = nhomCuaNhan_(nhanChon);
-    if (g) { const thieu = thieuNhom_({ nguoi_giao: me.ten_dn, nguoi_nhan: nhan }, g); if (!thieu.length) h = g; else hoi = { nhom: g.id, ten: g.ten, thieu: thieu }; }
+    if (g) { const thieu = thieuNhom_({ nguoi_giao: me.ten_dn, nguoi_nhan: nhan }, g); if (!thieu.length) { h = g; theoNhan = 1; } else hoi = { nhom: g.id, ten: g.ten, thieu: thieu }; }
   }
   khoa_(function () {
-    damBaoCot_('Viec', 'nhan');
-    v = { id: soMoi_('viec'), tieu_de: tieuDe, nguoi_giao: giao, nguoi_nhan: nhan, hoi_thoai: h ? h.id : '', tin_id: Number(d.tin_id || 0) || '', han: han, uu_tien: uu, cot: 'todo', tao_luc: Date.now(), xong_luc: '', sua_luc: Date.now(), nac: 1, tep_chot: '', theo_doi: '', nhan: nhanChon };
+    damBaoCot_('Viec', 'nhan'); damBaoCot_('Viec', 'theo_nhan');
+    v = { id: soMoi_('viec'), tieu_de: tieuDe, nguoi_giao: giao, nguoi_nhan: nhan, hoi_thoai: h ? h.id : '', tin_id: Number(d.tin_id || 0) || '', han: han, uu_tien: uu, cot: 'todo', tao_luc: Date.now(), xong_luc: '', sua_luc: Date.now(), nac: 1, tep_chot: '', theo_doi: '', nhan: nhanChon, theo_nhan: theoNhan };
     them_('Viec', v);
   });
   danhDau_('v_viec');
@@ -677,16 +680,18 @@ function nhomCuaNhan_(id) {
 }
 function thieuNhom_(v, g) { const tv = String(g.thanh_vien).split(','); return [v.nguoi_giao, v.nguoi_nhan].filter(function (u, i, a) { return u && a.indexOf(u) === i && tv.indexOf(u) < 0; }); }
 /* gọi trong khoa_ sau khi đổi v.nhan: nhãn có nhóm và đủ người thì tin việc đi vào nhóm; thiếu người thì trả để trang hỏi; bỏ nhãn có nhóm thì về tin riêng */
+function giaoTrongNhom_(v) { return !!(v.hoi_thoai && !v.theo_nhan && bang_('HoiThoai').rows.some(function (r) { return r.id === v.hoi_thoai && r.loai === 'nhom'; })); }
 function theoNhan_(v, cu) {
+  // vòng 10 (H duyệt 21/11): việc giao trong nhóm nào thì tin ở lại nhóm đó, nhãn chỉ để phân loại và đếm
+  if (giaoTrongNhom_(v)) return { viec: v };
   const g = v.nhan ? nhomCuaNhan_(v.nhan) : null;
   if (g) {
     const thieu = thieuNhom_(v, g);
     if (thieu.length) return { viec: v, hoi: { nhom: g.id, ten: g.ten, thieu: thieu } };
-    if (v.hoi_thoai !== g.id) { v.hoi_thoai = g.id; return { viec: v, tin: g.id }; }
+    if (v.hoi_thoai !== g.id) { damBaoCot_('Viec', 'theo_nhan'); v.hoi_thoai = g.id; v.theo_nhan = 1; return { viec: v, tin: g.id }; }
     return { viec: v };
   }
-  const gc = cu ? nhomCuaNhan_(cu) : null;
-  if (gc && v.hoi_thoai === gc.id) v.hoi_thoai = '';
+  if (v.theo_nhan) { v.hoi_thoai = ''; v.theo_nhan = ''; }
   return { viec: v };
 }
 /* sau khi ghi: báo vào nhóm một dòng cho việc vừa chuyển vào; gom các nhóm còn thiếu người để trang hỏi thêm */
@@ -718,9 +723,9 @@ API_.themVaoNhomNhan = function (d, me) {
     const T = bang_('Viec');
     T.rows.forEach(function (v) {
       if (ids.indexOf(v.id) < 0) return;
-      const n = nhomCuaNhan_(v.nhan); if (!n || n.id !== g.id) return;
+      const n = nhomCuaNhan_(v.nhan); if (!n || n.id !== g.id || (v.hoi_thoai !== g.id && giaoTrongNhom_(v))) return;
       [v.nguoi_giao, v.nguoi_nhan].forEach(function (u) { if (u && tv.indexOf(u) < 0) { tv.push(u); them.push(u); } });
-      if (v.hoi_thoai !== g.id) { v.hoi_thoai = g.id; v.sua_luc = Date.now(); ghiDong_(T, v); chuyen.push(v); }
+      if (v.hoi_thoai !== g.id) { damBaoCot_('Viec', 'theo_nhan'); v.hoi_thoai = g.id; v.theo_nhan = 1; v.sua_luc = Date.now(); ghiDong_(T, v); chuyen.push(v); }
     });
     if (them.length) { g.thanh_vien = tv.join(','); ghiDong_(H, g); }
   });
@@ -728,6 +733,35 @@ API_.themVaoNhomNhan = function (d, me) {
   baoDoiNhan_(chuyen.map(function (v) { return { viec: v, tin: g.id }; }), me);
   danhDau_('v_ht'); danhDau_('v_viec');
   return { viec: chuyen, them: them };
+};
+/* 🏷 ở đầu nhóm chat (vòng 10): nối một nhãn với nhóm (nhãn khác đang nối nhóm này thì bỏ nối); tao_moi = tạo nhãn cùng tên nhóm, trùng tên thì dùng nhãn có sẵn; nhan rỗng = bỏ nối */
+API_.noiNhanNhom = function (d, me) {
+  quanLyNhan_(me); nangCapNhan_();
+  const g = bang_('HoiThoai').rows.filter(function (r) { return r.id === String(d.nhom || '') && r.loai === 'nhom'; })[0];
+  if (!g) loi_('Không thấy nhóm này.');
+  let kq = null;
+  khoa_(function () {
+    const L = dsNhan_(), P = PropertiesService.getScriptProperties();
+    if (d.tao_moi) {
+      const ten = String(g.ten).replace(/\s+/g, ' ').trim().slice(0, 60);
+      kq = L.filter(function (n) { return n.ten.toLowerCase() === ten.toLowerCase(); })[0];
+      if (!kq) {
+        const so = Number(P.getProperty('SO_NHAN') || L.length) + 1;
+        P.setProperty('SO_NHAN', String(so));
+        kq = { id: 'n' + so, ten: ten, mau: MAU_NHAN_[(so - 1) % MAU_NHAN_.length], hoi_thoai: '', tao_boi: me.ten_dn, tao_luc: Date.now() };
+        L.push(kq);
+      }
+    } else if (d.nhan) {
+      kq = L.filter(function (n) { return n.id === String(d.nhan); })[0];
+      if (!kq) loi_('Không thấy nhãn này, bạn tải lại trang thử nha.');
+    }
+    L.forEach(function (n) { if (n.hoi_thoai === g.id && n !== kq) n.hoi_thoai = ''; });
+    if (kq) kq.hoi_thoai = g.id;
+    luuDsNhan_(L);
+  });
+  tinHeThong_(g.id, me.ten_dn, kq ? '🏷 ' + ten_(me) + ' nối nhãn ' + kq.ten + ' với nhóm này. Việc mang nhãn này giao ở Bảng việc sẽ báo tin trong nhóm.' : '🏷 ' + ten_(me) + ' bỏ nối nhãn với nhóm này.');
+  danhDau_('v_viec');
+  return { nhan: kq, nhan_ds: dsNhan_() };
 };
 /* thêm hoặc sửa nhãn: tên, màu, nhóm chat nối với nhãn. Thêm trùng tên thì trả nhãn có sẵn */
 API_.luuNhan = function (d, me) {
