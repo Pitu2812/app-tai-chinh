@@ -163,6 +163,10 @@ textarea{resize:vertical}
 .tdet .row{justify-content:flex-start;flex-wrap:wrap;gap:6px;margin:0}
 .lklist{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
 .lkcard{display:flex;gap:12px;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:14px 16px;color:var(--fg);text-decoration:none;box-shadow:var(--shadow)}
+.lkw{position:relative;min-width:0}.lkw .lkcard{height:100%;padding-right:46px}.lkm{position:absolute;top:10px;right:10px}
+.lkcard b{overflow-wrap:anywhere}.lktag{display:table;font-size:11px;font-weight:600;border-radius:99px;padding:0 7px;margin-top:3px}.lktag.all{background:var(--mint-soft,#def4ea);color:var(--ok)}.lktag.me{background:var(--pink-soft);color:var(--pink-deep)}
+.lkadd{display:flex;gap:8px;align-items:center;justify-content:center;border:2px dashed var(--pink);border-radius:18px;padding:14px 16px;background:transparent;color:var(--pink-deep);font:inherit;font-weight:700;font-size:15px;cursor:pointer;min-height:72px}.lkadd:hover{background:var(--pink-soft)}
+.icp{display:flex;gap:6px;flex-wrap:wrap}.icp button{font-size:20px;line-height:1;border:2px solid var(--line);background:var(--bg);border-radius:12px;padding:5px 7px;cursor:pointer}.icp button[aria-pressed=true]{border-color:var(--pink-deep);background:var(--pink-soft)}
 .lkcard:hover{border-color:var(--pink)}.lkcard .ic{font-size:30px;line-height:1}.lkcard b{display:block;font-family:var(--display);font-size:18px}.lkcard .go{margin-left:auto;color:var(--pink-deep);font-weight:700}
 .mv{display:flex;gap:4px;margin-left:auto}
 .mv button{font-size:12px;border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:0 8px;cursor:pointer;min-height:24px}
@@ -1380,10 +1384,33 @@ BIND.admin=function(m){
 
 /* ================= liên kết ================= */
 var LIEN_KET=[['💰','App tài chính','Vào thẳng, không đăng nhập lại','https://script.google.com/macros/s/AKfycbxoUmOzXZFN1EXGTfe7SsriHl2zpQfXVndLwqQeZKBmjMS28BYe2GsVS9sdklrcG6P5/exec']];
-function viewLk(){return'<div class="hello">'+pig('happy',44,null,ST.toi.avatar)+'<b>Các app hay dùng, bấm là mở ở tab mới, vào thẳng bằng tài khoản Ổ Heo</b></div><div class="lklist">'+LIEN_KET.map(function(l,i){return'<a class="lkcard" data-lk="'+i+'" href="'+esc(l[3])+'" target="_blank" rel="noopener"><span class="ic" aria-hidden="true">'+l[0]+'</span><span><b>'+esc(l[1])+'</b><span class="hint">'+esc(l[2])+'</span></span><span class="go" aria-hidden="true">↗</span></a>'}).join('')+'</div>'}
+function viewLk(){var h='<div class="hello">'+pig('happy',44,null,ST.toi.avatar)+'<b>Các app hay dùng, bấm là mở ở tab mới, vào thẳng bằng tài khoản Ổ Heo</b></div><div class="lklist">'+LIEN_KET.map(function(l,i){return'<a class="lkcard" data-lk="'+i+'" href="'+esc(l[3])+'" target="_blank" rel="noopener"><span class="ic" aria-hidden="true">'+l[0]+'</span><span><b>'+esc(l[1])+'</b><span class="hint">'+esc(l[2])+'</span></span><span class="go" aria-hidden="true">↗</span></a>'}).join('');
+ (ST.lk||[]).forEach(function(l){h+='<div class="lkw"><a class="lkcard" href="'+esc(l.duong_dan)+'" target="_blank" rel="noopener noreferrer" title="'+esc(l.duong_dan)+'"><span class="ic" aria-hidden="true">'+esc(l.bieu_tuong)+'</span><span style="min-width:0"><b>'+esc(l.tieu_de)+'</b>'+(l.ghi_chu?'<span class="hint">'+esc(l.ghi_chu)+'</span>':'')+'<span class="lktag '+(l.chung?'all">Mọi người':'me">Của bạn')+'</span></span>'+(l.sua?'':'<span class="go" aria-hidden="true">↗</span>')+'</a>'+(l.sua?'<button type="button" class="btn sm lkm" data-lke="'+l.id+'" aria-label="Sửa hoặc xóa liên kết '+esc(l.tieu_de)+'">⋯</button>':'')+'</div>'});
+ h+='<button type="button" class="lkadd" data-lkadd>＋ Thêm liên kết</button></div>';
+ if(ST.lk===undefined)h+='<p class="hint" style="margin-top:8px">Đang tải liên kết...</p>';
+ return h}
+/* vòng 11: thêm, sửa, xóa liên kết tự thêm */
+var LK_IC=['🔗','🏛️','📊','📁','📝','🧾','🌐','📅'];
+function napLk(){call('dsLienKet',{}).then(function(o){ST.lk=o.lien_ket;ST.lkChung=o.chia_se;if(ST.tab==='lk')renderMain()}).catch(function(e){ST.lk=ST.lk||[];fail(e)})}
+function dlgLk(l){var ic=l&&l.bieu_tuong||'🔗';
+ openModal('<h3>'+(l?'Sửa liên kết':'＋ Thêm liên kết')+'</h3><form id="lk-f" novalidate><label for="lk-t">Tiêu đề</label><input type="text" id="lk-t" maxlength="60" placeholder="Ví dụ: Cổng dịch vụ công" value="'+esc(l?l.tieu_de:'')+'"><label for="lk-u">Đường dẫn</label><input type="text" id="lk-u" inputmode="url" autocomplete="url" spellcheck="false" placeholder="Dán link vào đây, ví dụ dichvucong.gov.vn" value="'+esc(l?l.duong_dan:'')+'"><label>Biểu tượng</label><div class="icp" role="group" aria-label="Biểu tượng">'+LK_IC.map(function(c){return'<button type="button" data-ic="'+c+'" aria-pressed="'+(c===ic)+'">'+c+'</button>'}).join('')+'</div><label for="lk-g">Ghi chú ngắn (không bắt buộc)</label><input type="text" id="lk-g" maxlength="80" placeholder="Ví dụ: Nộp hồ sơ trực tuyến" value="'+esc(l?l.ghi_chu:'')+'">'
+  +(ST.lkChung?'<label class="tgnew" style="color:var(--fg)"><input type="checkbox" id="lk-c"'+(l&&l.chung?' checked':'')+'> <span>Hiện cho mọi người<br><span class="hint">Không tick thì chỉ bạn thấy.</span></span></label>':'')
+  +'<div class="err" id="lk-e"></div><div class="row">'+(l?'<button class="btn ghost" type="button" data-del style="color:var(--no);margin-right:auto">🗑 Xóa</button>':'')+'<button class="btn" type="button" data-x>Hủy</button><button class="btn solid" type="submit">Lưu</button></div></form>',function(m){
+  var f=m.querySelector('#lk-f'),er=m.querySelector('#lk-e');
+  m.querySelector('[data-x]').onclick=closeModal;
+  m.querySelectorAll('[data-ic]').forEach(function(b){b.onclick=function(){ic=b.dataset.ic;m.querySelectorAll('[data-ic]').forEach(function(x){x.setAttribute('aria-pressed',x===b)})}});
+  var xong=function(o,msg){ST.lk=o.lien_ket;ST.lkChung=o.chia_se;closeModal();if(ST.tab==='lk')renderMain();toast(msg)};
+  var del=m.querySelector('[data-del]');if(del)del.onclick=function(){if(del.dataset.ok!=='1'){del.dataset.ok='1';del.textContent='Bấm lần nữa để xóa hẳn';return}del.disabled=true;call('xoaLienKet',{id:l.id}).then(function(o){xong(o,'Đã xóa liên kết '+l.tieu_de)}).catch(function(e){del.disabled=false;er.textContent=(e&&e.msg)||'Chưa xóa được, bạn thử lại nha.'})};
+  f.onsubmit=function(ev){ev.preventDefault();var t=m.querySelector('#lk-t').value.trim(),u=m.querySelector('#lk-u').value.trim();
+   if(!t){er.textContent='Bạn ghi tiêu đề nha.';return}if(!u){er.textContent='Bạn dán đường dẫn nha.';return}
+   var b=f.querySelector('[type=submit]');b.disabled=true;var c=m.querySelector('#lk-c');
+   call('luuLienKet',{id:l?l.id:'',tieu_de:t,duong_dan:u,ghi_chu:m.querySelector('#lk-g').value,bieu_tuong:ic,chung:c?c.checked:undefined}).then(function(o){xong(o,'Đã lưu liên kết '+t)}).catch(function(e){b.disabled=false;er.textContent=(e&&e.msg)||'Chưa lưu được, bạn thử lại nha.'})};
+  setTimeout(function(){var i=m.querySelector('#lk-t');if(i)i.focus()},50);
+ })}
 
 /* App tài chính: xin vé dùng một lần rồi mở; mở cửa sổ ngay lúc bấm để trình duyệt không chặn */
-BIND.lk=function(m){m.querySelectorAll('[data-lk]').forEach(function(a){a.onclick=function(e){e.preventDefault();var w=null;try{w=window.open('','_blank')}catch(x){}
+BIND.lk=function(m){if(ST.lk===undefined)napLk();var ad=m.querySelector('[data-lkadd]');if(ad)ad.onclick=function(){dlgLk(null)};m.querySelectorAll('[data-lke]').forEach(function(b){b.onclick=function(){dlgLk((ST.lk||[]).filter(function(x){return x.id===+b.dataset.lke})[0])}});
+ m.querySelectorAll('[data-lk]').forEach(function(a){a.onclick=function(e){e.preventDefault();var w=null;try{w=window.open('','_blank')}catch(x){}
  if(w){try{w.opener=null;w.document.title='Đang mở...';w.document.body.innerHTML='<p style="font:16px system-ui;padding:24px">Đang mở App tài chính...</p>'}catch(x){}}
  call('veAppTaiChinh',{}).then(function(o){if(w&&!w.closed){w.location.href=o.url}else openModal('<h3>Mở App tài chính</h3><p>Trình duyệt vừa chặn mở tab mới. Bạn bấm nút dưới đây nha (link dùng được trong 2 phút).</p><div class="row"><button class="btn" type="button" data-x>Hủy</button><a class="btn solid" href="'+esc(o.url)+'" target="_blank" rel="noopener" data-go>Mở App tài chính</a></div>',function(md){md.querySelector('[data-x]').onclick=closeModal;md.querySelector('[data-go]').onclick=function(){setTimeout(closeModal,300)}})})
  .catch(function(x){if(w&&!w.closed)w.location.href=a.href;fail(x)})}})};
