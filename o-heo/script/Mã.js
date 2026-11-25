@@ -1121,9 +1121,18 @@ function bangLK_() {
 }
 function chungLK_(me) { return me.vai_tro === 'quan_tri' || coQuyen_(me, 'xem_het'); }
 function suaLK_(r, me) { return r.ai === me.ten_dn || (r.chung === '1' && chungLK_(me)); }
+/* thứ tự liên kết RIÊNG từng người (H duyệt vòng 12): Script Properties khóa LK_TT_<tên đăng nhập>, mảng id */
+function ttLK_(me) { try { return JSON.parse(PropertiesService.getScriptProperties().getProperty('LK_TT_' + me.ten_dn) || '[]'); } catch (e) { return []; } }
 function dsLK_(me) {
-  return bangLK_().rows.filter(function (r) { return r.chung === '1' || r.ai === me.ten_dn; }).map(function (r) {
+  const tt = ttLK_(me), vt = {};
+  tt.forEach(function (id, i) { vt[id] = i; });
+  const L = bangLK_().rows.filter(function (r) { return r.chung === '1' || r.ai === me.ten_dn; }).map(function (r) {
     return { id: r.id, ai: r.ai, tieu_de: r.tieu_de, duong_dan: r.duong_dan, ghi_chu: r.ghi_chu, bieu_tuong: r.bieu_tuong || '🔗', chung: r.chung === '1', sua: suaLK_(r, me), tao_luc: r.tao_luc };
+  });
+  /* có trong thứ tự đã lưu thì theo đó; liên kết mới (chưa có) xếp cuối theo lúc tạo */
+  return L.sort(function (a, b) {
+    const x = a.id in vt ? vt[a.id] : 1e9, y = b.id in vt ? vt[b.id] : 1e9;
+    return x !== y ? x - y : (Number(a.tao_luc) || 0) - (Number(b.tao_luc) || 0);
   });
 }
 /* đường dẫn: thiếu http(s):// thì thêm https://; chỉ nhận http và https */
@@ -1164,6 +1173,13 @@ API_.xoaLienKet = function (d, me) {
     if (!r || !suaLK_(r, me)) loi_('Bạn chưa có quyền xóa liên kết này.');
     xoaDong_(T, [r]);
   });
+  return { lien_ket: dsLK_(me), chia_se: chungLK_(me) };
+};
+API_.xepLienKet = function (d, me) {
+  const thay = {};
+  dsLK_(me).forEach(function (l) { thay[l.id] = 1; });
+  const ids = (Array.isArray(d.thu_tu) ? d.thu_tu : []).map(Number).filter(function (id, i, a) { return thay[id] && a.indexOf(id) === i; });
+  PropertiesService.getScriptProperties().setProperty('LK_TT_' + me.ten_dn, JSON.stringify(ids));
   return { lien_ket: dsLK_(me), chia_se: chungLK_(me) };
 };
 API_.veAppTaiChinh = function (d, me) {
