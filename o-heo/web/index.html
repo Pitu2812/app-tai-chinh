@@ -168,6 +168,26 @@ textarea{resize:vertical}
 .lkadd{display:flex;gap:8px;align-items:center;justify-content:center;border:2px dashed var(--pink);border-radius:18px;padding:14px 16px;background:transparent;color:var(--pink-deep);font:inherit;font-weight:700;font-size:15px;cursor:pointer;min-height:72px}.lkadd:hover{background:var(--pink-soft)}
 .icp{display:flex;gap:6px;flex-wrap:wrap}.icp button{font-size:20px;line-height:1;border:2px solid var(--line);background:var(--bg);border-radius:12px;padding:5px 7px;cursor:pointer}.icp button[aria-pressed=true]{border-color:var(--pink-deep);background:var(--pink-soft)}
 .lkcard:hover{border-color:var(--pink)}.lkcard .ic{font-size:30px;line-height:1}.lkcard b{display:block;font-family:var(--display);font-size:18px}.lkcard .go{margin-left:auto;color:var(--pink-deep);font-weight:700}
+.lkbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:4px}.lkbar .hello{flex:1 1 320px;margin:0;min-width:0}
+.lkfind{flex:1 1 200px;max-width:320px;font:inherit;font-size:14px;padding:8px 12px;border-radius:14px;border:1px solid var(--line);background:var(--panel);color:var(--fg)}
+.seg{display:inline-flex;background:var(--panel);border:1px solid var(--line);border-radius:99px;padding:3px;flex:none}
+.seg button{font:inherit;font-size:13px;font-weight:600;border:0;background:none;color:var(--mute);border-radius:99px;padding:5px 12px;cursor:pointer}.seg button[aria-pressed=true]{background:var(--pink-soft);color:var(--pink-deep)}
+.lksec{font-size:12px;font-weight:700;letter-spacing:.05em;color:var(--mute);margin:14px 2px 6px}
+.lkrows{display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.lkr{position:relative;display:flex;gap:10px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line);min-width:0}.lkr:last-child{border-bottom:0}
+.lkra{display:flex;gap:10px;align-items:center;flex:1;min-width:0;color:var(--fg);text-decoration:none}.lkra:hover b{color:var(--pink-deep)}
+.lkra .ic{font-size:20px;flex:none}.lkra .tx,.lkcard .tx{min-width:0;display:flex;flex-direction:column}
+.lkra b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.lkra .hint{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lkact{display:flex;gap:4px;align-items:center;flex:none}.lkw>.lkact{position:absolute;bottom:8px;right:10px}
+.lkw .lkcard{padding:14px 16px 42px}
+.lkgrip{cursor:grab;color:var(--mute);font-size:16px;user-select:none;padding:0 2px}
+.drag-over{outline:2px dashed var(--pink-deep);outline-offset:-2px}.dang-keo{opacity:.5}
+.lkmenu{position:absolute;top:calc(100% - 6px);right:10px;z-index:5;display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:6px;box-shadow:var(--shadow);min-width:150px}
+.lkmenu button{font:inherit;font-size:14px;text-align:left;border:0;background:none;color:var(--fg);padding:7px 10px;border-radius:8px;cursor:pointer}.lkmenu button:hover,.lkmenu button:focus-visible{background:var(--soft)}
+.lkadd{margin-top:14px;width:100%}
+@media (max-width:560px){.lkgrip{display:none}.lkr{padding:8px 10px}.lkfind{max-width:none}}
+@media (hover:none){.lkgrip{display:none}}
+.lkr[hidden],.lkw[hidden],.lksecw[hidden],.lkrong[hidden],.lkkhong[hidden]{display:none!important}
 .mv{display:flex;gap:4px;margin-left:auto}
 .mv button{font-size:12px;border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:0 8px;cursor:pointer;min-height:24px}
 .mv button:disabled{opacity:.3;cursor:default}
@@ -513,7 +533,7 @@ function bindPwForm(id,onDone){
 
 /* ================= đồng bộ ================= */
 var pollT=null,polling=false,firstSync=true;
-function startApp(){firstSync=true;ST.lk=undefined;ST.lkLoi='';ST.lkDang=0;ST.v=null;ST.sauTin=0;ST.tin={};ST.tep={};poll()}
+function startApp(){firstSync=true;ST.lk=undefined;ST.lkLoi='';ST.lkDang=0;ST.lkMenu=null;ST.lkQ='';ST.v=null;ST.sauTin=0;ST.tin={};ST.tep={};poll()}
 function stopPoll(){clearTimeout(pollT);pollT=null}
 /* mở khung chat thì 2 giây hỏi tin mới một lần; người kia đang nhắn thì 1,5 giây; ẩn trang thì 20 giây */
 /* không có gì mới thì giãn dần: mở chat 2 giây lên tới 8 giây, chỗ khác 4 lên tới 12 giây; bấm, gõ là nhanh lại */
@@ -1384,11 +1404,56 @@ BIND.admin=function(m){
 
 /* ================= liên kết ================= */
 var LIEN_KET=[['💰','App tài chính','Vào thẳng, không đăng nhập lại','https://script.google.com/macros/s/AKfycbxoUmOzXZFN1EXGTfe7SsriHl2zpQfXVndLwqQeZKBmjMS28BYe2GsVS9sdklrcG6P5/exec']];
-function viewLk(){var h='<div class="hello">'+pig('happy',44,null,ST.toi.avatar)+'<b>Các app hay dùng, bấm là mở ở tab mới, vào thẳng bằng tài khoản Ổ Heo</b></div><div class="lklist">'+LIEN_KET.map(function(l,i){return'<a class="lkcard" data-lk="'+i+'" href="'+esc(l[3])+'" target="_blank" rel="noopener"><span class="ic" aria-hidden="true">'+l[0]+'</span><span><b>'+esc(l[1])+'</b><span class="hint">'+esc(l[2])+'</span></span><span class="go" aria-hidden="true">↗</span></a>'}).join('');
- (ST.lk||[]).forEach(function(l){h+='<div class="lkw"><a class="lkcard" href="'+esc(l.duong_dan)+'" target="_blank" rel="noopener noreferrer" title="'+esc(l.duong_dan)+'"><span class="ic" aria-hidden="true">'+esc(l.bieu_tuong)+'</span><span style="min-width:0"><b>'+esc(l.tieu_de)+'</b>'+(l.ghi_chu?'<span class="hint">'+esc(l.ghi_chu)+'</span>':'')+'<span class="lktag '+(l.chung?'all">Mọi người':'me">Của bạn')+'</span></span>'+(l.sua?'':'<span class="go" aria-hidden="true">↗</span>')+'</a>'+(l.sua?'<button type="button" class="btn sm lkm" data-lke="'+l.id+'" aria-label="Sửa hoặc xóa liên kết '+esc(l.tieu_de)+'">⋯</button>':'')+'</div>'});
- h+='<button type="button" class="lkadd" data-lkadd>＋ Thêm liên kết</button></div>';
+/* vòng 12 (H duyệt 25/11): xem Thẻ hoặc Danh sách (nhớ theo máy), chia Dùng chung / Của bạn, ô tìm khi từ 6 liên kết, kéo thả thứ tự riêng từng người, nút 📋 chép */
+function lkKieu(){return LS.get('oh_lk_kieu')==='ds'?'ds':'the'}
+function boDau(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/đ/g,'d')}
+function lkHost(u){return String(u||'').replace(/^https?:\/\//i,'').split(/[\/?#]/)[0].replace(/^www\./i,'')}
+function lkCo(){var l=LIEN_KET[0];return{id:'tc',co:1,bieu_tuong:l[0],tieu_de:l[1],ghi_chu:l[2],duong_dan:l[3],chung:true}}
+function lkItem(l,ds){var co=!!l.co,id=co?'tc':l.id,keo=!co&&ST.lk&&ST.lk.length>1,mo=ST.lkMenu===l.id;
+ var a='<a class="'+(ds?'lkra':'lkcard')+'" href="'+esc(l.duong_dan)+'" target="_blank" rel="noopener noreferrer" title="'+esc(l.duong_dan)+'"'+(co?' data-lk="0"':'')+'><span class="ic" aria-hidden="true">'+esc(l.bieu_tuong)+'</span><span class="tx"><b>'+esc(l.tieu_de)+'</b><span class="hint">'+esc(ds?(l.ghi_chu?l.ghi_chu+' · ':'')+lkHost(l.duong_dan):l.ghi_chu||'')+'</span></span></a>';
+ var act='<span class="lkact">'+(keo?'<span class="lkgrip" title="Kéo để đổi chỗ" aria-hidden="true">⠿</span>':'')+'<button type="button" class="btn sm" data-lkcp="'+id+'" aria-label="Chép đường dẫn '+esc(l.tieu_de)+'" title="Chép đường dẫn">📋</button>'+(co?'':'<button type="button" class="btn sm" data-lkdot="'+id+'" aria-expanded="'+mo+'" aria-label="Thêm thao tác cho '+esc(l.tieu_de)+'">⋯</button>')+'</span>';
+ var menu=mo?'<div class="lkmenu" role="menu">'+(l.sua?'<button type="button" role="menuitem" data-lkm="sua">✏️ Sửa, xóa</button>':'')+(keo?'<button type="button" role="menuitem" data-lkm="dau">⬆ Lên đầu</button><button type="button" role="menuitem" data-lkm="cuoi">⬇ Xuống cuối</button>':'')+'</div>':'';
+ return'<div class="'+(ds?'lkr':'lkw')+'" data-lid="'+id+'" data-sec="'+(l.chung?'c':'r')+'" data-s="'+esc(boDau(l.tieu_de+' '+(l.ghi_chu||'')+' '+lkHost(l.duong_dan)))+'"'+(keo?' draggable="true"':'')+'>'+a+act+menu+'</div>'}
+function lkKhoi(L,ds,rong){if(!L.length)return'<p class="hint lkrong">'+rong+'</p>';return(ds?'<div class="lkrows">':'<div class="lklist">')+L.map(function(l){return lkItem(l,ds)}).join('')+'</div>'}
+function viewLk(){var ds=lkKieu()==='ds',L=ST.lk||[],A=[lkCo()].concat(L.filter(function(l){return l.chung})),B=L.filter(function(l){return!l.chung});
+ var h='<div class="lkbar"><div class="hello">'+pig('happy',44,null,ST.toi.avatar)+'<b>Các app hay dùng, bấm là mở ở tab mới, vào thẳng bằng tài khoản Ổ Heo</b></div>';
+ if(A.length+B.length>=6)h+='<input type="search" class="lkfind" data-lkq placeholder="🔍 Tìm liên kết" aria-label="Tìm liên kết" value="'+esc(ST.lkQ||'')+'">';
+ h+='<div class="seg" role="group" aria-label="Chế độ xem"><button type="button" data-lkk="the" aria-pressed="'+!ds+'">▦ Thẻ</button><button type="button" data-lkk="ds" aria-pressed="'+ds+'">☰ Danh sách</button></div></div>';
+ h+='<section class="lksecw" data-secw="c"><div class="lksec">DÙNG CHUNG · <span>'+A.length+'</span></div>'+lkKhoi(A,ds,'')+'</section>';
+ h+='<section class="lksecw" data-secw="r"><div class="lksec">CỦA BẠN · <span>'+B.length+'</span></div>'+(ST.lk===undefined?'':lkKhoi(B,ds,'Bạn chưa có liên kết riêng. Bấm ＋ Thêm liên kết ở dưới nha.'))+'</section>';
+ h+='<p class="hint lkkhong" hidden>Không có liên kết nào khớp.</p><button type="button" class="lkadd" data-lkadd>＋ Thêm liên kết</button>';
  if(ST.lkLoi)h+='<p class="hint" style="margin-top:8px;color:var(--no)">'+esc(ST.lkLoi)+' <button type="button" class="btn sm" data-lkre>Thử lại</button></p>';else if(ST.lk===undefined)h+='<p class="hint" style="margin-top:8px">Đang tải liên kết...</p>';
  return h}
+function lkLoc(m){var q=boDau((ST.lkQ||'').trim()),con=0;
+ m.querySelectorAll('[data-secw]').forEach(function(s){var n=0;s.querySelectorAll('[data-s]').forEach(function(x){var ok=!q||x.dataset.s.indexOf(q)>=0;x.hidden=!ok;if(ok)n++});var r=s.querySelector('.lkrong');if(r)r.hidden=!!q;s.hidden=!!q&&!n;con+=n});
+ var k=m.querySelector('.lkkhong');if(k)k.hidden=!(q&&!con)}
+function lkXep(ids,msg){var cu=ST.lk,map={};cu.forEach(function(l){map[l.id]=l});ST.lk=ids.map(function(id){return map[id]});ST.lkMenu=null;renderMain();if(msg)toast(msg);
+ call('xepLienKet',{thu_tu:ids}).then(function(o){ST.lk=o.lien_ket;ST.lkChung=o.chia_se}).catch(function(e){ST.lk=cu;if(ST.tab==='lk')renderMain();fail(e)})}
+function lkChep(u,b){var ok=function(){toast('Đã chép đường dẫn, dán vào đâu cũng được');if(b){b.textContent='✓';setTimeout(function(){b.textContent='📋'},1500)}};
+ var cu=function(){try{var t=document.createElement('textarea');t.value=u;t.style.position='fixed';t.style.opacity='0';document.body.appendChild(t);t.select();var r=document.execCommand('copy');t.remove();if(r)ok();else throw 0}catch(e){openModal('<h3>Chép đường dẫn</h3><p class="hint">Trình duyệt chặn chép tự động. Bạn bôi đen rồi chép (Ctrl+C) nha.</p><input type="text" readonly value="'+esc(u)+'" id="lk-cp"><div class="row"><button class="btn solid" type="button" data-x>Xong</button></div>',function(md){md.querySelector('[data-x]').onclick=closeModal;var i=md.querySelector('#lk-cp');i.focus();i.select()})}};
+ try{if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(u).then(ok,cu);else cu()}catch(e){cu()}}
+/* bấm ra ngoài hoặc Esc thì đóng menu ⋯ (gắn một lần) */
+document.addEventListener('click',function(e){if(ST.lkMenu==null||ST.tab!=='lk')return;var t=e.target;if(t.closest&&(t.closest('.lkmenu')||t.closest('[data-lkdot]')))return;ST.lkMenu=null;renderMain()},true);
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&ST.lkMenu!=null&&ST.tab==='lk'&&!document.querySelector('.modal-bg:not([hidden])')){ST.lkMenu=null;renderMain()}},true);
+function bindLk12(m){
+ m.querySelectorAll('[data-lkk]').forEach(function(b){b.onclick=function(){LS.set('oh_lk_kieu',b.dataset.lkk);ST.lkMenu=null;renderMain()}});
+ var fi=m.querySelector('[data-lkq]');if(fi)fi.oninput=function(){ST.lkQ=fi.value;lkLoc(m)};lkLoc(m);
+ var tim=function(id){return id==='tc'?lkCo():(ST.lk||[]).filter(function(x){return x.id===+id})[0]};
+ m.querySelectorAll('[data-lkcp]').forEach(function(b){b.onclick=function(){var l=tim(b.dataset.lkcp);if(l)lkChep(l.duong_dan,b)}});
+ m.querySelectorAll('[data-lkdot]').forEach(function(b){b.onclick=function(e){e.stopPropagation();var id=+b.dataset.lkdot;ST.lkMenu=ST.lkMenu===id?null:id;renderMain();var f=document.querySelector('#main .lkmenu button');if(f)f.focus()}});
+ var mn=m.querySelector('.lkmenu');if(mn){var l=tim(ST.lkMenu);
+  mn.querySelectorAll('[data-lkm]').forEach(function(b){b.onclick=function(e){e.stopPropagation();var k=b.dataset.lkm,ids=ST.lk.map(function(x){return x.id}).filter(function(x){return x!==l.id});
+   if(k==='sua'){ST.lkMenu=null;renderMain();dlgLk(l);return}
+   if(k==='dau')ids.unshift(l.id);else ids.push(l.id);lkXep(ids,(k==='dau'?'Đã đưa lên đầu: ':'Đã đưa xuống cuối: ')+l.tieu_de)}});
+}
+ var keo=null;
+ m.querySelectorAll('[draggable=true]').forEach(function(d){
+  d.ondragstart=function(e){keo=d;d.classList.add('dang-keo');e.dataTransfer.effectAllowed='move';try{e.dataTransfer.setData('text/plain',d.dataset.lid)}catch(x){}};
+  d.ondragend=function(){d.classList.remove('dang-keo');keo=null};
+  d.ondragover=function(e){if(!keo||keo===d||keo.dataset.sec!==d.dataset.sec)return;e.preventDefault();e.dataTransfer.dropEffect='move';d.classList.add('drag-over')};
+  d.ondragleave=function(){d.classList.remove('drag-over')};
+  d.ondrop=function(e){e.preventDefault();d.classList.remove('drag-over');if(!keo||keo===d)return;var a=+keo.dataset.lid,b=+d.dataset.lid;keo=null;
+   var ids=ST.lk.map(function(x){return x.id}),ia=ids.indexOf(a),ib=ids.indexOf(b);if(ia<0||ib<0)return;ids.splice(ia,1);ids.splice(ib,0,a);lkXep(ids,'Đã đổi chỗ')}})}
 /* vòng 11: thêm, sửa, xóa liên kết tự thêm */
 var LK_IC=['🔗','🏛️','📊','📁','📝','🧾','🌐','📅'];
 function napLk(){if(ST.lkDang)return;ST.lkDang=1;ST.lkLoi='';call('dsLienKet',{}).then(function(o){ST.lkDang=0;ST.lk=o.lien_ket;ST.lkChung=o.chia_se;if(ST.tab==='lk')renderMain()}).catch(function(e){ST.lkDang=0;ST.lkLoi=(e&&e.msg)||'Chưa tải được liên kết.';if(ST.tab==='lk')renderMain()})}
@@ -1409,7 +1474,7 @@ function dlgLk(l){var ic=l&&l.bieu_tuong||'🔗';
  })}
 
 /* App tài chính: xin vé dùng một lần rồi mở; mở cửa sổ ngay lúc bấm để trình duyệt không chặn */
-BIND.lk=function(m){if(ST.lk===undefined&&!ST.lkLoi)napLk();var re=m.querySelector('[data-lkre]');if(re)re.onclick=function(){ST.lkLoi='';renderMain();napLk()};var ad=m.querySelector('[data-lkadd]');if(ad)ad.onclick=function(){dlgLk(null)};m.querySelectorAll('[data-lke]').forEach(function(b){b.onclick=function(){dlgLk((ST.lk||[]).filter(function(x){return x.id===+b.dataset.lke})[0])}});
+BIND.lk=function(m){if(ST.lk===undefined&&!ST.lkLoi)napLk();bindLk12(m);var re=m.querySelector('[data-lkre]');if(re)re.onclick=function(){ST.lkLoi='';renderMain();napLk()};var ad=m.querySelector('[data-lkadd]');if(ad)ad.onclick=function(){dlgLk(null)};m.querySelectorAll('[data-lke]').forEach(function(b){b.onclick=function(){dlgLk((ST.lk||[]).filter(function(x){return x.id===+b.dataset.lke})[0])}});
  m.querySelectorAll('[data-lk]').forEach(function(a){a.onclick=function(e){e.preventDefault();var w=null;try{w=window.open('','_blank')}catch(x){}
  if(w){try{w.opener=null;w.document.title='Đang mở...';w.document.body.innerHTML='<p style="font:16px system-ui;padding:24px">Đang mở App tài chính...</p>'}catch(x){}}
  call('veAppTaiChinh',{}).then(function(o){if(w&&!w.closed){w.location.href=o.url}else openModal('<h3>Mở App tài chính</h3><p>Trình duyệt vừa chặn mở tab mới. Bạn bấm nút dưới đây nha (link dùng được trong 2 phút).</p><div class="row"><button class="btn" type="button" data-x>Hủy</button><a class="btn solid" href="'+esc(o.url)+'" target="_blank" rel="noopener" data-go>Mở App tài chính</a></div>',function(md){md.querySelector('[data-x]').onclick=closeModal;md.querySelector('[data-go]').onclick=function(){setTimeout(closeModal,300)}})})
