@@ -44,7 +44,9 @@ const OH = {
     DaDoc: ['ten_dn', 'hoi_thoai', 'tin_id', 'an_den'],
     CaiDat: ['khoa', 'gia_tri'],
     /* thông báo trong thẻ việc: ai gửi, gửi ai, câu, giờ gửi, giờ người nhận mở thẻ việc */
-    ThongBaoViec: ['id', 'viec_id', 'nguoi_gui', 'nguoi_nhan', 'noi_dung', 'luc', 'xem_luc']
+    ThongBaoViec: ['id', 'viec_id', 'nguoi_gui', 'nguoi_nhan', 'noi_dung', 'luc', 'xem_luc'],
+    /* vòng 11: liên kết tự thêm ở tab Liên kết; chung = '1' thì mọi người thấy */
+    LienKet: ['id', 'ai', 'tieu_de', 'duong_dan', 'ghi_chu', 'bieu_tuong', 'chung', 'tao_luc', 'sua_luc']
   },
   SO: { het_han: 1, tao_luc: 1, dang_nhap_cuoi: 1, hoat_dong: 1, luc: 1, xong_luc: 1, sua_luc: 1, id: 1, tin_id: 1, han: 1, kich_thuoc: 1, an_den: 1, viec_id: 1, nac: 1, tep_chot: 1, xem_luc: 1 },
   UU_TIEN: ['hi', 'imp', 'mid', 'lo'],
@@ -1104,6 +1106,66 @@ API_.baoXong = function (d, me) {
 };
 
 /* ---------- liên kết App tài chính: vé dùng một lần ký HMAC, App tài chính kiểm bằng cùng khóa ---------- */
+/* ---------- liên kết tự thêm (vòng 11, H duyệt 25/11): ai cũng thêm liên kết riêng; Quản trị và Đầy đủ đánh dấu Hiện cho mọi người ---------- */
+const BIEU_TUONG_LK_ = ['🔗', '🏛️', '📊', '📁', '📝', '🧾', '🌐', '📅'];
+function bangLK_() {
+  const ss = ss_();
+  if (!ss.getSheetByName('LienKet')) khoa_(function () {
+    if (ss.getSheetByName('LienKet')) return;
+    const sh = ss.insertSheet('LienKet');
+    sh.getRange(1, 1, sh.getMaxRows(), sh.getMaxColumns()).setNumberFormat('@');
+    sh.getRange(1, 1, 1, OH.COT.LienKet.length).setValues([OH.COT.LienKet]).setFontWeight('bold');
+    sh.setFrozenRows(1);
+  });
+  return bang_('LienKet');
+}
+function chungLK_(me) { return me.vai_tro === 'quan_tri' || coQuyen_(me, 'xem_het'); }
+function suaLK_(r, me) { return r.ai === me.ten_dn || (r.chung === '1' && chungLK_(me)); }
+function dsLK_(me) {
+  return bangLK_().rows.filter(function (r) { return r.chung === '1' || r.ai === me.ten_dn; }).map(function (r) {
+    return { id: r.id, ai: r.ai, tieu_de: r.tieu_de, duong_dan: r.duong_dan, ghi_chu: r.ghi_chu, bieu_tuong: r.bieu_tuong || '🔗', chung: r.chung === '1', sua: suaLK_(r, me), tao_luc: r.tao_luc };
+  });
+}
+/* đường dẫn: thiếu http(s):// thì thêm https://; chỉ nhận http và https */
+function duongDanLK_(u) {
+  u = String(u || '').trim();
+  if (!u) return '';
+  if (!/^[a-z][a-z0-9+.\-]*:/i.test(u)) u = 'https://' + u.replace(/^\/+/, '');
+  return /^https?:\/\/[^\s/?#]+\.[^\s]+$/i.test(u) && u.length <= 1500 ? u : '';
+}
+API_.dsLienKet = function (d, me) { return { lien_ket: dsLK_(me), chia_se: chungLK_(me) }; };
+API_.luuLienKet = function (d, me) {
+  const t = String(d.tieu_de || '').replace(/\s+/g, ' ').trim().slice(0, 60);
+  if (!t) loi_('Bạn ghi tiêu đề nha.');
+  const u = duongDanLK_(d.duong_dan);
+  if (!u) loi_('Đường dẫn chưa đúng, bạn dán lại link bắt đầu bằng http hoặc https nha.');
+  const g = String(d.ghi_chu || '').replace(/\s+/g, ' ').trim().slice(0, 80);
+  const ic = BIEU_TUONG_LK_.indexOf(d.bieu_tuong) >= 0 ? d.bieu_tuong : '🔗';
+  const T = bangLK_();
+  khoa_(function () {
+    if (d.id) {
+      const r = T.rows.filter(function (x) { return x.id === Number(d.id); })[0];
+      if (!r || !(r.chung === '1' || r.ai === me.ten_dn)) loi_('Không thấy liên kết này, bạn tải lại trang thử nha.');
+      if (!suaLK_(r, me)) loi_('Bạn chưa có quyền sửa liên kết này.');
+      r.tieu_de = t; r.duong_dan = u; r.ghi_chu = g; r.bieu_tuong = ic;
+      if (chungLK_(me) && d.chung !== undefined) r.chung = d.chung ? '1' : '';
+      r.sua_luc = Date.now(); ghiDong_(T, r);
+    } else {
+      if (T.rows.filter(function (x) { return x.ai === me.ten_dn; }).length >= 100) loi_('Bạn đã có 100 liên kết, xóa bớt rồi thêm nha.');
+      them_('LienKet', { id: soMoi_('lk'), ai: me.ten_dn, tieu_de: t, duong_dan: u, ghi_chu: g, bieu_tuong: ic, chung: d.chung && chungLK_(me) ? '1' : '', tao_luc: Date.now(), sua_luc: Date.now() });
+    }
+  });
+  return { lien_ket: dsLK_(me), chia_se: chungLK_(me) };
+};
+API_.xoaLienKet = function (d, me) {
+  const T = bangLK_();
+  khoa_(function () {
+    const r = T.rows.filter(function (x) { return x.id === Number(d.id); })[0];
+    if (!r || !suaLK_(r, me)) loi_('Bạn chưa có quyền xóa liên kết này.');
+    xoaDong_(T, [r]);
+  });
+  return { lien_ket: dsLK_(me), chia_se: chungLK_(me) };
+};
 API_.veAppTaiChinh = function (d, me) {
   const k = khoaLienKet_();
   const tai = b64Url_(Utilities.base64EncodeWebSafe(JSON.stringify({ u: me.ten_dn, n: ten_(me), t: Date.now() + OH.VE_HAN, r: Utilities.getUuid() }), Utilities.Charset.UTF_8));
