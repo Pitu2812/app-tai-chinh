@@ -1,0 +1,674 @@
+[
+{
+"ten": "Phường Long An",
+"cap": "phường",
+"pgd": "Phòng Nghiệp vụ 1",
+"ky": "Lê Thị Hồng Gấm",
+"ma_kb": "0511"
+},
+{
+"ten": "Phường Tân An",
+"cap": "phường",
+"pgd": "Phòng Nghiệp vụ 1",
+"ky": "Hồng Lê Minh Nguyệt",
+"ma_kb": "0511"
+},
+{
+"ten": "Phường Khánh Hậu",
+"cap": "phường",
+"pgd": "Phòng Nghiệp vụ 1",
+"ky": "Lê Thị Hồng Gấm",
+"ma_kb": "0511"
+},
+{
+"ten": "Xã Thuận Mỹ",
+"cap": "xã",
+"pgd": "Phòng Nghiệp vụ 3",
+"ky": "Đặng Đình Toàn",
+"ma_kb": "0511"
+},
+{
+"ten": "Xã An Lục Long",
+"cap": "xã",
+"pgd": "Phòng Nghiệp vụ 3",
+"ky": "Lê Thị Hồng Gấm",
+"ma_kb": "0511"
+},
+{
+"ten": "Xã Tầm Vu",
+"cap": "xã",
+"pgd": "Phòng Nghiệp vụ 3",
+"ky": "Lê Thị Hồng Gấm",
+"ma_kb": "0511"
+},
+{
+"ten": "Xã Vĩnh Công",
+"cap": "xã",
+"pgd": "Phòng Nghiệp vụ 3",
+"ky": "Đặng Đình Toàn",
+"ma_kb": "0511"
+},
+{
+"ten": "Xã Vàm Cỏ",
+"cap": "xã",
+"pgd": "Phòng Nghiệp vụ 4",
+"ky": "Đặng Đình Toàn",
+"ma_kb": "0511"
+},
+{
+"ten": "Xã Tân Trụ",
+"cap": "xã",
+"pgd": "Phòng Nghiệp vụ 4",
+"ky": "Trần Văn Vũ",
+"ma_kb": "0511"
+},
+{
+"ten": "Xã Nhựt Tảo",
+"cap": "xã",
+"pgd": "Phòng Nghiệp vụ 4",
+"ky": "Trần Văn Vũ",
+"ma_kb": "0511"
+},
+{
+"ten": "Xã Thủ Thừa",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 1",
+"ky": "Lê Thị Hồng Gấm",
+"ma_kb": "0514"
+},
+{
+"ten": "Xã Mỹ An",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 1",
+"ky": "Lê Thị Hồng Gấm",
+"ma_kb": "0514"
+},
+{
+"ten": "Xã Mỹ Thạnh",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 1",
+"ky": "Lê Thị Hồng Gấm",
+"ma_kb": "0514"
+},
+{
+"ten": "Xã Tân Long",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 1",
+"ky": "Đặng Đình Toàn",
+"ma_kb": "0514"
+},
+{
+"ten": "Xã Thạnh Lợi",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 1",
+"ky": "Lê Thị Hồng Gấm",
+"ma_kb": "0514"
+},
+{
+"ten": "Xã Bình Đức",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 1",
+"ky": "Hồng Lê Minh Nguyệt",
+"ma_kb": "0514"
+},
+{
+"ten": "Xã Lương Hoà",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 1",
+"ky": "Nguyễn Tấn Quí",
+"ma_kb": "0514"
+},
+{
+"ten": "Xã Bến Lức",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 1",
+"ky": "Hồ Quốc Công",
+"ma_kb": "0514"
+},
+{
+"ten": "Xã Mỹ Yên",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 1",
+"ky": "Đặng Đình Toàn",
+"ma_kb": "0514"
+},
+{
+"ten": "Xã Mỹ Quý",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 2",
+"ky": "Nguyễn Tấn Quí",
+"ma_kb": "0516"
+},
+{
+"ten": "Xã Đông Thành",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 2",
+"ky": "Nguyễn Tấn Quí",
+"ma_kb": "0516"
+},
+{
+"ten": "Xã Đức Huệ",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 2",
+"ky": "Nguyễn Tấn Quí",
+"ma_kb": "0516"
+},
+{
+"ten": "Xã An Ninh",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 2",
+"ky": "Hồng Lê Minh Nguyệt",
+"ma_kb": "0516"
+},
+{
+"ten": "Xã Hiệp Hoà",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 2",
+"ky": "Hồ Quốc Công",
+"ma_kb": "0516"
+},
+{
+"ten": "Xã Hậu Nghĩa",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 2",
+"ky": "Hồng Lê Minh Nguyệt",
+"ma_kb": "0516"
+},
+{
+"ten": "Xã Hoà Khánh",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 2",
+"ky": "Hồ Quốc Công",
+"ma_kb": "0516"
+},
+{
+"ten": "Xã Đức Lập",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 2",
+"ky": "Nguyễn Kiên Cường",
+"ma_kb": "0516"
+},
+{
+"ten": "Xã Mỹ Hạnh",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 2",
+"ky": "Lê Thị Hồng Gấm",
+"ma_kb": "0516"
+},
+{
+"ten": "Xã Đức Hoà",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 2",
+"ky": "Đặng Đình Toàn",
+"ma_kb": "0516"
+},
+{
+"ten": "Xã Long Cang",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 3",
+"ky": "Hồ Quốc Công",
+"ma_kb": "0518"
+},
+{
+"ten": "Xã Rạch Kiến",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 3",
+"ky": "Nguyễn Kiên Cường",
+"ma_kb": "0518"
+},
+{
+"ten": "Xã Mỹ Lệ",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 3",
+"ky": "Trần Văn Vũ",
+"ma_kb": "0518"
+},
+{
+"ten": "Xã Tân Lân",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 3",
+"ky": "Nguyễn Tấn Quí",
+"ma_kb": "0518"
+},
+{
+"ten": "Xã Cần Đước",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 3",
+"ky": "Lê Thị Hồng Gấm",
+"ma_kb": "0518"
+},
+{
+"ten": "Xã Long Hựu",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 3",
+"ky": "Nguyễn Tấn Quí",
+"ma_kb": "0518"
+},
+{
+"ten": "Xã Phước Lý",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 3",
+"ky": "Nguyễn Tấn Quí",
+"ma_kb": "0518"
+},
+{
+"ten": "Xã Mỹ Lộc",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 3",
+"ky": "Nguyễn Kiên Cường",
+"ma_kb": "0518"
+},
+{
+"ten": "Xã Cần Giuộc",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 3",
+"ky": "Hồ Quốc Công",
+"ma_kb": "0518"
+},
+{
+"ten": "Xã Phước Vĩnh Tây",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 3",
+"ky": "Trần Văn Vũ",
+"ma_kb": "0518"
+},
+{
+"ten": "Xã Tân Tập",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 3",
+"ky": "Hồng Lê Minh Nguyệt",
+"ma_kb": "0518"
+},
+{
+"ten": "Xã Hậu Thạnh",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 4",
+"ky": "Nguyễn Tấn Quí",
+"ma_kb": "0520"
+},
+{
+"ten": "Xã Nhơn Hòa Lập",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 4",
+"ky": "Hồng Lê Minh Nguyệt",
+"ma_kb": "0520"
+},
+{
+"ten": "Xã Nhơn Ninh",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 4",
+"ky": "Hồng Lê Minh Nguyệt",
+"ma_kb": "0520"
+},
+{
+"ten": "Xã Tân Thạnh",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 4",
+"ky": "Đặng Đình Toàn",
+"ma_kb": "0520"
+},
+{
+"ten": "Xã Bình Thành",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 4",
+"ky": "Đặng Đình Toàn",
+"ma_kb": "0520"
+},
+{
+"ten": "Xã Thạnh Phước",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 4",
+"ky": "Nguyễn Kiên Cường",
+"ma_kb": "0520"
+},
+{
+"ten": "Xã Thạnh Hoá",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 4",
+"ky": "Trần Văn Vũ",
+"ma_kb": "0520"
+},
+{
+"ten": "Xã Tân Tây",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 4",
+"ky": "Nguyễn Kiên Cường",
+"ma_kb": "0520"
+},
+{
+"ten": "Xã Tuyên Thạnh",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 5",
+"ky": "Trần Văn Vũ",
+"ma_kb": "0526"
+},
+{
+"ten": "Xã Bình Hiệp",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 5",
+"ky": "Hồ Quốc Công",
+"ma_kb": "0526"
+},
+{
+"ten": "Phường Kiến Tường",
+"cap": "phường",
+"pgd": "Phòng Giao dịch số 5",
+"ky": "Hồ Quốc Công",
+"ma_kb": "0526"
+},
+{
+"ten": "Xã Bình Hoà",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 5",
+"ky": "Trần Văn Vũ",
+"ma_kb": "0526"
+},
+{
+"ten": "Xã Mộc Hoá",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 5",
+"ky": "Nguyễn Kiên Cường",
+"ma_kb": "0526"
+},
+{
+"ten": "Xã Hưng Điền",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 6",
+"ky": "Đặng Đình Toàn",
+"ma_kb": "0524"
+},
+{
+"ten": "Xã Vĩnh Thạnh",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 6",
+"ky": "Lê Thị Hồng Gấm",
+"ma_kb": "0524"
+},
+{
+"ten": "Xã Tân Hưng",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 6",
+"ky": "Nguyễn Kiên Cường",
+"ma_kb": "0524"
+},
+{
+"ten": "Xã Vĩnh Châu",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 6",
+"ky": "Lê Thị Hồng Gấm",
+"ma_kb": "0524"
+},
+{
+"ten": "Xã Tuyên Bình",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 6",
+"ky": "Hồ Quốc Công",
+"ma_kb": "0524"
+},
+{
+"ten": "Xã Vĩnh Hưng",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 6",
+"ky": "Đặng Đình Toàn",
+"ma_kb": "0524"
+},
+{
+"ten": "Xã Khánh Hưng",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 6",
+"ky": "Đặng Đình Toàn",
+"ma_kb": "0524"
+},
+{
+"ten": "Phường Tân Ninh",
+"cap": "phường",
+"pgd": "Phòng Giao dịch số 7",
+"ky": "Đặng Đình Toàn",
+"ma_kb": "0527"
+},
+{
+"ten": "Phường Bình Minh",
+"cap": "phường",
+"pgd": "Phòng Giao dịch số 7",
+"ky": "Nguyễn Tấn Quí",
+"ma_kb": "0527"
+},
+{
+"ten": "Phường Ninh Thạnh",
+"cap": "phường",
+"pgd": "Phòng Giao dịch số 7",
+"ky": "Đặng Đình Toàn",
+"ma_kb": "0527"
+},
+{
+"ten": "Phường Long Hoa",
+"cap": "phường",
+"pgd": "Phòng Giao dịch số 7",
+"ky": "Hồng Lê Minh Nguyệt",
+"ma_kb": "0527"
+},
+{
+"ten": "Phường Hòa Thành",
+"cap": "phường",
+"pgd": "Phòng Giao dịch số 7",
+"ky": "Trần Văn Vũ",
+"ma_kb": "0527"
+},
+{
+"ten": "Phường Trảng Bàng",
+"cap": "phường",
+"pgd": "Phòng Giao dịch số 8",
+"ky": "Nguyễn Tấn Quí",
+"ma_kb": "0528"
+},
+{
+"ten": "Phường An Tịnh",
+"cap": "phường",
+"pgd": "Phòng Giao dịch số 8",
+"ky": "Hồ Quốc Công",
+"ma_kb": "0528"
+},
+{
+"ten": "Phường Gò Dầu",
+"cap": "phường",
+"pgd": "Phòng Giao dịch số 8",
+"ky": "Nguyễn Kiên Cường",
+"ma_kb": "0528"
+},
+{
+"ten": "Xã Long Chữ",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 8",
+"ky": "Nguyễn Kiên Cường",
+"ma_kb": "0528"
+},
+{
+"ten": "Xã Long Thuận",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 8",
+"ky": "Nguyễn Kiên Cường",
+"ma_kb": "0528"
+},
+{
+"ten": "Xã Bến Cầu",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 8",
+"ky": "Nguyễn Kiên Cường",
+"ma_kb": "0528"
+},
+{
+"ten": "Phường Gia Lộc",
+"cap": "phường",
+"pgd": "Phòng Giao dịch số 8",
+"ky": "Đặng Đình Toàn",
+"ma_kb": "0528"
+},
+{
+"ten": "Xã Hưng Thuận",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 8",
+"ky": "Trần Văn Vũ",
+"ma_kb": "0528"
+},
+{
+"ten": "Xã Phước Chỉ",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 8",
+"ky": "Nguyễn Tấn Quí",
+"ma_kb": "0528"
+},
+{
+"ten": "Xã Thạnh Đức",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 8",
+"ky": "Nguyễn Kiên Cường",
+"ma_kb": "0528"
+},
+{
+"ten": "Xã Phước Thạnh",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 8",
+"ky": "Nguyễn Kiên Cường",
+"ma_kb": "0528"
+},
+{
+"ten": "Phường Thanh Điền",
+"cap": "phường",
+"pgd": "Phòng Giao dịch số 9",
+"ky": "Hồng Lê Minh Nguyệt",
+"ma_kb": "0529"
+},
+{
+"ten": "Xã Tân Lập",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 9",
+"ky": "Nguyễn Tấn Quí",
+"ma_kb": "0529"
+},
+{
+"ten": "Xã Tân Biên",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 9",
+"ky": "Hồng Lê Minh Nguyệt",
+"ma_kb": "0529"
+},
+{
+"ten": "Xã Thạnh Bình",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 9",
+"ky": "Hồ Quốc Công",
+"ma_kb": "0529"
+},
+{
+"ten": "Xã Trà Vong",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 9",
+"ky": "Hồ Quốc Công",
+"ma_kb": "0529"
+},
+{
+"ten": "Xã Phước Vinh",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 9",
+"ky": "Hồ Quốc Công",
+"ma_kb": "0529"
+},
+{
+"ten": "Xã Hòa Hội",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 9",
+"ky": "Hồng Lê Minh Nguyệt",
+"ma_kb": "0529"
+},
+{
+"ten": "Xã Ninh Điền",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 9",
+"ky": "Nguyễn Tấn Quí",
+"ma_kb": "0529"
+},
+{
+"ten": "Xã Châu Thành",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 9",
+"ky": "Trần Văn Vũ",
+"ma_kb": "0529"
+},
+{
+"ten": "Xã Hảo Đước",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 9",
+"ky": "Hồ Quốc Công",
+"ma_kb": "0529"
+},
+{
+"ten": "Xã Truông Mít",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 10",
+"ky": "Hồ Quốc Công",
+"ma_kb": "0530"
+},
+{
+"ten": "Xã Lộc Ninh",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 10",
+"ky": "Nguyễn Tấn Quí",
+"ma_kb": "0530"
+},
+{
+"ten": "Xã Cầu Khởi",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 10",
+"ky": "Nguyễn Tấn Quí",
+"ma_kb": "0530"
+},
+{
+"ten": "Xã Dương Minh Châu",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 10",
+"ky": "Nguyễn Tấn Quí",
+"ma_kb": "0530"
+},
+{
+"ten": "Xã Tân Đông",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 10",
+"ky": "Hồng Lê Minh Nguyệt",
+"ma_kb": "0530"
+},
+{
+"ten": "Xã Tân Châu",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 10",
+"ky": "Hồng Lê Minh Nguyệt",
+"ma_kb": "0530"
+},
+{
+"ten": "Xã Tân Phú",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 10",
+"ky": "Lê Thị Hồng Gấm",
+"ma_kb": "0530"
+},
+{
+"ten": "Xã Tân Hội",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 10",
+"ky": "Lê Thị Hồng Gấm",
+"ma_kb": "0530"
+},
+{
+"ten": "Xã Tân Thành",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 10",
+"ky": "Nguyễn Kiên Cường",
+"ma_kb": "0530"
+},
+{
+"ten": "Xã Tân Hòa",
+"cap": "xã",
+"pgd": "Phòng Giao dịch số 10",
+"ky": "Hồng Lê Minh Nguyệt",
+"ma_kb": "0530"
+}
+]
