@@ -1,0 +1,104 @@
+name: App Thong bao - tao du an, day ma va trien khai
+# Rieng cho App Thong bao (thu muc app-thong-bao/). KHONG dung den APP TAI CHINH, App ty le phan cap, O Heo.
+# Thu tu dung lan dau: 1) tao_du_an  2) ghi scriptId vao app-thong-bao/script/.clasp.json  3) day ma + trien_khai_thu
+# Trien khai link chinh (trien_khai) chi chay khi H da duyet.
+on:
+  workflow_dispatch:
+    inputs:
+      tao_du_an:
+        description: "Lan dau: tao du an Apps Script moi 'App Thong bao' duoi takikj02 (in ra scriptId, khong day ma)"
+        type: boolean
+        default: false
+      trien_khai:
+        description: "Trien khai vao link /exec CHINH cua App Thong bao (can H duyet)"
+        type: boolean
+        default: false
+      trien_khai_thu:
+        description: "Trien khai link THU"
+        type: boolean
+        default: false
+      ma_link_thu:
+        description: "Tuy chon: ma link THU da co (AKfycb...) de cap nhat dung link do"
+        type: string
+        default: ""
+      quay_lai_phien_ban:
+        description: "Chi dung khi can lui link chinh ve phien ban cu"
+        type: string
+        default: ""
+      ghi_chu:
+        description: "Ghi chu cho ban trien khai"
+        type: string
+        default: "Trien khai App Thong bao tu GitHub"
+permissions:
+  contents: read
+concurrency:
+  group: apps-script-deploy-app-thong-bao
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app-thong-bao/script
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Cai clasp
+        run: npm install -g @google/clasp
+      - name: Dang nhap clasp bang secret
+        env:
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+        run: |
+          printf '%s' "$CLASPRC_JSON" > ~/.clasprc.json
+          chmod 600 ~/.clasprc.json
+      - name: Tao du an moi (chi lan dau)
+        if: ${{ inputs.tao_du_an }}
+        working-directory: ${{ runner.temp }}
+        run: |
+          if [ -f "$GITHUB_WORKSPACE/app-thong-bao/script/.clasp.json" ]; then
+            echo "Da co .clasp.json, khong tao them du an."; exit 1
+          fi
+          mkdir tao && cd tao
+          clasp create --type standalone --title "App Thông báo" | tee /tmp/tao.txt
+          id=$(python3 -c "import json;print(json.load(open('.clasp.json'))['scriptId'])")
+          echo "SCRIPT ID APP THONG BAO: $id"
+          echo "### Script ID App Thong bao: \`$id\`" >> "$GITHUB_STEP_SUMMARY"
+      - name: Kiem tra cau hinh
+        if: ${{ !inputs.tao_du_an }}
+        run: |
+          test -f .clasp.json || { echo "Chua co app-thong-bao/script/.clasp.json (chay tao_du_an truoc)"; exit 1; }
+          test -f appsscript.json || { echo "Chua co app-thong-bao/script/appsscript.json"; exit 1; }
+          if [ "${{ inputs.trien_khai }}" = "true" ] || [ -n "${{ inputs.quay_lai_phien_ban }}" ]; then
+            test -s .deploy-id || { echo "Chua co app-thong-bao/script/.deploy-id (ma link chinh)"; exit 1; }
+          fi
+      - name: Gop web vao thu muc script (neu co app-thong-bao/web)
+        if: ${{ !inputs.tao_du_an && inputs.quay_lai_phien_ban == '' }}
+        run: |
+          shopt -s nullglob; for h in ../web/*.html; do cp "$h" . ; echo "chep $h"; done
+          echo "var BUILD_TS = $(date +%s%3N);" > build-info.js
+      - name: Day ma len script
+        if: ${{ !inputs.tao_du_an && inputs.quay_lai_phien_ban == '' }}
+        run: clasp push --force
+      - name: Trien khai link chinh
+        if: ${{ !inputs.tao_du_an && inputs.trien_khai && inputs.quay_lai_phien_ban == '' }}
+        run: clasp deploy --deploymentId "$(cat .deploy-id)" --description "${{ inputs.ghi_chu }}"
+      - name: Trien khai link THU
+        if: ${{ !inputs.tao_du_an && inputs.trien_khai_thu && inputs.quay_lai_phien_ban == '' }}
+        run: |
+          if [ -n "${{ inputs.ma_link_thu }}" ]; then
+            clasp deploy --deploymentId "${{ inputs.ma_link_thu }}" --description "THU: ${{ inputs.ghi_chu }}" | tee /tmp/dep.txt
+          else
+            clasp deploy --description "THU: ${{ inputs.ghi_chu }}" | tee /tmp/dep.txt
+          fi
+          id=$(grep -o 'AKfycb[A-Za-z0-9_-]*' /tmp/dep.txt | head -1)
+          echo "LINK THU: https://script.google.com/macros/s/$id/exec"
+          echo "### Link thu App Thong bao: https://script.google.com/macros/s/$id/exec" >> "$GITHUB_STEP_SUMMARY"
+      - name: Lui link chinh ve phien ban cu
+        if: ${{ !inputs.tao_du_an && inputs.quay_lai_phien_ban != '' }}
+        run: clasp deploy --deploymentId "$(cat .deploy-id)" --versionNumber "${{ inputs.quay_lai_phien_ban }}" --description "Lui ve phien ban ${{ inputs.quay_lai_phien_ban }}"
+      - name: Xoa chia khoa
+        if: always()
+        working-directory: ${{ github.workspace }}
+        run: rm -f ~/.clasprc.json
